@@ -32,13 +32,12 @@ class EnderecoSchema(BaseModel):
         return valor or None
 
 
-class UsuarioCreateRequest(BaseModel):
+class DadosUsuarioRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     nome: str = Field(min_length=3, max_length=120)
     email: str = Field(min_length=5, max_length=160)
     senha: str = Field(min_length=8, max_length=128)
-    tipo: TipoCadastro
     endereco: EnderecoSchema
 
     @field_validator("nome", "email")
@@ -66,6 +65,14 @@ class UsuarioCreateRequest(BaseModel):
         ):
             raise ValueError("senha deve conter letra e número")
         return valor
+
+
+class UsuarioCreateRequest(DadosUsuarioRequest):
+    tipo: TipoCadastro
+
+
+class PontoColetaProvisionRequest(DadosUsuarioRequest):
+    pass
 
 
 class UsuarioUpdateRequest(BaseModel):

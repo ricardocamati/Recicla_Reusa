@@ -2,7 +2,7 @@
 
 Os casos abaixo especificam os critérios de aceitação da primeira entrega. Cada cenário informa objetivo, pré-condições, dados, procedimento e resultado observável para permitir execução manual ou automação reproduzível.
 
-> **Estado atual:** o backend executável contém o CRUD de usuários e itens, autenticação básica, autorização por sessão e auditoria temporal. O frontend, o provisionamento de `ponto_coleta` e os fluxos de interesse/coleta permanecem fora deste marco.
+> **Estado atual:** o backend executável contém o CRUD de usuários e itens, autenticação básica, autorização por sessão, auditoria temporal e provisionamento controlado de `ponto_coleta`. O frontend e os fluxos de interesse/coleta permanecem fora deste marco.
 
 ## Convenções de execução
 
@@ -346,11 +346,12 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 
 - **Requisitos:** V1-RF-01, V1-RF-17 e V1-RN-01.
 - **Objetivo:** Garantir que o perfil `ponto_coleta` não possa ser obtido pelo cadastro público.
-- **Pré-condições:** A API e o banco estão disponíveis e o responsável técnico possui um mecanismo controlado de provisionamento.
+- **Pré-condições:** A API e o banco estão disponíveis e o comando local `python -m app.provisionar_ponto_coleta` está disponível ao responsável técnico.
 - **Dados de teste:** Cadastro público com `tipo: "ponto_coleta"` e conta provisionada `coleta.ct31@example.com` com senha válida.
 - **Procedimento:**
   1. Tentar o cadastro público e confirmar que nenhum documento foi criado.
-  2. Provisionar a conta pelo caminho autorizado, autenticar e consultar `/api/usuarios/me`.
+  2. Executar o comando local de provisionamento, fornecer a senha no prompt e confirmar o documento criado com `tipo: "ponto_coleta"`.
+  3. Autenticar com a conta provisionada e consultar `/api/usuarios/me`.
 - **Resultado esperado:** O cadastro público retorna HTTP `400` sem persistência, enquanto a conta provisionada autentica com HTTP `200` e apresenta `tipo: "ponto_coleta"`.
 
 ## V1-CT-32 — Abrir frontend sem etapa de build
@@ -430,6 +431,7 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 | `tests/test_api_item.py` | cadastro, filtros, validação, privacidade, autorização e CRUD HTTP de itens | 8 testes aprovados |
 | `tests/test_item_service.py` | proprietário, auditoria, filtros, atualização, autorização e recurso inexistente | 6 testes aprovados |
 | `tests/test_mongo_item_repository.py` | persistência, filtros, índice, conversão de ID, precisão temporal e exclusão com `mongomock` | 3 testes aprovados |
-| Suíte atual | CRUD de usuários e itens, autenticação, autorização e auditoria executáveis; frontend ainda pendente | 35 testes aprovados; cobertura total de 94,54% |
+| `tests/test_provisionamento_ponto_coleta.py` | tipo controlado, hash, duplicidade, rejeição de tipo no corpo e comando administrativo | 4 testes aprovados |
+| Suíte atual | CRUD de usuários e itens, autenticação, autorização, provisionamento e auditoria executáveis; frontend ainda pendente | 39 testes aprovados; cobertura total de 94,28% |
 
-A automação atual comprova o CRUD de usuários e itens, endereço, auditoria, privacidade, login, sessão, filtros e autorização por proprietário. A integração real também foi executada contra MongoDB 7.0 no Docker Compose, com ping, índices, CRUD dos dois recursos e limpeza dos dados temporários aprovados. O frontend, o provisionamento de `ponto_coleta` e os fluxos de interesse/coleta continuam planejados; a cobertura permanece igual ou superior a 70%.
+A automação atual comprova o CRUD de usuários e itens, endereço, auditoria, privacidade, login, sessão, filtros, autorização por proprietário e provisionamento controlado. A integração real também foi executada contra MongoDB 7.0 no Docker Compose, com ping, índices, CRUD dos dois recursos e limpeza dos dados temporários aprovados. O frontend, os fluxos de interesse/coleta e as demais capacidades administrativas da v2.0 continuam planejados; a cobertura permanece igual ou superior a 70%.

@@ -4,7 +4,7 @@
 
 ## V1-RN-01 — Tipos de usuário
 
-`tipo` aceita somente `doador`, `beneficiario` ou `ponto_coleta`. O cadastro público permite apenas os dois primeiros; `ponto_coleta` é provisionado pelo responsável técnico para impedir autoatribuição desse perfil.
+`tipo` aceita somente `doador`, `beneficiario` ou `ponto_coleta`. O cadastro público permite apenas os dois primeiros; `ponto_coleta` é provisionado pelo responsável técnico pelo comando local `python -m app.provisionar_ponto_coleta`, que não aceita o tipo como entrada e solicita a senha sem eco.
 
 ## V1-RN-02 — Limites dos dados do usuário
 

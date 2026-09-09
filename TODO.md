@@ -10,7 +10,7 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Separar API, Service, Repository, Model, Mapper e schemas.
 - [x] Criar testes automatizados para a base de usuários.
 - [x] Validar os CRUDs de usuários e itens com MongoDB real via Docker Compose.
-- [x] Obter cobertura superior a 70% — resultado atual: 94,54%.
+- [x] Obter cobertura superior a 70% — resultado atual: 94,28%.
 
 ### Usuários — concluir antes da v1.0
 
@@ -50,7 +50,7 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Permitir alteração e exclusão de item somente pelo proprietário.
 - [x] Aplicar permissões de `doador`, `beneficiario` e `ponto_coleta`.
 - [x] Permitir cadastro público apenas de `doador` e `beneficiario`.
-- [ ] Criar forma controlada de provisionar conta `ponto_coleta`.
+- [x] Criar forma controlada de provisionar conta `ponto_coleta` por comando administrativo local.
 - [x] Tornar `tipo` imutável na atualização comum.
 - [x] Retornar `401` para falha de autenticação e `403` para falta de autorização.
 - [x] Ocultar e-mail, endereço completo, senha e hash nos resumos públicos.
@@ -80,7 +80,7 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Atualizar os testes de usuários para o novo contrato.
 - [x] Criar testes de Service, Repository e API para itens.
 - [x] Validar os dois CRUDs contra MongoDB real.
-- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,54%.
+- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,28%.
 - [x] Atualizar documentação HTTP e arquitetura executável.
 - [ ] Validar o projeto em máquina limpa.
 - [ ] Publicar no GitHub e identificar a v1.0 por commit, tag ou release.

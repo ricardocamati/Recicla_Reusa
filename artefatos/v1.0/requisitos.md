@@ -4,7 +4,7 @@
 
 Entregar a primeira versão funcional da PoC com cadastros de usuários e itens eletrônicos, endereço aninhado, auditoria temporal, POO, documentação e testes automatizados.
 
-> **Estado atual:** o núcleo de usuários atende aos requisitos de cadastro, endereço, auditoria, sessão e autorização do próprio perfil. A coleção `itens` e o frontend ainda precisam ser implementados para fechar toda a v1.0.
+> **Estado atual:** o backend atende aos requisitos de usuários, itens, endereço, auditoria, sessão, autorização e provisionamento controlado de `ponto_coleta`. O frontend ainda precisa ser implementado para fechar toda a v1.0.
 
 ## 2. Requisitos funcionais
 
@@ -20,6 +20,7 @@ Cadastrar usuário por `POST /api/usuarios` com `nome`, `email`, `senha`, `tipo`
 - documento é persistido em `usuarios`.
 - senha nunca aparece na resposta e somente seu hash é persistido.
 - cadastro público aceita somente `doador` e `beneficiario`; conta `ponto_coleta` é provisionada pelo responsável técnico.
+- o provisionamento operacional é feito localmente por `python -m app.provisionar_ponto_coleta`, que não recebe `tipo` como argumento e solicita a senha sem eco.
 
 ### V1-RF-02 — Listar usuários
 

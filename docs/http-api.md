@@ -15,6 +15,8 @@ A documentação OpenAPI está disponível em `/docs`. As rotas de usuários usa
 
 A atualização comum não aceita `tipo`; a classificação é imutável nessa operação. O cadastro público aceita somente `doador` e `beneficiario`.
 
+O perfil `ponto_coleta` não é criado por rota HTTP. O responsável técnico deve executar, na raiz do projeto, `python -m app.provisionar_ponto_coleta` com `--nome`, `--email`, `--logradouro`, `--numero`, `--cep` e `--cidade` (e opcionalmente `--complemento`). O comando define o tipo internamente, solicita a senha sem eco e grava somente o hash.
+
 ## Autenticação
 
 | Método | Caminho | Entrada | Sucesso |

@@ -4,7 +4,7 @@ A coluna de evidência distingue o núcleo de usuários já implementado das fun
 
 | Requisito/regra | Casos | Evidência |
 |---|---|---|
-| V1-RF-01 | V1-CT-01 a V1-CT-04 | Implementado no núcleo de usuários; provisionamento de `ponto_coleta` permanece restrito |
+| V1-RF-01 | V1-CT-01 a V1-CT-04 | Implementado no núcleo de usuários; provisionamento controlado de `ponto_coleta` por comando local |
 | V1-RF-02, V1-RF-03 | V1-CT-05 | Implementado com resumo público e perfil completo do titular |
 | V1-RF-04 | V1-CT-06 | Implementado com `data_adicao` preservada e `data_modificacao` renovada |
 | V1-RF-05 | V1-CT-07 | Implementado com autorização pela sessão |
@@ -17,11 +17,11 @@ A coluna de evidência distingue o núcleo de usuários já implementado das fun
 | V1-RF-12 | — | OpenAPI de usuários, autenticação e itens disponível |
 | V1-RF-13 | V1-CT-21, V1-CT-22 | Implementado para usuários |
 | V1-RF-14 | V1-CT-24 | Implementado em `/api/usuarios/me` |
-| V1-RF-15 a V1-RF-17 | V1-CT-26, V1-CT-31 | Autorização por tipo e propriedade implementada; provisionamento de `ponto_coleta` pendente |
+| V1-RF-15 a V1-RF-17 | V1-CT-26, V1-CT-31 | Autorização por tipo e propriedade implementada; provisionamento controlado de `ponto_coleta` implementado |
 | V1-RF-18 | V1-CT-23, V1-CT-25, V1-CT-27 | `401` e `403` implementados para usuários e itens |
 | V1-RF-19 | V1-CT-32 a V1-CT-35 | Planejado: frontend simples separado |
 | V1-RF-20 | V1-CT-36 | Implementado com remoção da sessão e expiração do cookie |
-| V1-RN-01 a V1-RN-03 | V1-CT-01, V1-CT-31 | Tipos de cadastro e validações de usuário implementados; provisionamento pendente |
+| V1-RN-01 a V1-RN-03 | V1-CT-01, V1-CT-31 | Tipos de cadastro, validações e provisionamento controlado implementados |
 | V1-RN-04 a V1-RN-06 | V1-CT-01 a V1-CT-04 | Implementado no subdocumento de endereço |
 | V1-RN-07 | V1-CT-01, V1-CT-06, V1-CT-08, V1-CT-12 | Implementado para usuários e itens |
 | V1-RN-08 | V1-CT-08, V1-CT-09, V1-CT-16 | Implementado com referência e validação do proprietário |
@@ -43,7 +43,7 @@ A coluna de evidência distingue o núcleo de usuários já implementado das fun
 | V1-RN-31, V1-RN-32 | V1-CT-36, V1-CT-37 | Implementado para cookie e encerramento da sessão |
 | V1-RNF-01, V1-RNF-02 | V1-CT-16, V1-CT-17 | MongoDB, duas coleções e endereço de usuário implementados |
 | V1-RNF-03, V1-RNF-04 | V1-CT-01 a V1-CT-37 | Arquitetura em camadas implementada para usuários e itens |
-| V1-RNF-05, V1-RNF-06 | V1-CT-18 | 35 testes aprovados; cobertura total de 94,54% |
+| V1-RNF-05, V1-RNF-06 | V1-CT-18 | 39 testes aprovados; cobertura total de 94,28% |
 | V1-RNF-07 | — | Artefatos v1.0, contratos HTTP e arquitetura atualizados |
 | V1-RNF-08 | — | GitHub e identificação por commit/tag pendentes |
 | V1-RNF-09, V1-RNF-10 | V1-CT-17, V1-CT-18 | Configuração segura e compatibilidade da base de usuários |
@@ -54,7 +54,7 @@ A coluna de evidência distingue o núcleo de usuários já implementado das fun
 
 ## Estado resumido
 
-- **Implementado:** usuários e itens com endereço aninhado, auditoria temporal, hash, sessão, autorização, filtros, testes e documentação correspondente.
+- **Implementado:** usuários e itens com endereço aninhado, auditoria temporal, hash, sessão, autorização, provisionamento controlado, filtros, testes e documentação correspondente.
 - **Concluído na base de backend:** validação dos dois CRUDs contra MongoDB 7.0 real via Docker Compose, incluindo índices e limpeza dos dados de teste.
 - **Planejado para v1.0:** frontend simples.
 - **Pendente externamente:** GitHub e identificação da versão.

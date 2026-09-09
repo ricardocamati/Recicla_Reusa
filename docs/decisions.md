@@ -87,3 +87,11 @@
 **Motivação:** impedir que o cliente associe um item a outro usuário, manter o endereço normalizado em um único documento e permitir filtros independentes de catálogo.
 
 **Consequência:** o Service coordena a validação do proprietário e a autorização de alteração/exclusão. A resposta pode derivar a cidade do usuário, mas o item não duplica o subdocumento `endereco`. Status inicial, identificador e auditoria permanecem controlados pelo servidor.
+
+## ADR-012 — Provisionamento local de ponto de coleta
+
+**Decisão:** criar contas `ponto_coleta` somente pelo comando administrativo local `python -m app.provisionar_ponto_coleta`, sem rota HTTP pública para atribuição desse perfil.
+
+**Motivação:** impedir autoatribuição de privilégio mantendo a segurança da PoC simples, sem introduzir JWT ou uma conta administrativa adicional.
+
+**Consequência:** o cadastro HTTP continua limitado a `doador` e `beneficiario`; o comando recebe os dados operacionais, define `tipo` internamente e solicita a senha sem eco antes de persistir o hash.
