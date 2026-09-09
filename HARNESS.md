@@ -4,8 +4,8 @@ Este arquivo reúne os comandos de instalação, execução e validação do pro
 
 ## Pré-requisitos
 
-- Python 3.11 ou superior;
-- Docker e Docker Compose v2 para o MongoDB local.
+- Python 3.11 ou superior para a execução manual e os testes;
+- Docker e Docker Compose v2 para executar o ambiente completo.
 
 ## Preparação
 
@@ -17,19 +17,25 @@ python -m venv .venv
 
 No Linux/macOS, substitua `.venv/Scripts/python.exe` por `.venv/bin/python`.
 
-## Infraestrutura
+## Ambiente completo em Docker
 
 ```bash
-docker compose up -d
+cp .env.example .env
+docker compose config --quiet
+docker compose up -d --build
 docker compose ps
 ```
 
-Serviços previstos:
+Serviços publicados:
 
 | Serviço | Endereço |
 |---|---|
+| Backend | `http://localhost:8000` |
+| Frontend Python `http.server` | `http://localhost:8080` |
 | MongoDB | `localhost:27018` |
 | Mongo Express | `http://localhost:18081` |
+
+A API usa `mongo` como hostname dentro da rede Compose. O navegador usa a porta publicada do backend e o CORS inclui as origens do frontend nas portas `5500` e `8080`.
 
 Encerrar preservando dados:
 
@@ -62,7 +68,7 @@ O `pyproject.toml` exige cobertura mínima de 70% e mostra as linhas não cobert
 
 ## Frontend da v1.0
 
-O frontend simples será servido separadamente a partir de `frontend/`, por exemplo:
+No ambiente completo, o frontend é servido pelo Python `http.server` na porta `8080`. Para execução manual sem container, ele pode ser servido separadamente a partir de `frontend/`, por exemplo:
 
 ```bash
 .venv/Scripts/python.exe -m http.server 5500 --directory frontend
@@ -75,9 +81,10 @@ Os testes atuais usam:
 - Service com repositório em memória;
 - API com transporte ASGI;
 - Repository com `mongomock`;
-- API executada contra MongoDB real em Docker Compose, com CRUD completo validado.
+- API executada contra MongoDB real em Docker Compose, com CRUD completo validado;
+- aplicação completa executável no Compose com backend FastAPI e frontend Python `http.server`.
 
-A validação real realizada confirmou os serviços `mongo` e `mongo-express` em execução saudável e o fluxo HTTP de criação, listagem, consulta, atualização e exclusão.
+A validação real realizada confirmou os serviços `mongo`, `backend` e `frontend` em execução saudável e os fluxos HTTP de criação, listagem, consulta, atualização e exclusão.
 
 ## Verificações futuras
 
@@ -87,7 +94,6 @@ A validação real realizada confirmou os serviços `mongo` e `mongo-express` em
 - testar relacionamentos entre coleções;
 - demonstrar os três fluxos de destinação;
 - gerar relatório HTML de cobertura;
-- validar o frontend separado da v1.0.
 
 ## Definition of Done
 
@@ -103,14 +109,17 @@ Uma tarefa está concluída quando:
 
 ## Validação realizada
 
-Docker Desktop foi validado neste ambiente. O MongoDB 7.0 e o Mongo Express iniciaram pelo Compose, o container `mongo` ficou saudável e a API executou o CRUD real de usuários contra a coleção `usuarios`.
+Docker Desktop foi validado neste ambiente com uma execução isolada e sem reutilizar o volume do MongoDB anterior. A configuração foi resolvida sem o `.env` local, as imagens do backend e frontend foram construídas com `--no-cache` e o Compose criou um volume MongoDB novo.
 
-A validação executada foi:
+A validação executada confirmou:
 
-- `POST /api/usuarios` → `201`;
-- `GET /api/usuarios` → `200`;
-- `PUT /api/usuarios/{id}` → `200`;
-- `DELETE /api/usuarios/{id}` → `204`;
-- consulta após exclusão → `404`.
+- `docker compose config --quiet` → sucesso;
+- backend FastAPI → healthcheck saudável;
+- frontend Python `http.server` → healthcheck saudável;
+- MongoDB 7.0 → healthcheck saudável;
+- `GET /health`, `/docs`, páginas HTML e módulos JavaScript → HTTP `200`;
+- base inicial de usuários → lista vazia;
+- smoke test funcional → cadastro `201`, login `200`, `/me` `200`, CRUD de item, logout `204` e `/me` posterior `401`;
+- frontend aberto no navegador a partir de `http://127.0.0.1:8080`.
 
-A validação em uma máquina limpa ainda está pendente.
+A suíte completa também foi executada: 52 testes aprovados, cobertura total de 94,28%, compilação Python, verificação `node --check` dos módulos JavaScript e `git diff --check` sem erros.

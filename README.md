@@ -95,20 +95,59 @@ Os artefatos estão separados por entrega em [artefatos/v1.0/](artefatos/v1.0/) 
 
 ```text
 app/            backend Python
-frontend/       cliente web simples da v1.0
+frontend/       cliente web simples da v1.0; Dockerfile com `http.server`
  tests/         testes automatizados
 docs/           arquitetura, decisões e contratos
-compose.yaml    MongoDB local
+compose.yaml    MongoDB, backend FastAPI e frontend Python
+Dockerfile      imagem do backend
 pyproject.toml  dependências e configuração de testes
 ```
 
-## 9. Execução do estado atual
+## 9. Execução em máquina limpa com Docker
+
+O Compose sobe MongoDB, backend e frontend sem exigir Python, Node.js ou instalação de dependências na máquina host. Essa é a forma recomendada para validar a entrega.
+
+```bash
+# Opcional: criar configurações locais a partir do exemplo.
+cp .env.example .env
+
+# Validar a configuração resolvida sem iniciar os serviços.
+docker compose config --quiet
+
+# Construir as imagens e iniciar a aplicação.
+docker compose up -d --build
+
+# Conferir o estado e os healthchecks.
+docker compose ps
+```
+
+Acesse:
+
+- frontend: <http://127.0.0.1:8080>;
+- saúde da API: <http://127.0.0.1:8000/health>;
+- documentação OpenAPI: <http://127.0.0.1:8000/docs>;
+- Mongo Express opcional: <http://127.0.0.1:18081>.
+
+O backend usa o nome de serviço `mongo` para acessar o banco dentro da rede Docker. O navegador acessa a API pela porta publicada `8000`, e o Compose acrescenta as origens das portas `5500` e `8080` à configuração CORS. `SECURE_COOKIES=false` é intencional no ambiente HTTP local; em produção, use HTTPS e uma configuração própria.
+
+Para acompanhar os logs e encerrar o ambiente:
+
+```bash
+docker compose logs -f backend frontend
+docker compose down
+```
+
+`docker compose down -v` remove também o volume do MongoDB e deve ser usado somente quando a base local puder ser apagada.
+
+## 10. Execução manual do backend e frontend
+
+Quando a validação precisar executar a aplicação Python diretamente, suba somente o banco:
 
 ```bash
 cp .env.example .env
 python -m venv .venv
 .venv/Scripts/python.exe -m pip install -e '.[dev]'
-docker compose up -d
+docker compose up -d mongo
 .venv/Scripts/python.exe -m uvicorn app.main:app --reload
 ```
 
@@ -124,7 +163,7 @@ Depois abra <http://127.0.0.1:5500>. A origem `http://127.0.0.1:5500` já está 
 
 Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e login/logout em `/api/auth`. Os contratos estão documentados em [docs/http-api.md](docs/http-api.md).
 
-## 10. Testes e cobertura
+## 11. Testes e cobertura
 
 ```bash
 .venv/Scripts/python.exe -m pytest
@@ -132,7 +171,7 @@ Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e 
 
 A suíte deve manter cobertura mínima de **70%**, conforme a AEP. Os testes unitários do repositório usam `mongomock`; a aplicação utiliza PyMongo e MongoDB em execução normal.
 
-## 11. Limites atuais
+## 12. Limites atuais
 
 O frontend simples da v1.0 está implementado com cadastro, login, perfil, catálogo, filtros e gestão de itens próprios. Interesses, pontos de coleta detalhados, notificações e fluxos completos permanecem na especificação da v2.0, fora do `TODO.md` de implementação atual.
 
