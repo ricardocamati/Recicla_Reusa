@@ -95,10 +95,10 @@ Os artefatos estão separados por entrega em [artefatos/v1.0/](artefatos/v1.0/) 
 
 ```text
 app/            backend Python
-frontend/       cliente web simples da v1.0; Dockerfile e configuração Nginx
+frontend/       cliente web simples da v1.0; Dockerfile com `http.server`
  tests/         testes automatizados
 docs/           arquitetura, decisões e contratos
-compose.yaml    MongoDB, backend FastAPI e frontend Nginx
+compose.yaml    MongoDB, backend FastAPI e frontend Python
 Dockerfile      imagem do backend
 pyproject.toml  dependências e configuração de testes
 ```

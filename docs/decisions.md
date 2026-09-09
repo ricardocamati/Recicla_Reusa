@@ -98,7 +98,7 @@
 
 ## ADR-013 — Compose integrado para validação reproduzível
 
-**Decisão:** usar Docker Compose para orquestrar MongoDB, backend FastAPI/Uvicorn e frontend estático Nginx, mantendo portas locais publicadas para o navegador e healthchecks entre as dependências.
+**Decisão:** usar Docker Compose para orquestrar MongoDB, backend FastAPI/Uvicorn e frontend estático com Python `http.server`, mantendo portas locais publicadas para o navegador e healthchecks entre as dependências.
 
 **Motivação:** permitir que uma máquina limpa execute a PoC sem instalar Python, Node.js ou dependências da aplicação, preservando também a execução manual para desenvolvimento.
 

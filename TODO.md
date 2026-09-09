@@ -75,7 +75,7 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Configurar origem do frontend na lista CORS do backend.
 - [x] Validar o fluxo completo em navegador.
 
-Evidências: `tests/test_frontend.py`, `tests/test_docker.py`, `node --check frontend/js/*.js`, smoke test manual com `python -m http.server 5500` e smoke test integrado com frontend Nginx, backend e MongoDB em Docker Compose.
+Evidências: `tests/test_frontend.py`, `tests/test_docker.py`, `node --check frontend/js/*.js`, smoke test manual com `python -m http.server 5500` e smoke test integrado com frontend Python (`http.server`), backend e MongoDB em Docker Compose.
 
 ### Qualidade da v1.0
 

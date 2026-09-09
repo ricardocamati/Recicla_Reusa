@@ -50,12 +50,12 @@ A coluna de evidência distingue o núcleo de usuários e itens, o frontend modu
 | V1-RNF-11, V1-RNF-12 | V1-CT-19, V1-CT-21 a V1-CT-23, V1-CT-36, V1-CT-37 | Hash e sessão implementados |
 | V1-RNF-13 | V1-CT-30 | CORS e exposição mínima implementados para usuários e itens |
 | V1-RNF-14 | V1-CT-19, V1-CT-22, V1-CT-29, V1-CT-30 | Respostas de login e exposição de dados implementadas; logs específicos ainda pendentes |
-| V1-RNF-15 | V1-CT-32 a V1-CT-35, V1-CT-38 | Implementado em `frontend/` como cliente independente, sem etapa de build obrigatória, com entrega estática por Nginx |
+| V1-RNF-15 | V1-CT-32 a V1-CT-35, V1-CT-38 | Implementado em `frontend/` como cliente independente, sem etapa de build obrigatória, com entrega estática por Python `http.server` |
 
 ## Estado resumido
 
 - **Implementado:** usuários e itens com endereço aninhado, auditoria temporal, hash, sessão, autorização, provisionamento controlado, filtros, frontend modular, testes e documentação correspondente.
 - **Concluído na base de backend:** validação dos dois CRUDs contra MongoDB 7.0 real via Docker Compose, incluindo índices e limpeza dos dados de teste.
-- **Concluído na execução integrada:** backend FastAPI e frontend Nginx subiram com volume MongoDB novo; healthchecks, smoke HTTP e navegação no navegador foram aprovados.
+- **Concluído na execução integrada:** backend FastAPI e frontend Python `http.server` subiram com volume MongoDB novo; healthchecks, smoke HTTP e navegação no navegador foram aprovados.
 - **Concluído no frontend:** telas separadas de cadastro, login, perfil, catálogo e gestão de itens, com smoke test no navegador.
 - **Pendente externamente:** GitHub e identificação da versão.

@@ -31,7 +31,7 @@ Serviços publicados:
 | Serviço | Endereço |
 |---|---|
 | Backend | `http://localhost:8000` |
-| Frontend Nginx | `http://localhost:8080` |
+| Frontend Python `http.server` | `http://localhost:8080` |
 | MongoDB | `localhost:27018` |
 | Mongo Express | `http://localhost:18081` |
 
@@ -68,7 +68,7 @@ O `pyproject.toml` exige cobertura mínima de 70% e mostra as linhas não cobert
 
 ## Frontend da v1.0
 
-No ambiente completo, o frontend é servido pelo Nginx na porta `8080`. Para execução manual sem container, ele pode ser servido separadamente a partir de `frontend/`, por exemplo:
+No ambiente completo, o frontend é servido pelo Python `http.server` na porta `8080`. Para execução manual sem container, ele pode ser servido separadamente a partir de `frontend/`, por exemplo:
 
 ```bash
 .venv/Scripts/python.exe -m http.server 5500 --directory frontend
@@ -82,7 +82,7 @@ Os testes atuais usam:
 - API com transporte ASGI;
 - Repository com `mongomock`;
 - API executada contra MongoDB real em Docker Compose, com CRUD completo validado;
-- aplicação completa executável no Compose com backend FastAPI e frontend Nginx.
+- aplicação completa executável no Compose com backend FastAPI e frontend Python `http.server`.
 
 A validação real realizada confirmou os serviços `mongo`, `backend` e `frontend` em execução saudável e os fluxos HTTP de criação, listagem, consulta, atualização e exclusão.
 
@@ -115,7 +115,7 @@ A validação executada confirmou:
 
 - `docker compose config --quiet` → sucesso;
 - backend FastAPI → healthcheck saudável;
-- frontend Nginx → healthcheck saudável;
+- frontend Python `http.server` → healthcheck saudável;
 - MongoDB 7.0 → healthcheck saudável;
 - `GET /health`, `/docs`, páginas HTML e módulos JavaScript → HTTP `200`;
 - base inicial de usuários → lista vazia;
