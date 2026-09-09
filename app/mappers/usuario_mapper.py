@@ -1,21 +1,45 @@
-from app.models.usuario import Usuario
+from app.models.usuario import Endereco, Usuario
 from app.schemas.usuario import (
+    EnderecoSchema,
     UsuarioCreateRequest,
     UsuarioResponse,
     UsuarioSummaryResponse,
     UsuarioUpdateRequest,
 )
+from app.security.passwords import hash_password
+
+
+def endereco_para_modelo(endereco: EnderecoSchema) -> Endereco:
+    return Endereco(
+        logradouro=endereco.logradouro,
+        numero=endereco.numero,
+        complemento=endereco.complemento,
+        cep=endereco.cep,
+        cidade=endereco.cidade,
+    )
+
+
+def endereco_para_schema(endereco: Endereco) -> EnderecoSchema:
+    return EnderecoSchema(
+        logradouro=endereco.logradouro,
+        numero=endereco.numero,
+        complemento=endereco.complemento,
+        cep=endereco.cep,
+        cidade=endereco.cidade,
+    )
 
 
 class UsuarioMapper:
     @staticmethod
-    def para_modelo(request: UsuarioCreateRequest, *, data_cadastro) -> Usuario:
+    def para_modelo(request: UsuarioCreateRequest, *, instante) -> Usuario:
         return Usuario(
             nome=request.nome,
             email=request.email,
             tipo=request.tipo,
-            cidade=request.cidade,
-            data_cadastro=data_cadastro,
+            endereco=endereco_para_modelo(request.endereco),
+            senha_hash=hash_password(request.senha),
+            data_adicao=instante,
+            data_modificacao=instante,
         )
 
     @staticmethod
@@ -27,8 +51,9 @@ class UsuarioMapper:
             nome=usuario.nome,
             email=usuario.email,
             tipo=usuario.tipo,
-            cidade=usuario.cidade,
-            data_cadastro=usuario.data_cadastro,
+            endereco=endereco_para_schema(usuario.endereco),
+            data_adicao=usuario.data_adicao,
+            data_modificacao=usuario.data_modificacao,
         )
 
     @staticmethod
@@ -38,13 +63,13 @@ class UsuarioMapper:
         return UsuarioSummaryResponse(
             id=usuario.id,
             nome=usuario.nome,
-            email=usuario.email,
             tipo=usuario.tipo,
+            cidade=usuario.endereco.cidade,
         )
 
     @staticmethod
-    def atualizar_modelo(request: UsuarioUpdateRequest, usuario: Usuario) -> None:
+    def atualizar_modelo(request: UsuarioUpdateRequest, usuario: Usuario, *, instante) -> None:
         usuario.nome = request.nome
         usuario.email = request.email
-        usuario.tipo = request.tipo
-        usuario.cidade = request.cidade
+        usuario.endereco = endereco_para_modelo(request.endereco)
+        usuario.data_modificacao = instante
