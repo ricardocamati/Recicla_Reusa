@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import mongomock
@@ -62,3 +63,22 @@ def test_repositorio_retorna_none_para_id_invalido() -> None:
     repositorio = MongoItemRepository(colecao)
 
     assert repositorio.buscar_por_id("abc") is None
+
+
+def test_repositorio_normaliza_datas_na_precisao_do_mongodb() -> None:
+    colecao = mongomock.MongoClient(tz_aware=True).recicla_reusa.itens
+    repositorio = MongoItemRepository(colecao)
+    item_com_microssegundos = replace(
+        item(),
+        data_adicao=datetime(2026, 9, 8, 12, 0, 0, 123456, tzinfo=UTC),
+        data_modificacao=datetime(2026, 9, 8, 12, 0, 0, 123456, tzinfo=UTC),
+    )
+
+    criado = repositorio.criar(item_com_microssegundos)
+    recuperado = repositorio.buscar_por_id(criado.id or "")
+
+    assert recuperado is not None
+    assert criado.data_adicao.microsecond == 123000
+    assert criado.data_modificacao.microsecond == 123000
+    assert recuperado.data_adicao == criado.data_adicao
+    assert recuperado.data_modificacao == criado.data_modificacao

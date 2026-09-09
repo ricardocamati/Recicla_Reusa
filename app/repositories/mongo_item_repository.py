@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from datetime import UTC, datetime
 from typing import Any
 
 from bson import ObjectId
@@ -28,6 +29,7 @@ class MongoItemRepository:
         self._colecao.create_index("status", name="item_status")
 
     def criar(self, item: Item) -> Item:
+        self._normalizar_datas(item)
         resultado = self._colecao.insert_one(self._para_documento(item))
         item.id = str(resultado.inserted_id)
         return item
@@ -51,6 +53,7 @@ class MongoItemRepository:
     def atualizar(self, item: Item) -> Item:
         if item.id is None:
             raise ValueError("Item sem identificador não pode ser atualizado")
+        self._normalizar_datas(item)
         self._colecao.replace_one(
             {"_id": ObjectId(item.id)},
             self._para_documento(item),
@@ -79,9 +82,25 @@ class MongoItemRepository:
             raise ValueError("proprietario_id deve ser um ObjectId válido") from erro
         return documento
 
+    @classmethod
+    def _normalizar_datas(cls, item: Item) -> None:
+        item.data_adicao = cls._normalizar_data(item.data_adicao)
+        item.data_modificacao = cls._normalizar_data(item.data_modificacao)
+
+    @staticmethod
+    def _normalizar_data(instante: datetime) -> datetime:
+        instante_utc = (
+            instante.replace(tzinfo=UTC)
+            if instante.tzinfo is None
+            else instante.astimezone(UTC)
+        )
+        return instante_utc.replace(microsecond=instante_utc.microsecond // 1000 * 1000)
+
     @staticmethod
     def _para_modelo(documento: dict[str, Any]) -> Item:
         dados = dict(documento)
         dados["id"] = str(dados.pop("_id"))
         dados["proprietario_id"] = str(dados["proprietario_id"])
+        dados["data_adicao"] = MongoItemRepository._normalizar_data(dados["data_adicao"])
+        dados["data_modificacao"] = MongoItemRepository._normalizar_data(dados["data_modificacao"])
         return Item(**dados)

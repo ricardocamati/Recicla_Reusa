@@ -32,13 +32,12 @@ O frontend simples continua pendente. O provisionamento de contas `ponto_coleta`
 ## Evidências verificadas
 
 - CRUD HTTP de usuários com endereço aninhado e auditoria temporal;
-- MongoDB 7.0, coleções `usuarios`/`itens` e índices de consulta previstos nos repositórios;
+- MongoDB 7.0 real via Docker Compose, coleções `usuarios`/`itens`, índices e CRUDs completos com limpeza dos dados de teste;
 - login, logout, sessão HttpOnly, perfil próprio e autorização do usuário;
-- 34 testes automatizados aprovados;
-- cobertura total atual de 94,44%.
+- 35 testes automatizados aprovados;
+- cobertura total atual de 94,54%.
 
 ## Pendências para fechar a v1.0
 
 - implementar as telas simples de cadastro, login, perfil e catálogo/gestão de itens;
-- validar o fluxo completo contra MongoDB real após a inclusão de itens;
 - produzir as evidências externas de GitHub e identificação da versão.

@@ -9,8 +9,8 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Implementar CRUD simples da coleção `usuarios`.
 - [x] Separar API, Service, Repository, Model, Mapper e schemas.
 - [x] Criar testes automatizados para a base de usuários.
-- [x] Validar a integração com MongoDB real via Docker Compose.
-- [x] Obter cobertura superior a 70% — resultado atual: 94,44%.
+- [x] Validar os CRUDs de usuários e itens com MongoDB real via Docker Compose.
+- [x] Obter cobertura superior a 70% — resultado atual: 94,54%.
 
 ### Usuários — concluir antes da v1.0
 
@@ -79,8 +79,8 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 
 - [x] Atualizar os testes de usuários para o novo contrato.
 - [x] Criar testes de Service, Repository e API para itens.
-- [ ] Validar os dois CRUDs contra MongoDB real.
-- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,44%.
+- [x] Validar os dois CRUDs contra MongoDB real.
+- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,54%.
 - [x] Atualizar documentação HTTP e arquitetura executável.
 - [ ] Validar o projeto em máquina limpa.
 - [ ] Publicar no GitHub e identificar a v1.0 por commit, tag ou release.

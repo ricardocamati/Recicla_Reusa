@@ -43,7 +43,7 @@ A coluna de evidência distingue o núcleo de usuários já implementado das fun
 | V1-RN-31, V1-RN-32 | V1-CT-36, V1-CT-37 | Implementado para cookie e encerramento da sessão |
 | V1-RNF-01, V1-RNF-02 | V1-CT-16, V1-CT-17 | MongoDB, duas coleções e endereço de usuário implementados |
 | V1-RNF-03, V1-RNF-04 | V1-CT-01 a V1-CT-37 | Arquitetura em camadas implementada para usuários e itens |
-| V1-RNF-05, V1-RNF-06 | V1-CT-18 | 34 testes aprovados; cobertura total de 94,44% |
+| V1-RNF-05, V1-RNF-06 | V1-CT-18 | 35 testes aprovados; cobertura total de 94,54% |
 | V1-RNF-07 | — | Artefatos v1.0, contratos HTTP e arquitetura atualizados |
 | V1-RNF-08 | — | GitHub e identificação por commit/tag pendentes |
 | V1-RNF-09, V1-RNF-10 | V1-CT-17, V1-CT-18 | Configuração segura e compatibilidade da base de usuários |
@@ -55,5 +55,6 @@ A coluna de evidência distingue o núcleo de usuários já implementado das fun
 ## Estado resumido
 
 - **Implementado:** usuários e itens com endereço aninhado, auditoria temporal, hash, sessão, autorização, filtros, testes e documentação correspondente.
-- **Planejado para v1.0:** frontend simples e validação dos dois CRUDs contra MongoDB real neste ambiente.
+- **Concluído na base de backend:** validação dos dois CRUDs contra MongoDB 7.0 real via Docker Compose, incluindo índices e limpeza dos dados de teste.
+- **Planejado para v1.0:** frontend simples.
 - **Pendente externamente:** GitHub e identificação da versão.
