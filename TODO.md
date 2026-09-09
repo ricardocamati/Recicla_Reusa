@@ -10,7 +10,7 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Separar API, Service, Repository, Model, Mapper e schemas.
 - [x] Criar testes automatizados para a base de usuários.
 - [x] Validar os CRUDs de usuários e itens com MongoDB real via Docker Compose.
-- [x] Obter cobertura superior a 70% — resultado atual: 94,28%.
+- [x] Obter cobertura superior a 70% — resultado atual: 94,28% em 49 testes.
 
 ### Usuários — concluir antes da v1.0
 
@@ -60,27 +60,29 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 
 ### Frontend simples — concluir antes da v1.0
 
-- [ ] Manter o cliente separado em `frontend/`.
-- [ ] Criar estrutura simples em HTML, CSS e JavaScript, sem build obrigatório.
-- [ ] Criar tela ou seção de cadastro.
-- [ ] Criar tela ou seção de login.
-- [ ] Criar visualização e edição do próprio perfil.
-- [ ] Criar catálogo com filtros de itens.
-- [ ] Criar formulário para o doador cadastrar e administrar itens próprios.
-- [ ] Permitir ao ponto de coleta filtrar itens destinados a descarte.
-- [ ] Ocultar ações incompatíveis com o perfil, sem substituir a autorização do backend.
-- [ ] Usar `credentials: "include"` no frontend sem ler ou armazenar o cookie HttpOnly.
-- [ ] Renderizar dados da API como texto para evitar injeção de HTML/script.
-- [ ] Tratar validação, `401`, `403`, `404` e indisponibilidade da API.
-- [ ] Configurar origem do frontend na lista CORS do backend.
-- [ ] Validar o fluxo completo em navegador.
+- [x] Manter o cliente separado em `frontend/`.
+- [x] Criar estrutura simples em HTML, CSS e JavaScript, sem build obrigatório.
+- [x] Criar tela ou seção de cadastro.
+- [x] Criar tela ou seção de login.
+- [x] Criar visualização e edição do próprio perfil.
+- [x] Criar catálogo com filtros de itens.
+- [x] Criar formulário para o doador cadastrar e administrar itens próprios.
+- [x] Permitir ao ponto de coleta filtrar itens destinados a descarte.
+- [x] Ocultar ações incompatíveis com o perfil, sem substituir a autorização do backend.
+- [x] Usar `credentials: "include"` no frontend sem ler ou armazenar o cookie HttpOnly.
+- [x] Renderizar dados da API como texto para evitar injeção de HTML/script.
+- [x] Tratar validação, `401`, `403`, `404` e indisponibilidade da API.
+- [x] Configurar origem do frontend na lista CORS do backend.
+- [x] Validar o fluxo completo em navegador.
+
+Evidências: `tests/test_frontend.py`, `node --check frontend/js/*.js` e smoke test manual com `python -m http.server 5500` e a API em `8000`.
 
 ### Qualidade da v1.0
 
 - [x] Atualizar os testes de usuários para o novo contrato.
 - [x] Criar testes de Service, Repository e API para itens.
 - [x] Validar os dois CRUDs contra MongoDB real.
-- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,28%.
+- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,28% em 49 testes.
 - [x] Atualizar documentação HTTP e arquitetura executável.
 - [ ] Validar o projeto em máquina limpa.
 - [ ] Publicar no GitHub e identificar a v1.0 por commit, tag ou release.

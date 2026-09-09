@@ -22,7 +22,7 @@ artefatos/
 - autenticação por sessão simples e autorização básica por perfil e propriedade;
 - frontend simples em HTML, CSS e JavaScript;
 - testes automatizados e cobertura mínima de 70%;
-- base atual de usuários e itens validada com MongoDB 7.0 real via Docker Compose; provisionamento operacional controlado; frontend e evolução ainda pendentes.
+- base atual de usuários e itens validada com MongoDB 7.0 real via Docker Compose; provisionamento operacional controlado; frontend separado validado em navegador.
 
 Documentos: [requisitos](v1.0/requisitos.md) · [regras de negócio](v1.0/regras_de_negocio.md) · [modelo de dados](v1.0/modelo_dados.md) · [casos de teste](v1.0/casos_de_teste.md) · [matriz](v1.0/matriz_rastreabilidade.md)
 
@@ -40,7 +40,7 @@ Documentos: [requisitos](v1.0/requisitos.md) · [regras de negócio](v1.0/regras
 
 Documentos: [requisitos](v2.0/requisitos.md) · [regras de negócio](v2.0/regras_de_negocio.md) · [modelo de dados](v2.0/modelo_dados.md) · [casos de teste](v2.0/casos_de_teste.md) · [matriz](v2.0/matriz_rastreabilidade.md)
 
-> A v2.0 é uma especificação planejada. O código atual implementa a base de usuários e o CRUD de itens, mas ainda não conclui todo o escopo da v1.0, especialmente o frontend.
+> A v2.0 é uma especificação planejada. O código atual implementa a base de usuários, o CRUD de itens e o frontend simples da v1.0; interesses, notificações e fluxos completos continuam fora da implementação.
 
 ## Materiais locais
 

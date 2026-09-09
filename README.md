@@ -40,7 +40,7 @@ Cada destino terá seu próprio fluxo de status e um histórico rastreável. O s
 
 ### Estado atual do repositório
 
-A primeira entrega conclui os fluxos de usuários e itens nas coleções MongoDB `usuarios` e `itens`: cadastro público de doadores e beneficiários, endereço como subdocumento, auditoria temporal em UTC, e-mail normalizado com índice único, sessões simples em cookie HttpOnly, catálogo filtrável e autorização por proprietário.
+A primeira entrega conclui os fluxos de usuários e itens nas coleções MongoDB `usuarios` e `itens`: cadastro público de doadores e beneficiários, endereço como subdocumento, auditoria temporal em UTC, e-mail normalizado com índice único, sessões simples em cookie HttpOnly, catálogo filtrável, autorização por proprietário e frontend simples separado em HTML, CSS e JavaScript.
 
 Itens referenciam o usuário por `proprietario_id` e não duplicam o endereço. O histórico de ciclo de vida, interesses e pontos de coleta permanecem na evolução da v2.0; a implementação atual mantém a evolução visível no histórico de commits.
 
@@ -95,7 +95,7 @@ Os artefatos estão separados por entrega em [artefatos/v1.0/](artefatos/v1.0/) 
 
 ```text
 app/            backend Python
-frontend/       cliente web simples planejado para a v1.0
+frontend/       cliente web simples da v1.0
  tests/         testes automatizados
 docs/           arquitetura, decisões e contratos
 compose.yaml    MongoDB local
@@ -114,6 +114,14 @@ docker compose up -d
 
 Documentação interativa: <http://127.0.0.1:8000/docs>.
 
+Para servir o frontend sem etapa de build, em outro terminal execute:
+
+```bash
+.venv/Scripts/python.exe -m http.server 5500 --bind 127.0.0.1 --directory frontend
+```
+
+Depois abra <http://127.0.0.1:5500>. A origem `http://127.0.0.1:5500` já está incluída na configuração CORS de exemplo.
+
 Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e login/logout em `/api/auth`. Os contratos estão documentados em [docs/http-api.md](docs/http-api.md).
 
 ## 10. Testes e cobertura
@@ -126,6 +134,6 @@ A suíte deve manter cobertura mínima de **70%**, conforme a AEP. Os testes uni
 
 ## 11. Limites atuais
 
-O frontend simples da v1.0 ainda não foi implementado. Interesses, pontos de coleta, notificações e fluxos completos permanecem na especificação da v2.0, fora do `TODO.md` de implementação atual.
+O frontend simples da v1.0 está implementado com cadastro, login, perfil, catálogo, filtros e gestão de itens próprios. Interesses, pontos de coleta detalhados, notificações e fluxos completos permanecem na especificação da v2.0, fora do `TODO.md` de implementação atual.
 
 > Projeto iniciado a partir do **template fornecido pelo professor Munif Gebara Júnior** e adaptado para Python conforme a proposta da AEP.
