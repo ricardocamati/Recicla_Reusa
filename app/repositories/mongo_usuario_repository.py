@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from dataclasses import asdict
 from typing import Any
 
@@ -43,6 +44,18 @@ class MongoUsuarioRepository:
             return None
         documento = self._colecao.find_one({"_id": object_id})
         return self._para_modelo(documento) if documento else None
+
+    def buscar_por_ids(self, usuario_ids: Iterable[str]) -> dict[str, Usuario]:
+        object_ids = {
+            object_id
+            for usuario_id in usuario_ids
+            if (object_id := self._converter_id(usuario_id)) is not None
+        }
+        if not object_ids:
+            return {}
+        documentos = self._colecao.find({"_id": {"$in": list(object_ids)}})
+        usuarios = (self._para_modelo(documento) for documento in documentos)
+        return {usuario.id: usuario for usuario in usuarios if usuario.id is not None}
 
     def buscar_por_email(self, email: str) -> Usuario | None:
         documento = self._colecao.find_one({"email": email.lower()})

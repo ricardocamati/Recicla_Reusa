@@ -41,6 +41,7 @@ def test_repositorio_persiste_endereco_datas_e_remove_usuario() -> None:
     assert recuperado.data_adicao == datetime(2026, 9, 7, tzinfo=UTC)
     assert len(repositorio.listar()) == 1
     assert repositorio.buscar_por_email("JOAO@EXAMPLE.COM") is not None
+    assert list(repositorio.buscar_por_ids([criado.id or "", "invalido"])) == [criado.id]
     assert repositorio._colecao.index_information()["usuario_email_unico"]["unique"] is True
 
     repositorio.excluir(criado.id or "")
