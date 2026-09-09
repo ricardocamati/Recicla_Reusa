@@ -13,7 +13,8 @@ A versão 1.0 tem como meta uma base funcional com usuários e itens eletrônico
 - autorização por tipo de usuário e propriedade do recurso;
 - frontend simples em HTML, CSS e JavaScript, separado do backend;
 - API FastAPI documentada por OpenAPI;
-- testes automatizados com cobertura mínima de 70%.
+- testes automatizados com cobertura mínima de 70%;
+- aplicação completa executada em Docker Compose, com backend FastAPI e frontend Nginx.
 
 ## Situação do código
 
@@ -36,7 +37,8 @@ O frontend simples está implementado em `frontend/`, com cadastro, login, perfi
 - login, logout, sessão HttpOnly, perfil próprio e autorização do usuário;
 - provisionamento controlado de `ponto_coleta` por comando local, com senha solicitada sem eco;
 - frontend validado em navegador com API e MongoDB ativos;
-- 49 testes automatizados aprovados;
+- frontend servido pelo Nginx e backend executados em um Compose integrado, com volume MongoDB novo;
+- 52 testes automatizados aprovados;
 - cobertura total atual de 94,28%.
 
 ## Pendências para fechar a v1.0

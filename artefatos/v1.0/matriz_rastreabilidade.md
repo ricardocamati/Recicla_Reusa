@@ -41,20 +41,21 @@ A coluna de evidência distingue o núcleo de usuários e itens, o frontend modu
 | V1-RN-28, V1-RN-29 | V1-CT-33 a V1-CT-35 | Implementado com módulos separados, `credentials: "include"`, sem armazenamento de sessão, mensagens por status HTTP e autorização mantida no backend |
 | V1-RN-30 | V1-CT-32 a V1-CT-35 | Implementado com telas de cadastro, login, perfil, catálogo e gestão de itens próprios |
 | V1-RN-31, V1-RN-32 | V1-CT-36, V1-CT-37 | Implementado para cookie e encerramento da sessão |
-| V1-RNF-01, V1-RNF-02 | V1-CT-16, V1-CT-17 | MongoDB, duas coleções e endereço de usuário implementados |
+| V1-RNF-01, V1-RNF-02 | V1-CT-16, V1-CT-17, V1-CT-38 | MongoDB, duas coleções, endereço de usuário e execução em Compose implementados |
 | V1-RNF-03, V1-RNF-04 | V1-CT-01 a V1-CT-37 | Arquitetura em camadas implementada para usuários e itens |
-| V1-RNF-05, V1-RNF-06 | V1-CT-18 | 49 testes aprovados; cobertura total de 94,28% |
-| V1-RNF-07 | — | Artefatos v1.0, contratos HTTP e arquitetura atualizados |
+| V1-RNF-05, V1-RNF-06 | V1-CT-18 | 52 testes aprovados; cobertura total de 94,28% |
+| V1-RNF-07 | V1-CT-38 | Artefatos v1.0, contratos HTTP, arquitetura e instruções de execução atualizados |
 | V1-RNF-08 | — | GitHub e identificação por commit/tag pendentes |
-| V1-RNF-09, V1-RNF-10 | V1-CT-17, V1-CT-18 | Configuração segura e compatibilidade da base de usuários |
+| V1-RNF-09, V1-RNF-10 | V1-CT-17, V1-CT-18, V1-CT-38 | Configuração segura, compatibilidade e execução limpa do ambiente implementadas |
 | V1-RNF-11, V1-RNF-12 | V1-CT-19, V1-CT-21 a V1-CT-23, V1-CT-36, V1-CT-37 | Hash e sessão implementados |
 | V1-RNF-13 | V1-CT-30 | CORS e exposição mínima implementados para usuários e itens |
 | V1-RNF-14 | V1-CT-19, V1-CT-22, V1-CT-29, V1-CT-30 | Respostas de login e exposição de dados implementadas; logs específicos ainda pendentes |
-| V1-RNF-15 | V1-CT-32 a V1-CT-35 | Implementado em `frontend/` como cliente independente sem etapa de build obrigatória |
+| V1-RNF-15 | V1-CT-32 a V1-CT-35, V1-CT-38 | Implementado em `frontend/` como cliente independente, sem etapa de build obrigatória, com entrega estática por Nginx |
 
 ## Estado resumido
 
 - **Implementado:** usuários e itens com endereço aninhado, auditoria temporal, hash, sessão, autorização, provisionamento controlado, filtros, frontend modular, testes e documentação correspondente.
 - **Concluído na base de backend:** validação dos dois CRUDs contra MongoDB 7.0 real via Docker Compose, incluindo índices e limpeza dos dados de teste.
+- **Concluído na execução integrada:** backend FastAPI e frontend Nginx subiram com volume MongoDB novo; healthchecks, smoke HTTP e navegação no navegador foram aprovados.
 - **Concluído no frontend:** telas separadas de cadastro, login, perfil, catálogo e gestão de itens, com smoke test no navegador.
 - **Pendente externamente:** GitHub e identificação da versão.

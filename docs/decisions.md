@@ -95,3 +95,11 @@
 **Motivação:** impedir autoatribuição de privilégio mantendo a segurança da PoC simples, sem introduzir JWT ou uma conta administrativa adicional.
 
 **Consequência:** o cadastro HTTP continua limitado a `doador` e `beneficiario`; o comando recebe os dados operacionais, define `tipo` internamente e solicita a senha sem eco antes de persistir o hash.
+
+## ADR-013 — Compose integrado para validação reproduzível
+
+**Decisão:** usar Docker Compose para orquestrar MongoDB, backend FastAPI/Uvicorn e frontend estático Nginx, mantendo portas locais publicadas para o navegador e healthchecks entre as dependências.
+
+**Motivação:** permitir que uma máquina limpa execute a PoC sem instalar Python, Node.js ou dependências da aplicação, preservando também a execução manual para desenvolvimento.
+
+**Consequência:** o backend usa `mongo` como hostname interno, o frontend continua sem etapa de build e o CORS inclui as origens das portas estáticas configuradas. O volume do MongoDB é persistente por padrão; a remoção exige `docker compose down -v` explícito.

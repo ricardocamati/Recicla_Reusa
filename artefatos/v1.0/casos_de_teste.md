@@ -420,6 +420,20 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
   2. Comparar a validade com a sessão no servidor e tentar a alteração a partir da origem não permitida.
 - **Resultado esperado:** `recicla_sessao` possui `HttpOnly`, `SameSite=Lax`, `Path=/` e duração máxima de 30 minutos, recebe `Secure` em HTTPS, não excede a validade do servidor e não autoriza alteração de origem não permitida.
 
+## V1-CT-38 — Subir a aplicação completa em máquina limpa com Docker
+
+- **Requisitos:** V1-RNF-01, V1-RNF-07, V1-RNF-09, V1-RNF-10 e V1-RNF-15.
+- **Objetivo:** Comprovar que MongoDB, backend e frontend podem ser iniciados de forma reproduzível sem instalar Python, Node.js ou dependências da aplicação na máquina host.
+- **Pré-condições:** Docker Desktop com Docker Compose v2 disponível e portas locais `8000`, `8080`, `27018` e `18081` livres.
+- **Dados de teste:** Ambiente Compose isolado com volume MongoDB novo; nenhum dado de aplicação pré-existente.
+- **Procedimento:**
+  1. Executar `docker compose config --quiet`.
+  2. Executar `docker compose up -d --build` e aguardar os healthchecks.
+  3. Consultar `GET http://127.0.0.1:8000/health`, abrir `http://127.0.0.1:8080` e verificar uma página HTML e um módulo JavaScript.
+  4. Executar o smoke test de cadastro, login, `/me`, CRUD de item e logout.
+  5. Encerrar com `docker compose down`, preservando o volume quando os dados forem necessários.
+- **Resultado esperado:** A configuração é aceita, as imagens do backend e frontend são construídas, os serviços ficam saudáveis, a API responde HTTP `200`, o frontend carrega no navegador e o fluxo autenticado funciona sem dependências instaladas no host.
+
 ## Evidência de automação
 
 | Evidência atual | Escopo comprovado | Resultado verificado |
@@ -433,6 +447,7 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 | `tests/test_mongo_item_repository.py` | persistência, filtros, índice, conversão de ID, precisão temporal e exclusão com `mongomock` | 3 testes aprovados |
 | `tests/test_provisionamento_ponto_coleta.py` | tipo controlado, hash, duplicidade, rejeição de tipo no corpo e comando administrativo | 4 testes aprovados |
 | `tests/test_frontend.py` | páginas separadas, módulos por responsabilidade, contratos da API, segurança de armazenamento, permissões, filtro de descarte e responsividade | 10 testes aprovados |
-| Suíte atual | CRUD de usuários e itens, autenticação, autorização, provisionamento, auditoria e estrutura do frontend executáveis; smoke test manual do frontend validado no navegador | 49 testes aprovados; cobertura total de 94,28% |
+| `tests/test_docker.py` | presença das imagens, serviços Compose, healthcheck/configuração e documentação de execução integrada | 3 testes aprovados |
+| Suíte atual | CRUD de usuários e itens, autenticação, autorização, provisionamento, auditoria, estrutura do frontend e configuração Docker executáveis; smoke test do frontend validado no navegador e smoke test integrado validado em stack limpo | 52 testes aprovados; cobertura total de 94,28% |
 
-A automação atual comprova o CRUD de usuários e itens, endereço, auditoria, privacidade, login, sessão, filtros, autorização por proprietário, provisionamento controlado e a estrutura modular do frontend. A integração real também foi executada contra MongoDB 7.0 no Docker Compose, com ping, índices, CRUD dos dois recursos e limpeza dos dados temporários aprovados. O frontend foi validado em navegador; os fluxos de interesse/coleta e as demais capacidades administrativas da v2.0 continuam planejados; a cobertura permanece igual ou superior a 70%.
+A automação atual comprova o CRUD de usuários e itens, endereço, auditoria, privacidade, login, sessão, filtros, autorização por proprietário, provisionamento controlado, a estrutura modular do frontend e a configuração do ambiente Docker. A integração real também foi executada contra MongoDB 7.0 no Docker Compose, com ping, índices, CRUD dos dois recursos e limpeza dos dados temporários aprovados. O frontend foi validado em navegador tanto em servidor estático quanto no Nginx do Compose; os fluxos de interesse/coleta e as demais capacidades administrativas da v2.0 continuam planejados; a cobertura permanece igual ou superior a 70%.

@@ -15,6 +15,17 @@ MongoDB -> Model -> Service -> Mapper -> Response DTO -> JSON
 
 O frontend permanece em uma pasta própria na raiz e conclui o escopo simples da v1.0. Ele usa HTML, CSS e JavaScript, sem etapa de build obrigatória, consumindo somente os contratos públicos da API.
 
+## Execução integrada com Docker Compose
+
+A execução reproduzível usa três serviços principais no mesmo Compose, com Mongo Express opcional:
+
+```text
+Navegador --HTTP--> frontend (Nginx:80)
+Navegador --HTTP/CORS--> backend (Uvicorn:8000) -> mongo (MongoDB:27017)
+```
+
+O frontend é servido como conteúdo estático pelo Nginx. A API é publicada na porta local `8000` para que o navegador possa enviar requisições com `credentials: "include"`; o backend acessa o MongoDB pelo hostname interno `mongo`. Healthchecks impedem que o frontend seja iniciado antes de a API e o banco estarem disponíveis. Mongo Express permanece como ferramenta opcional de inspeção local.
+
 ## Responsabilidades
 
 - **API (`app/api`)**: traduz HTTP em chamadas de casos de uso, valida DTOs e define respostas HTTP.
