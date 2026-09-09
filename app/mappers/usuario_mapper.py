@@ -1,6 +1,7 @@
 from app.models.usuario import Endereco, Usuario
 from app.schemas.usuario import (
     EnderecoSchema,
+    PontoColetaProvisionRequest,
     UsuarioCreateRequest,
     UsuarioResponse,
     UsuarioSummaryResponse,
@@ -32,10 +33,22 @@ def endereco_para_schema(endereco: Endereco) -> EnderecoSchema:
 class UsuarioMapper:
     @staticmethod
     def para_modelo(request: UsuarioCreateRequest, *, instante) -> Usuario:
+        return UsuarioMapper._para_modelo(request, tipo=request.tipo, instante=instante)
+
+    @staticmethod
+    def para_modelo_ponto_coleta(
+        request: PontoColetaProvisionRequest,
+        *,
+        instante,
+    ) -> Usuario:
+        return UsuarioMapper._para_modelo(request, tipo="ponto_coleta", instante=instante)
+
+    @staticmethod
+    def _para_modelo(request, *, tipo, instante) -> Usuario:
         return Usuario(
             nome=request.nome,
             email=request.email,
-            tipo=request.tipo,
+            tipo=tipo,
             endereco=endereco_para_modelo(request.endereco),
             senha_hash=hash_password(request.senha),
             data_adicao=instante,

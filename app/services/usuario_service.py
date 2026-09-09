@@ -6,6 +6,7 @@ from app.exceptions import EmailDuplicadoError, UsuarioNaoEncontradoError
 from app.mappers.usuario_mapper import UsuarioMapper
 from app.models.usuario import Usuario
 from app.schemas.usuario import (
+    PontoColetaProvisionRequest,
     UsuarioCreateRequest,
     UsuarioResponse,
     UsuarioSummaryResponse,
@@ -38,6 +39,16 @@ class UsuarioService:
             raise EmailDuplicadoError(request.email)
         instante = self._relogio()
         usuario = UsuarioMapper.para_modelo(request, instante=instante)
+        return UsuarioMapper.para_resposta(self._repositorio.criar(usuario))
+
+    def provisionar_ponto_coleta(
+        self,
+        request: PontoColetaProvisionRequest,
+    ) -> UsuarioResponse:
+        if self._repositorio.buscar_por_email(request.email) is not None:
+            raise EmailDuplicadoError(request.email)
+        instante = self._relogio()
+        usuario = UsuarioMapper.para_modelo_ponto_coleta(request, instante=instante)
         return UsuarioMapper.para_resposta(self._repositorio.criar(usuario))
 
     def listar(self) -> list[UsuarioSummaryResponse]:

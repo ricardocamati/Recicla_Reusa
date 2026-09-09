@@ -22,7 +22,7 @@ artefatos/
 - autenticação por sessão simples e autorização básica por perfil e propriedade;
 - frontend simples em HTML, CSS e JavaScript;
 - testes automatizados e cobertura mínima de 70%;
-- base atual de usuários e itens validada com MongoDB 7.0 real via Docker Compose; frontend e evolução ainda pendentes.
+- base atual de usuários e itens validada com MongoDB 7.0 real via Docker Compose; provisionamento operacional controlado; frontend e evolução ainda pendentes.
 
 Documentos: [requisitos](v1.0/requisitos.md) · [regras de negócio](v1.0/regras_de_negocio.md) · [modelo de dados](v1.0/modelo_dados.md) · [casos de teste](v1.0/casos_de_teste.md) · [matriz](v1.0/matriz_rastreabilidade.md)
 
