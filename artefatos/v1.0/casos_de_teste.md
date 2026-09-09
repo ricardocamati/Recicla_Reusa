@@ -2,7 +2,7 @@
 
 Os casos abaixo especificam os critérios de aceitação da primeira entrega. Cada cenário informa objetivo, pré-condições, dados, procedimento e resultado observável para permitir execução manual ou automação reproduzível.
 
-> **Estado atual:** o backend executável ainda contém somente o CRUD simples de usuários. Endereço aninhado, auditoria revisada, itens, autenticação, autorização e frontend permanecem como escopo-alvo e não devem ser considerados implementados apenas por estarem descritos aqui.
+> **Estado atual:** o backend executável contém o CRUD de usuários e itens, autenticação básica, autorização por sessão e auditoria temporal. O frontend, o provisionamento de `ponto_coleta` e os fluxos de interesse/coleta permanecem fora deste marco.
 
 ## Convenções de execução
 
@@ -32,7 +32,7 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 - **Procedimento:**
   1. Enviar `POST /api/usuarios` para cada uma das quatro variações e registrar as respostas.
   2. Consultar a coleção `usuarios` pelos e-mails usados e comparar sua contagem antes e depois.
-- **Resultado esperado:** Cada requisição retorna HTTP `422` indicando o campo ausente, nenhum dos usuários é persistido e a quantidade de documentos permanece inalterada.
+- **Resultado esperado:** Cada requisição retorna HTTP `400` indicando o campo ausente, nenhum dos usuários é persistido e a quantidade de documentos permanece inalterada.
 
 ## V1-CT-03 — Aceitar endereço sem complemento
 
@@ -164,7 +164,7 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 - **Procedimento:**
   1. Enviar cada variação inválida por `POST /api/itens` e verificar a coleção.
   2. Enviar casos válidos com `funcional`, `funcional_com_defeito`, `reparavel`, `sem_conserto`, `recondicionado`, `doacao`, `descarte` e `revenda` coerente.
-- **Resultado esperado:** As variações inválidas retornam HTTP `422` sem persistência e todos os valores enumerados são aceitos quando os demais dados são válidos.
+- **Resultado esperado:** As variações inválidas retornam HTTP `400` sem persistência e todos os valores enumerados são aceitos quando os demais dados são válidos.
 
 ## V1-CT-15 — Validar valor de revenda
 
@@ -175,7 +175,7 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 - **Procedimento:**
   1. Enviar separadamente os cinco cadastros por `POST /api/itens`.
   2. Consultar no banco os documentos aceitos e confirmar a ausência dos rejeitados.
-- **Resultado esperado:** Revenda sem valor ou com valor negativo retorna HTTP `422` sem persistência, revenda com zero retorna HTTP `201` mantendo `0` e doação ou descarte não mantêm preço de venda.
+- **Resultado esperado:** Revenda sem valor ou com valor negativo retorna HTTP `400` sem persistência, revenda com zero retorna HTTP `201` mantendo `0` e doação ou descarte não mantêm preço de venda.
 
 ## V1-CT-16 — Não duplicar endereço no item
 
@@ -318,7 +318,7 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 - **Procedimento:**
   1. Enviar a atualização com a sessão do beneficiário e consultar `/api/usuarios/me`.
   2. Conferir o tipo persistido e tentar uma operação exclusiva de doador.
-- **Resultado esperado:** A atualização com `tipo` retorna HTTP `422`, `tipo` permanece `beneficiario` no banco e a operação exclusiva de doador retorna HTTP `403`.
+- **Resultado esperado:** A atualização com `tipo` retorna HTTP `400`, `tipo` permanece `beneficiario` no banco e a operação exclusiva de doador retorna HTTP `403`.
 
 ## V1-CT-29 — Proteger dados na listagem
 
@@ -351,7 +351,7 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 - **Procedimento:**
   1. Tentar o cadastro público e confirmar que nenhum documento foi criado.
   2. Provisionar a conta pelo caminho autorizado, autenticar e consultar `/api/usuarios/me`.
-- **Resultado esperado:** O cadastro público retorna HTTP `422` sem persistência, enquanto a conta provisionada autentica com HTTP `200` e apresenta `tipo: "ponto_coleta"`.
+- **Resultado esperado:** O cadastro público retorna HTTP `400` sem persistência, enquanto a conta provisionada autentica com HTTP `200` e apresenta `tipo: "ponto_coleta"`.
 
 ## V1-CT-32 — Abrir frontend sem etapa de build
 
@@ -427,6 +427,9 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 | `tests/test_usuario_service.py` | criação, hash de senha, atualização temporal, unicidade, autenticação e recurso inexistente | 5 testes aprovados |
 | `tests/test_mongo_usuario_repository.py` | persistência, endereço, auditoria, índice único, consulta e exclusão com `mongomock` | 2 testes aprovados |
 | `tests/test_security.py` | hash scrypt e expiração de sessão em 30 minutos | 2 testes aprovados |
-| Suíte atual | Núcleo de usuários e autenticação executável; itens e frontend ainda pendentes | 18 testes aprovados; cobertura total de 92,35% |
+| `tests/test_api_item.py` | cadastro, filtros, validação, privacidade, autorização e CRUD HTTP de itens | 8 testes aprovados |
+| `tests/test_item_service.py` | proprietário, auditoria, filtros, atualização, autorização e recurso inexistente | 6 testes aprovados |
+| `tests/test_mongo_item_repository.py` | persistência, filtros, índice, conversão de ID, precisão temporal e exclusão com `mongomock` | 3 testes aprovados |
+| Suíte atual | CRUD de usuários e itens, autenticação, autorização e auditoria executáveis; frontend ainda pendente | 35 testes aprovados; cobertura total de 94,54% |
 
-A automação atual comprova o núcleo de usuários e autenticação relacionado aos casos de cadastro, endereço, auditoria, privacidade, login, sessão e autorização do próprio perfil. Os casos relacionados à coleção `itens`, ao frontend e ao provisionamento de `ponto_coleta` continuam planejados e não são apresentados como implementados. A cobertura deverá ser medida novamente após essas evoluções e permanecer igual ou superior a 70%.
+A automação atual comprova o CRUD de usuários e itens, endereço, auditoria, privacidade, login, sessão, filtros e autorização por proprietário. A integração real também foi executada contra MongoDB 7.0 no Docker Compose, com ping, índices, CRUD dos dois recursos e limpeza dos dados temporários aprovados. O frontend, o provisionamento de `ponto_coleta` e os fluxos de interesse/coleta continuam planejados; a cobertura permanece igual ou superior a 70%.

@@ -8,3 +8,14 @@ class EmailDuplicadoError(Exception):
     def __init__(self, email: str) -> None:
         super().__init__(f"E-mail já cadastrado: {email}")
         self.email = email
+
+
+class ItemNaoEncontradoError(Exception):
+    def __init__(self, item_id: str) -> None:
+        super().__init__(f"Item não encontrado: {item_id}")
+        self.item_id = item_id
+
+
+class ItemNaoAutorizadoError(Exception):
+    def __init__(self) -> None:
+        super().__init__("Ação não permitida para este item")

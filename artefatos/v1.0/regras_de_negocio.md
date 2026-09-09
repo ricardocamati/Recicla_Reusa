@@ -1,6 +1,6 @@
 # Regras de negócio da versão 1.0
 
-> Regras da primeira entrega. As regras específicas de itens continuam como alvo até a implementação da coleção `itens`.
+> Regras da primeira entrega. O CRUD de itens está implementado; transições de ciclo de vida, interesses e coleta permanecem na v2.0.
 
 ## V1-RN-01 — Tipos de usuário
 

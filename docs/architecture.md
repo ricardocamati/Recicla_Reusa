@@ -64,6 +64,23 @@ O `_id` do MongoDB é convertido para `id` nos DTOs. `data_adicao` e `data_modif
 
 Listagens públicas usam DTOs resumidos. O perfil completo exige que a sessão corresponda ao usuário consultado; a autorização de alteração e exclusão também é validada no backend.
 
+## Estado atual de itens
+
+O fluxo implementado é:
+
+```text
+/api/itens
+      -> ItemService
+      -> MongoItemRepository
+      -> itens
+           |
+           +--> proprietario_id -> usuarios
+```
+
+O item fica em coleção própria. O Service consulta o usuário relacionado para validar o proprietário e derivar somente sua cidade no DTO público; `endereco`, `senha_hash` e demais dados privados não são copiados nem expostos. O repositório cria índices para proprietário, categoria, condição, destino e status.
+
+O cadastro obtém `proprietario_id` da sessão, inicia `status` como `disponivel` e gera as duas datas em UTC. Atualizações preservam o identificador, o proprietário e `data_adicao`; somente o proprietário pode alterar ou excluir o recurso.
+
 ## Segurança implementada
 
 O cadastro público aceita somente `doador` e `beneficiario`. A senha não é persistida em texto claro: o Service gera um hash scrypt com salt aleatório. O login cria uma sessão em memória e devolve apenas o cookie `recicla_sessao`, configurado como `HttpOnly`, `SameSite=Lax`, `Path=/` e com duração de 30 minutos.

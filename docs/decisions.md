@@ -79,3 +79,11 @@
 **Motivação:** atender à segurança básica da primeira entrega sem introduzir infraestrutura adicional de persistência de sessões; a autorização permanece no backend.
 
 **Consequência:** reiniciar a aplicação invalida as sessões ativas. O cookie usa `SameSite=Lax`, `Path=/` e expiração de 30 minutos; a evolução futura poderá substituir o armazenamento quando houver necessidade de múltiplas instâncias.
+
+## ADR-011 — Item em coleção própria e proprietário derivado da sessão
+
+**Decisão:** persistir itens na coleção `itens`, relacionando-os a `usuarios` por `proprietario_id`; no cadastro, esse identificador será obtido exclusivamente da sessão autenticada.
+
+**Motivação:** impedir que o cliente associe um item a outro usuário, manter o endereço normalizado em um único documento e permitir filtros independentes de catálogo.
+
+**Consequência:** o Service coordena a validação do proprietário e a autorização de alteração/exclusão. A resposta pode derivar a cidade do usuário, mas o item não duplica o subdocumento `endereco`. Status inicial, identificador e auditoria permanecem controlados pelo servidor.
