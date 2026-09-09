@@ -11,7 +11,13 @@ def ler(nome: str) -> str:
 def test_execucao_docker_possui_imagens_do_backend_e_frontend() -> None:
     assert (RAIZ / "Dockerfile").is_file()
     assert (RAIZ / "frontend" / "Dockerfile").is_file()
-    assert (RAIZ / "frontend" / "nginx.conf").is_file()
+
+    frontend_dockerfile = ler("frontend/Dockerfile")
+    assert "FROM python:3.11-slim" in frontend_dockerfile
+    assert '"python", "-m", "http.server"' in frontend_dockerfile
+    assert '"--directory", "/app"' in frontend_dockerfile
+    assert '"--bind", "0.0.0.0"' in frontend_dockerfile
+    assert not (RAIZ / "frontend" / "nginx.conf").exists()
 
 
 def test_compose_sobe_mongo_backend_e_frontend() -> None:
