@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Catálogo de eletrônicos do Recicla/Reusa.">
+  <title>Catálogo | Recicla/Reusa</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="brand" href="./index.html" aria-label="Recicla/Reusa, início">
+        <span class="brand-mark" aria-hidden="true">↺</span>
+        <span>Recicla/<span>Reusa</span></span>
+      </a>
+      <nav class="header-actions" aria-label="Navegação principal">
+        <a class="nav-link active" href="./catalogo.html" aria-current="page">Catálogo</a>
+        <a class="nav-link" id="items-link" href="./itens.html" hidden>Meus itens</a>
+        <a class="nav-link" href="./perfil.html">Meu perfil</a>
+        <span id="session-chip" class="session-chip" hidden></span>
+        <button id="logout-button" class="button button-ghost" type="button" hidden>Sair</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="global-message" class="message" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <main class="page-content">
+    <div class="container">
+      <section class="workspace-heading">
+        <div>
+          <p class="eyebrow">Catálogo aberto</p>
+          <h1>Encontre o próximo destino.</h1>
+          <p id="role-description" class="section-description">Carregando seu espaço...</p>
+        </div>
+        <span id="role-badge" class="role-badge">...</span>
+      </section>
+
+      <section id="point-note" class="info-banner" hidden>
+        <div class="info-icon" aria-hidden="true">⌁</div>
+        <div>
+          <h2>Visão do ponto de coleta</h2>
+          <p>O catálogo está fixado em itens destinados a descarte.</p>
+        </div>
+      </section>
+
+      <section class="card catalog-card" aria-labelledby="catalog-title">
+        <div class="card-heading compact-heading">
+          <span class="icon-badge icon-blue" aria-hidden="true">⌕</span>
+          <div>
+            <h2 id="catalog-title">Itens disponíveis</h2>
+            <p>Combine filtros para encontrar equipamentos compatíveis.</p>
+          </div>
+        </div>
+        <form id="catalog-form" class="filter-bar">
+          <label class="field">Categoria
+            <select id="catalog-category" name="categoria">
+              <option value="">Todas</option>
+              <option value="informatica">Informática</option>
+              <option value="notebook">Notebook</option>
+              <option value="desktop">Desktop</option>
+              <option value="telefonia">Telefonia</option>
+              <option value="celular">Celular</option>
+              <option value="tablet">Tablet</option>
+              <option value="televisao">Televisão</option>
+              <option value="audio">Áudio</option>
+              <option value="eletrodomestico">Eletrodoméstico</option>
+              <option value="perifericos">Periféricos</option>
+              <option value="monitor">Monitor</option>
+              <option value="impressora">Impressora</option>
+              <option value="outro">Outro</option>
+            </select>
+          </label>
+          <label class="field">Condição
+            <select id="catalog-condition" name="condicao">
+              <option value="">Todas</option>
+              <option value="funcional">Funcional</option>
+              <option value="funcional_com_defeito">Com defeito</option>
+              <option value="reparavel">Reparável</option>
+              <option value="sem_conserto">Sem conserto</option>
+              <option value="recondicionado">Recondicionado</option>
+            </select>
+          </label>
+          <label class="field">Destino
+            <select id="catalog-destination" name="destino">
+              <option value="">Todos</option>
+              <option value="doacao">Doação</option>
+              <option value="descarte">Descarte</option>
+              <option value="revenda">Revenda</option>
+            </select>
+          </label>
+          <label class="field">Status
+            <select id="catalog-status" name="status">
+              <option value="">Todos</option>
+              <option value="disponivel">Disponível</option>
+              <option value="reservado">Reservado</option>
+              <option value="doado">Doado</option>
+              <option value="encaminhado">Encaminhado</option>
+              <option value="coletado">Coletado</option>
+              <option value="em_avaliacao">Em avaliação</option>
+              <option value="recondicionado">Recondicionado</option>
+              <option value="vendido">Vendido</option>
+            </select>
+          </label>
+          <div class="filter-actions">
+            <button class="button button-primary" type="submit">Filtrar</button>
+            <button id="clear-filters" class="button button-ghost" type="button">Limpar</button>
+          </div>
+        </form>
+        <p id="catalog-message" class="form-message" role="status" aria-live="polite"></p>
+        <div id="catalog-list" class="item-grid" aria-live="polite"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p><strong>Recicla/Reusa</strong> · ODS 12.</p>
+      <p>Dados do catálogo vêm da API.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="./js/catalogo.js"></script>
+</body>
+</html>

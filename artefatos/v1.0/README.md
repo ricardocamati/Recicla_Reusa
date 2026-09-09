@@ -19,7 +19,7 @@ A versão 1.0 tem como meta uma base funcional com usuários e itens eletrônico
 
 O backend atual conclui o núcleo de `usuarios` e o CRUD de `itens`: cadastro público de doadores e beneficiários, endereço aninhado, datas de auditoria em UTC, e-mail normalizado com índice único, hash de senha, login, logout, perfil próprio, catálogo filtrável e proteção de atualização/exclusão pela sessão. Contas `ponto_coleta` são provisionadas pelo comando administrativo local, sem permitir autoatribuição no cadastro público. Itens usam coleção própria, referenciam o proprietário por `proprietario_id` e não duplicam o endereço. Listagens públicas usam resumo sem e-mail ou endereço completo.
 
-O frontend simples e os fluxos de interesse/coleta permanecem dependentes das próximas implementações.
+O frontend simples está implementado em `frontend/`, com cadastro, login, perfil, catálogo, filtros e gestão de itens próprios. Os fluxos de interesse/coleta detalhados permanecem dependentes da v2.0.
 
 ## Documentos
 
@@ -35,10 +35,10 @@ O frontend simples e os fluxos de interesse/coleta permanecem dependentes das pr
 - MongoDB 7.0 real via Docker Compose, coleções `usuarios`/`itens`, índices e CRUDs completos com limpeza dos dados de teste;
 - login, logout, sessão HttpOnly, perfil próprio e autorização do usuário;
 - provisionamento controlado de `ponto_coleta` por comando local, com senha solicitada sem eco;
-- 39 testes automatizados aprovados;
+- frontend validado em navegador com API e MongoDB ativos;
+- 49 testes automatizados aprovados;
 - cobertura total atual de 94,28%.
 
 ## Pendências para fechar a v1.0
 
-- implementar as telas simples de cadastro, login, perfil e catálogo/gestão de itens;
 - produzir as evidências externas de GitHub e identificação da versão.

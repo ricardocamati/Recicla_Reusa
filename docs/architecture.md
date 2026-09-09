@@ -13,7 +13,7 @@ API FastAPI -> Request DTO -> Service -> Repository -> MongoDB
 MongoDB -> Model -> Service -> Mapper -> Response DTO -> JSON
 ```
 
-O frontend permanece em uma pasta própria na raiz e faz parte do escopo planejado da v1.0. Será simples, em HTML, CSS e JavaScript, consumindo somente os contratos públicos da API.
+O frontend permanece em uma pasta própria na raiz e conclui o escopo simples da v1.0. Ele usa HTML, CSS e JavaScript, sem etapa de build obrigatória, consumindo somente os contratos públicos da API.
 
 ## Responsabilidades
 
@@ -85,7 +85,7 @@ O cadastro obtém `proprietario_id` da sessão, inicia `status` como `disponivel
 
 O cadastro público aceita somente `doador` e `beneficiario`. A senha não é persistida em texto claro: o Service gera um hash scrypt com salt aleatório. O login cria uma sessão em memória e devolve apenas o cookie `recicla_sessao`, configurado como `HttpOnly`, `SameSite=Lax`, `Path=/` e com duração de 30 minutos.
 
-As origens CORS são lidas de `CORS_ORIGINS`; credenciais são permitidas somente para essa lista. O frontend deverá usar `credentials: "include"` sem tentar ler o cookie.
+As origens CORS são lidas de `CORS_ORIGINS`; credenciais são permitidas somente para essa lista. O frontend usa `credentials: "include"` sem tentar ler o cookie.
 
 ## Arquitetura-alvo
 

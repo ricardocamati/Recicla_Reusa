@@ -4,7 +4,7 @@
 
 Entregar a primeira versão funcional da PoC com cadastros de usuários e itens eletrônicos, endereço aninhado, auditoria temporal, POO, documentação e testes automatizados.
 
-> **Estado atual:** o backend atende aos requisitos de usuários, itens, endereço, auditoria, sessão, autorização e provisionamento controlado de `ponto_coleta`. O frontend ainda precisa ser implementado para fechar toda a v1.0.
+> **Estado atual:** o backend atende aos requisitos de usuários, itens, endereço, auditoria, sessão, autorização e provisionamento controlado de `ponto_coleta`; o frontend simples em HTML, CSS e JavaScript também está implementado e validado em navegador.
 
 ## 2. Requisitos funcionais
 
