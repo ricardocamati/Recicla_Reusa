@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Crie sua conta no Recicla/Reusa.">
+  <title>Criar conta | Recicla/Reusa</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="brand" href="./index.html" aria-label="Recicla/Reusa, início">
+        <span class="brand-mark" aria-hidden="true">↺</span>
+        <span>Recicla/<span>Reusa</span></span>
+      </a>
+      <a id="login-link" class="button button-ghost" href="./login.html">Já tenho conta</a>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <div class="container page-narrow">
+      <div class="page-heading">
+        <p class="eyebrow">Primeiro passo</p>
+        <h1>Crie seu espaço de reuso.</h1>
+        <p class="page-lede">Cadastre seus dados para publicar ou encontrar eletrônicos com destino responsável.</p>
+      </div>
+
+      <section class="card form-card auth-card" aria-labelledby="register-title">
+        <div class="card-heading">
+          <span class="icon-badge icon-green" aria-hidden="true">+</span>
+          <div>
+            <h2 id="register-title">Cadastro</h2>
+            <p>O tipo de conta define as ações disponíveis no catálogo.</p>
+          </div>
+        </div>
+        <form id="register-form" class="form-stack" novalidate>
+          <div class="field-row">
+            <label class="field">Nome completo
+              <input name="nome" type="text" minlength="3" maxlength="120" autocomplete="name" required>
+            </label>
+            <label class="field">Tipo de conta
+              <select name="tipo" autocomplete="off" required>
+                <option value="doador">Doador</option>
+                <option value="beneficiario">Beneficiário</option>
+              </select>
+            </label>
+          </div>
+          <label class="field">E-mail
+            <input name="email" type="email" minlength="5" maxlength="160" autocomplete="email" required>
+          </label>
+          <label class="field">Senha
+            <input name="senha" type="password" minlength="8" maxlength="128" autocomplete="new-password" required>
+            <small>Use ao menos oito caracteres, com uma letra e um número.</small>
+          </label>
+          <fieldset>
+            <legend>Endereço</legend>
+            <div class="field-row">
+              <label class="field">Logradouro
+                <input name="logradouro" type="text" maxlength="160" autocomplete="street-address" required>
+              </label>
+              <label class="field field-small">Número
+                <input name="numero" type="text" maxlength="160" required>
+              </label>
+            </div>
+            <div class="field-row">
+              <label class="field">Cidade
+                <input name="cidade" type="text" maxlength="160" autocomplete="address-level2" required>
+              </label>
+              <label class="field field-small">CEP
+                <input name="cep" type="text" inputmode="numeric" maxlength="9" pattern="[0-9]{5}-?[0-9]{3}" autocomplete="postal-code" required>
+              </label>
+            </div>
+            <label class="field">Complemento <span class="optional">(opcional)</span>
+              <input name="complemento" type="text" maxlength="160" autocomplete="address-line2">
+            </label>
+          </fieldset>
+          <button class="button button-primary button-full" type="submit">Criar minha conta</button>
+          <p id="register-message" class="form-message" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p><strong>Recicla/Reusa</strong> · ODS 12.</p>
+      <p>Seus dados de senha nunca aparecem no frontend.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="./js/cadastro.js"></script>
+</body>
+</html>

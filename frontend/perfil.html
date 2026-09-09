@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Seu perfil no Recicla/Reusa.">
+  <title>Meu perfil | Recicla/Reusa</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="brand" href="./index.html" aria-label="Recicla/Reusa, início">
+        <span class="brand-mark" aria-hidden="true">↺</span>
+        <span>Recicla/<span>Reusa</span></span>
+      </a>
+      <nav class="header-actions" aria-label="Navegação principal">
+        <a class="nav-link" href="./catalogo.html">Catálogo</a>
+        <a class="nav-link" id="items-link" href="./itens.html" hidden>Meus itens</a>
+        <a class="nav-link active" href="./perfil.html" aria-current="page">Meu perfil</a>
+        <span id="session-chip" class="session-chip" hidden></span>
+        <button id="logout-button" class="button button-ghost" type="button" hidden>Sair</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="global-message" class="message" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <main class="page-content">
+    <div class="container">
+      <section class="workspace-heading">
+        <div>
+          <p class="eyebrow">Sua conta</p>
+          <h1>Olá, <span id="user-name">...</span>.</h1>
+          <p id="role-description" class="section-description">Carregando seu espaço...</p>
+        </div>
+        <span id="role-badge" class="role-badge">...</span>
+      </section>
+
+      <div class="card-grid card-grid-profile">
+        <section class="card form-card" aria-labelledby="profile-title">
+          <div class="card-heading">
+            <span class="icon-badge icon-green" aria-hidden="true">◎</span>
+            <div>
+              <h2 id="profile-title">Dados do perfil</h2>
+              <p>Atualize seus dados de contato.</p>
+            </div>
+          </div>
+          <form id="profile-form" class="form-stack">
+            <label class="field">Nome completo
+              <input name="nome" type="text" minlength="3" maxlength="120" autocomplete="name" required>
+            </label>
+            <label class="field">E-mail
+              <input name="email" type="email" minlength="5" maxlength="160" autocomplete="email" required>
+            </label>
+            <fieldset>
+              <legend>Endereço</legend>
+              <div class="field-row">
+                <label class="field">Logradouro
+                  <input name="logradouro" type="text" maxlength="160" autocomplete="street-address" required>
+                </label>
+                <label class="field field-small">Número
+                  <input name="numero" type="text" maxlength="160" required>
+                </label>
+              </div>
+              <div class="field-row">
+                <label class="field">Cidade
+                  <input name="cidade" type="text" maxlength="160" autocomplete="address-level2" required>
+                </label>
+                <label class="field field-small">CEP
+                  <input name="cep" type="text" inputmode="numeric" maxlength="9" pattern="[0-9]{5}-?[0-9]{3}" autocomplete="postal-code" required>
+                </label>
+              </div>
+              <label class="field">Complemento <span class="optional">(opcional)</span>
+                <input name="complemento" type="text" maxlength="160" autocomplete="address-line2">
+              </label>
+            </fieldset>
+            <button class="button button-primary" type="submit">Salvar alterações</button>
+            <p id="profile-message" class="form-message" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <aside class="account-card card" aria-labelledby="account-summary-title">
+          <div class="account-illustration" aria-hidden="true">◌</div>
+          <p class="eyebrow">Resumo</p>
+          <h2 id="account-summary-title">Seu papel no ciclo</h2>
+          <p id="account-tip">Carregando informações da conta...</p>
+          <dl class="account-facts">
+            <div>
+              <dt>Perfil</dt>
+              <dd id="account-role">...</dd>
+            </div>
+            <div>
+              <dt>Cidade</dt>
+              <dd id="account-city">...</dd>
+            </div>
+          </dl>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p><strong>Recicla/Reusa</strong> · ODS 12.</p>
+      <p>Perfil protegido pela sessão do servidor.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="./js/perfil.js"></script>
+</body>
+</html>

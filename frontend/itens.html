@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Gerencie seus itens no Recicla/Reusa.">
+  <title>Meus itens | Recicla/Reusa</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="brand" href="./index.html" aria-label="Recicla/Reusa, início">
+        <span class="brand-mark" aria-hidden="true">↺</span>
+        <span>Recicla/<span>Reusa</span></span>
+      </a>
+      <nav class="header-actions" aria-label="Navegação principal">
+        <a class="nav-link" href="./catalogo.html">Catálogo</a>
+        <a class="nav-link active" id="items-link" href="./itens.html" aria-current="page">Meus itens</a>
+        <a class="nav-link" href="./perfil.html">Meu perfil</a>
+        <span id="session-chip" class="session-chip" hidden></span>
+        <button id="logout-button" class="button button-ghost" type="button" hidden>Sair</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="global-message" class="message" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <main class="page-content">
+    <div class="container">
+      <section class="workspace-heading">
+        <div>
+          <p class="eyebrow">Gestão do doador</p>
+          <h1>Seus eletrônicos, <span id="user-name">...</span>.</h1>
+          <p class="section-description">Publique um item, acompanhe seus dados e mantenha o destino sempre claro.</p>
+        </div>
+        <span id="role-badge" class="role-badge">...</span>
+      </section>
+
+      <p id="not-donor" class="message error" hidden>Somente doadores podem administrar itens. Consulte o <a href="./catalogo.html">catálogo</a>.</p>
+
+      <section id="item-management" class="management-section" aria-labelledby="management-title">
+        <div class="card-grid card-grid-management">
+          <section class="card form-card" aria-labelledby="management-title">
+            <div class="card-heading">
+              <span class="icon-badge icon-green" aria-hidden="true">+</span>
+              <div>
+                <h2 id="management-title"><span id="item-form-title">Cadastrar item</span></h2>
+                <p>Descreva o equipamento e indique seu destino inicial.</p>
+              </div>
+            </div>
+            <form id="item-form" class="form-stack">
+              <input name="item_id" type="hidden">
+              <label class="field">Título
+                <input name="titulo" type="text" minlength="3" maxlength="160" required>
+              </label>
+              <label class="field">Descrição
+                <textarea name="descricao" minlength="3" maxlength="2000" required></textarea>
+              </label>
+              <div class="field-row">
+                <label class="field">Categoria
+                  <select name="categoria" required>
+                    <option value="">Selecione</option>
+                    <option value="informatica">Informática</option>
+                    <option value="notebook">Notebook</option>
+                    <option value="desktop">Desktop</option>
+                    <option value="telefonia">Telefonia</option>
+                    <option value="celular">Celular</option>
+                    <option value="tablet">Tablet</option>
+                    <option value="televisao">Televisão</option>
+                    <option value="audio">Áudio</option>
+                    <option value="eletrodomestico">Eletrodoméstico</option>
+                    <option value="perifericos">Periféricos</option>
+                    <option value="monitor">Monitor</option>
+                    <option value="impressora">Impressora</option>
+                    <option value="outro">Outro</option>
+                  </select>
+                </label>
+                <label class="field">Condição
+                  <select name="condicao" required>
+                    <option value="">Selecione</option>
+                    <option value="funcional">Funcional</option>
+                    <option value="funcional_com_defeito">Com defeito</option>
+                    <option value="reparavel">Reparável</option>
+                    <option value="sem_conserto">Sem conserto</option>
+                    <option value="recondicionado">Recondicionado</option>
+                  </select>
+                </label>
+              </div>
+              <div class="field-row">
+                <label class="field">Marca <span class="optional">(opcional)</span>
+                  <input name="marca" type="text" maxlength="120">
+                </label>
+                <label class="field">Modelo <span class="optional">(opcional)</span>
+                  <input name="modelo" type="text" maxlength="120">
+                </label>
+              </div>
+              <div class="field-row">
+                <label class="field">Destino
+                  <select id="item-destination" name="destino" required>
+                    <option value="doacao">Doação</option>
+                    <option value="descarte">Descarte</option>
+                    <option value="revenda">Revenda</option>
+                  </select>
+                </label>
+                <label id="item-value-field" class="field">Valor <span class="optional">(revenda)</span>
+                  <input id="item-value" name="valor" type="number" min="0" step="0.01">
+                </label>
+              </div>
+              <div class="form-actions">
+                <button class="button button-primary" type="submit">Salvar item</button>
+                <button id="cancel-item-edit" class="button button-ghost" type="button" hidden>Cancelar edição</button>
+              </div>
+              <p id="item-message" class="form-message" role="status" aria-live="polite"></p>
+            </form>
+          </section>
+
+          <section class="owned-items-column" aria-labelledby="my-items-title">
+            <div class="section-heading compact-heading">
+              <div>
+                <p class="eyebrow">Seu inventário</p>
+                <h2 id="my-items-title">Meus itens</h2>
+              </div>
+            </div>
+            <p id="my-items-message" class="form-message" role="status" aria-live="polite"></p>
+            <div id="my-items-list" class="item-grid item-grid-owned" aria-live="polite"></div>
+          </section>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p><strong>Recicla/Reusa</strong> · ODS 12.</p>
+      <p>Você administra somente seus próprios itens.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="./js/itens.js"></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Entre no Recicla/Reusa.">
+  <title>Entrar | Recicla/Reusa</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="brand" href="./index.html" aria-label="Recicla/Reusa, início">
+        <span class="brand-mark" aria-hidden="true">↺</span>
+        <span>Recicla/<span>Reusa</span></span>
+      </a>
+      <a class="button button-ghost" href="./cadastro.html">Criar conta</a>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <div class="container page-narrow narrow-login">
+      <div class="page-heading">
+        <p class="eyebrow">Bem-vindo de volta</p>
+        <h1>Continue de onde parou.</h1>
+        <p class="page-lede">Acesse seu catálogo, perfil e os itens que você publicou.</p>
+      </div>
+
+      <section class="card form-card auth-card login-card" aria-labelledby="login-title">
+        <div class="card-heading">
+          <span class="icon-badge icon-blue" aria-hidden="true">→</span>
+          <div>
+            <h2 id="login-title">Login</h2>
+            <p>Use o e-mail e a senha do seu cadastro.</p>
+          </div>
+        </div>
+        <form id="login-form" class="form-stack">
+          <label class="field">E-mail
+            <input name="email" type="email" autocomplete="username" required>
+          </label>
+          <label class="field">Senha
+            <input name="senha" type="password" autocomplete="current-password" required>
+          </label>
+          <button class="button button-primary button-full" type="submit">Entrar no Recicla/Reusa</button>
+          <p id="login-message" class="form-message" role="status" aria-live="polite"></p>
+        </form>
+        <p class="auth-switch">Ainda não possui conta? <a href="./cadastro.html">Faça seu cadastro</a>.</p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p><strong>Recicla/Reusa</strong> · ODS 12.</p>
+      <p>Sessão protegida por cookie HttpOnly.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="./js/login.js"></script>
+</body>
+</html>
