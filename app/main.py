@@ -1,76 +1,96 @@
+from collections.abc import Callable
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
+from datetime import UTC, datetime
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pymongo import MongoClient
 
-from app.api.usuarios import criar_router
-from app.config import obter_configuracoes
-from app.exceptions import UsuarioNaoEncontradoError
+from app.api.usuarios import criar_routers
+from app.config import Settings
+from app.exceptions import EmailDuplicadoError, UsuarioNaoEncontradoError
 from app.repositories.mongo_usuario_repository import MongoUsuarioRepository
-from app.services.usuario_service import RepositorioDeUsuarios, UsuarioService
+from app.security.sessions import ArmazenamentoDeSessoes
+from app.services.usuario_service import UsuarioService, RepositorioDeUsuarios
 
 
-def criar_app(repositorio: RepositorioDeUsuarios | None = None) -> FastAPI:
-    cliente_mongo: MongoClient | None = None
-
+def criar_app(
+    repositorio: RepositorioDeUsuarios | None = None,
+    *,
+    relogio: Callable[[], datetime] | None = None,
+    sessoes: ArmazenamentoDeSessoes | None = None,
+) -> FastAPI:
+    settings = Settings()
+    cliente_mongo = None
+    repositorio_mongo = None
     if repositorio is None:
-        configuracoes = obter_configuracoes()
-        cliente_mongo = MongoClient(configuracoes.mongo_uri, tz_aware=True)
-        colecao = cliente_mongo[configuracoes.mongo_database]["usuarios"]
-        repositorio = MongoUsuarioRepository(colecao)
+        cliente_mongo = MongoClient(settings.mongo_uri)
+        colecao = cliente_mongo[settings.mongo_database][settings.mongo_collection_usuarios]
+        repositorio_mongo = MongoUsuarioRepository(colecao, criar_indice=False)
+        repositorio = repositorio_mongo
+
+    relogio = relogio or (lambda: datetime.now(UTC))
+    sessoes = sessoes or ArmazenamentoDeSessoes(relogio=relogio)
+    servico = UsuarioService(repositorio, relogio=relogio)
 
     @asynccontextmanager
-    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(_: FastAPI):
+        if repositorio_mongo is not None:
+            repositorio_mongo.criar_indice_email()
         yield
-        if cliente_mongo is not None:
-            cliente_mongo.close()
 
-    aplicacao = FastAPI(
-        title="Recicla/Reusa",
-        description="PoC inicial com CRUD de usuários",
-        version="0.1.0",
-        lifespan=lifespan,
+    app = FastAPI(title="Recicla/Reusa", version="1.0.0", lifespan=lifespan)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.origens_cors(),
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type"],
     )
-    aplicacao.include_router(criar_router(UsuarioService(repositorio)))
+    if cliente_mongo is not None:
+        app.state.mongo_client = cliente_mongo
+        app.state.mongo_repository = repositorio_mongo
 
-    @aplicacao.exception_handler(UsuarioNaoEncontradoError)
-    async def tratar_usuario_nao_encontrado(
-        request: Request, exception: UsuarioNaoEncontradoError
+    router_usuarios, router_auth = criar_routers(
+        servico,
+        sessoes,
+        cookies_seguros=settings.secure_cookies,
+    )
+    app.include_router(router_usuarios)
+    app.include_router(router_auth)
+
+    @app.get("/health", tags=["infraestrutura"])
+    def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @app.exception_handler(EmailDuplicadoError)
+    async def email_duplicado_handler(
+        request: Request,
+        exc: EmailDuplicadoError,
+    ) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"detail": "E-mail já cadastrado"})
+
+    @app.exception_handler(UsuarioNaoEncontradoError)
+    async def usuario_nao_encontrado_handler(
+        request: Request,
+        exc: UsuarioNaoEncontradoError,
+    ) -> JSONResponse:
+        return JSONResponse(status_code=404, content={"detail": "Usuário não encontrado"})
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_handler(
+        request: Request,
+        exc: RequestValidationError,
     ) -> JSONResponse:
         return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={
-                "status": 404,
-                "error": "Not Found",
-                "message": str(exception),
-                "path": request.url.path,
-                "fieldErrors": {},
-            },
+            status_code=400,
+            content={"detail": jsonable_encoder(exc.errors())},
         )
 
-    @aplicacao.exception_handler(RequestValidationError)
-    async def tratar_entrada_invalida(
-        request: Request, exception: RequestValidationError
-    ) -> JSONResponse:
-        erros_de_campo: dict[str, str] = {}
-        for erro in exception.errors():
-            campo = str(erro["loc"][-1])
-            erros_de_campo.setdefault(campo, erro["msg"])
-        return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content={
-                "status": 400,
-                "error": "Bad Request",
-                "message": "Dados de entrada inválidos",
-                "path": request.url.path,
-                "fieldErrors": erros_de_campo,
-            },
-        )
-
-    return aplicacao
+    return app
 
 
 app = criar_app()
