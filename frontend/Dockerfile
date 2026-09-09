@@ -1,8 +1,14 @@
-FROM nginx:1.27-alpine
+FROM python:3.11-slim
 
-COPY . /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+COPY . .
 
 EXPOSE 80
 
-HEALTHCHECK --interval=10s --timeout=5s --retries=5 CMD wget -q -O /dev/null http://127.0.0.1/ || exit 1
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1/')"
+
+CMD ["python", "-m", "http.server", "80", "--bind", "0.0.0.0", "--directory", "/app"]
