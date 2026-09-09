@@ -122,3 +122,49 @@ def test_css_tem_layout_responsivo_e_foco_acessivel() -> None:
     assert "@media" in css
     assert ":focus-visible" in css
     assert "grid-template-columns" in css
+
+
+def test_frontend_nao_exibe_referencias_institucionais() -> None:
+    arquivos = sorted(
+        caminho
+        for caminho in FRONTEND.rglob("*")
+        if caminho.is_file()
+    )
+    frontend = "\n".join(
+        caminho.read_text(encoding="utf-8")
+        for caminho in arquivos
+    ).casefold()
+
+    for referencia in (
+        "poc",
+        "ods 12",
+        "consumo responsável",
+        "consumo responsavel",
+        "responsável",
+        "responsavel",
+    ):
+        assert referencia not in frontend
+
+
+def test_css_aplica_modo_escuro() -> None:
+    css = ler("styles.css")
+
+    assert "color-scheme: dark" in css
+    for variavel in (
+        "--ink: #e8f2eb",
+        "--muted: #9aaea2",
+        "--paper: #0d1410",
+        "--card: #17221b",
+        "--line: #2c3d32",
+        "--green: #57c987",
+        "--green-dark: #9ae6b0",
+        "--green-soft: #183a28",
+    ):
+        assert variavel in css
+
+    for superficie in (
+        "--surface-deep: #0a120e",
+        "--surface-input: #101a14",
+        "--hero: #142d22",
+    ):
+        assert superficie in css
