@@ -1,6 +1,6 @@
 # Modelo de dados da versão 1.0
 
-> Este é o modelo-alvo da primeira entrega. O código atual ainda usa somente `usuarios` com `cidade` e `data_cadastro`.
+> Este é o modelo persistido do núcleo de usuários implementado na primeira entrega. A coleção `itens` permanece como modelo-alvo até sua implementação.
 
 ## Relacionamento
 
@@ -17,7 +17,7 @@ O item fica em coleção separada e referencia o proprietário. O endereço é s
   "_id": "ObjectId",
   "nome": "Maria da Silva",
   "email": "maria@example.com",
-  "senha_hash": "hash Argon2id; nunca retornado pela API",
+  "senha_hash": "hash scrypt com salt; nunca retornado pela API",
   "tipo": "doador",
   "endereco": {
     "logradouro": "Avenida Brasil",

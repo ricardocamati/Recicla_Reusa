@@ -4,7 +4,7 @@
 
 Entregar a primeira versão funcional da PoC com cadastros de usuários e itens eletrônicos, endereço aninhado, auditoria temporal, POO, documentação e testes automatizados.
 
-> **Estado atual:** estes são os requisitos-alvo da v1.0. O código atual atende apenas ao CRUD simples de usuários e ainda precisa ser evoluído para satisfazer todo este documento.
+> **Estado atual:** o núcleo de usuários atende aos requisitos de cadastro, endereço, auditoria, sessão e autorização do próprio perfil. A coleção `itens` e o frontend ainda precisam ser implementados para fechar toda a v1.0.
 
 ## 2. Requisitos funcionais
 

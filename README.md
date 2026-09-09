@@ -38,11 +38,11 @@ Cada destino terá seu próprio fluxo de status e um histórico rastreável. O s
 
 ## 5. Evolução incremental da AEP
 
-### Estado inicial do repositório
+### Estado atual do repositório
 
-O primeiro marco começa pequeno, com uma única coleção MongoDB chamada `usuarios` e CRUD completo. Os documentos são simples e homogêneos, contendo `nome`, `email`, `tipo`, `cidade` e `data_cadastro`.
+A primeira entrega conclui o fluxo de usuários na coleção MongoDB `usuarios`: cadastro público de doadores e beneficiários, endereço como subdocumento, auditoria temporal em UTC, e-mail normalizado com índice único e sessões simples em cookie HttpOnly.
 
-Esse início cria a base de participantes que será relacionada aos eletrônicos nas etapas seguintes e permite que a evolução fique visível no histórico de commits.
+Esse núcleo cria a base de participantes que será relacionada aos eletrônicos nas etapas seguintes e mantém a evolução visível no histórico de commits.
 
 ### Evolução planejada
 
@@ -114,7 +114,7 @@ docker compose up -d
 
 Documentação interativa: <http://127.0.0.1:8000/docs>.
 
-O CRUD inicial está em `/api/usuarios`. Os contratos estão documentados em [docs/http-api.md](docs/http-api.md).
+Os endpoints de usuários estão em `/api/usuarios`; login e logout estão em `/api/auth`. Os contratos estão documentados em [docs/http-api.md](docs/http-api.md).
 
 ## 10. Testes e cobertura
 
@@ -126,6 +126,6 @@ A suíte deve manter cobertura mínima de **70%**, conforme a AEP. Os testes uni
 
 ## 11. Limites atuais
 
-Ainda não foram implementados itens eletrônicos, autenticação nem o frontend simples da v1.0. Interesses, pontos de coleta, notificações e fluxos completos permanecem na especificação da v2.0, fora do `TODO.md` de implementação atual.
+Ainda não foram implementados itens eletrônicos nem o frontend simples da v1.0. Interesses, pontos de coleta, notificações e fluxos completos permanecem na especificação da v2.0, fora do `TODO.md` de implementação atual.
 
-> Projeto iniciado a partir do **template fornecido** e adaptado para Python conforme a proposta da AEP.
+> Projeto iniciado a partir do **template fornecido pelo professor Munif Gebara Júnior** e adaptado para Python conforme a proposta da AEP.
