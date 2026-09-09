@@ -40,9 +40,9 @@ Cada destino terá seu próprio fluxo de status e um histórico rastreável. O s
 
 ### Estado atual do repositório
 
-A primeira entrega conclui o fluxo de usuários na coleção MongoDB `usuarios`: cadastro público de doadores e beneficiários, endereço como subdocumento, auditoria temporal em UTC, e-mail normalizado com índice único e sessões simples em cookie HttpOnly.
+A primeira entrega conclui os fluxos de usuários e itens nas coleções MongoDB `usuarios` e `itens`: cadastro público de doadores e beneficiários, endereço como subdocumento, auditoria temporal em UTC, e-mail normalizado com índice único, sessões simples em cookie HttpOnly, catálogo filtrável e autorização por proprietário.
 
-Esse núcleo cria a base de participantes que será relacionada aos eletrônicos nas etapas seguintes e mantém a evolução visível no histórico de commits.
+Itens referenciam o usuário por `proprietario_id` e não duplicam o endereço. O histórico de ciclo de vida, interesses e pontos de coleta permanecem na evolução da v2.0; a implementação atual mantém a evolução visível no histórico de commits.
 
 ### Evolução planejada
 
@@ -58,7 +58,7 @@ A coleção `itens` deverá conter uma lista de subdocumentos com o histórico d
 ```json
 {
   "titulo": "Notebook usado",
-  "usuario_id": "...",
+  "proprietario_id": "...",
   "destino": "revenda",
   "historico": [
     {"etapa": "cadastro", "status": "disponivel", "data": "..."},
@@ -114,7 +114,7 @@ docker compose up -d
 
 Documentação interativa: <http://127.0.0.1:8000/docs>.
 
-Os endpoints de usuários estão em `/api/usuarios`; login e logout estão em `/api/auth`. Os contratos estão documentados em [docs/http-api.md](docs/http-api.md).
+Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e login/logout em `/api/auth`. Os contratos estão documentados em [docs/http-api.md](docs/http-api.md).
 
 ## 10. Testes e cobertura
 
@@ -126,6 +126,6 @@ A suíte deve manter cobertura mínima de **70%**, conforme a AEP. Os testes uni
 
 ## 11. Limites atuais
 
-Ainda não foram implementados itens eletrônicos nem o frontend simples da v1.0. Interesses, pontos de coleta, notificações e fluxos completos permanecem na especificação da v2.0, fora do `TODO.md` de implementação atual.
+O frontend simples da v1.0 ainda não foi implementado. Interesses, pontos de coleta, notificações e fluxos completos permanecem na especificação da v2.0, fora do `TODO.md` de implementação atual.
 
 > Projeto iniciado a partir do **template fornecido pelo professor Munif Gebara Júnior** e adaptado para Python conforme a proposta da AEP.

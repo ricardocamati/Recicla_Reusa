@@ -10,7 +10,7 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Separar API, Service, Repository, Model, Mapper e schemas.
 - [x] Criar testes automatizados para a base de usuários.
 - [x] Validar a integração com MongoDB real via Docker Compose.
-- [x] Obter cobertura superior a 70% — resultado atual: 92,35%.
+- [x] Obter cobertura superior a 70% — resultado atual: 94,44%.
 
 ### Usuários — concluir antes da v1.0
 
@@ -24,15 +24,15 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 
 ### Itens — concluir antes da v1.0
 
-- [ ] Criar a coleção separada `itens`.
-- [ ] Implementar Model, schemas, Mapper, Repository, Service e API de itens.
-- [ ] Implementar CRUD em `/api/itens`.
-- [ ] Relacionar item ao usuário por `proprietario_id`.
-- [ ] Validar a existência do proprietário.
-- [ ] Definir categorias, condições e destinos.
-- [ ] Incluir `data_adicao` e `data_modificacao`.
-- [ ] Manter o endereço somente no usuário, sem cópia no item.
-- [ ] Permitir filtros de categoria, condição, destino e status.
+- [x] Criar a coleção separada `itens`.
+- [x] Implementar Model, schemas, Mapper, Repository, Service e API de itens.
+- [x] Implementar CRUD em `/api/itens`.
+- [x] Relacionar item ao usuário por `proprietario_id`.
+- [x] Validar a existência do proprietário.
+- [x] Definir categorias, condições e destinos.
+- [x] Incluir `data_adicao` e `data_modificacao`.
+- [x] Manter o endereço somente no usuário, sem cópia no item.
+- [x] Permitir filtros de categoria, condição, destino e status.
 
 ### Segurança básica — concluir antes da v1.0
 
@@ -46,9 +46,9 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Implementar `POST /api/auth/logout` para remover a sessão e expirar o cookie.
 - [x] Implementar `GET /api/usuarios/me`.
 - [x] Proteger atualização e exclusão do usuário pela identidade da sessão.
-- [ ] Obter `proprietario_id` da sessão ao criar item.
-- [ ] Permitir alteração e exclusão de item somente pelo proprietário.
-- [ ] Aplicar permissões de `doador`, `beneficiario` e `ponto_coleta`.
+- [x] Obter `proprietario_id` da sessão ao criar item.
+- [x] Permitir alteração e exclusão de item somente pelo proprietário.
+- [x] Aplicar permissões de `doador`, `beneficiario` e `ponto_coleta`.
 - [x] Permitir cadastro público apenas de `doador` e `beneficiario`.
 - [ ] Criar forma controlada de provisionar conta `ponto_coleta`.
 - [x] Tornar `tipo` imutável na atualização comum.
@@ -77,10 +77,10 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 
 ### Qualidade da v1.0
 
-- [ ] Atualizar os testes de usuários para o novo contrato.
-- [ ] Criar testes de Service, Repository e API para itens.
+- [x] Atualizar os testes de usuários para o novo contrato.
+- [x] Criar testes de Service, Repository e API para itens.
 - [ ] Validar os dois CRUDs contra MongoDB real.
-- [ ] Confirmar cobertura mínima de 70% após todas as mudanças.
-- [ ] Atualizar documentação HTTP e arquitetura executável.
+- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,44%.
+- [x] Atualizar documentação HTTP e arquitetura executável.
 - [ ] Validar o projeto em máquina limpa.
 - [ ] Publicar no GitHub e identificar a v1.0 por commit, tag ou release.

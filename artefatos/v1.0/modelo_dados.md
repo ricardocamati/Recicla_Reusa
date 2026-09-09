@@ -1,6 +1,6 @@
 # Modelo de dados da versão 1.0
 
-> Este é o modelo persistido do núcleo de usuários implementado na primeira entrega. A coleção `itens` permanece como modelo-alvo até sua implementação.
+> Este é o modelo persistido do núcleo de usuários e itens implementado na primeira entrega. Os fluxos de interesse, coleta e histórico continuam reservados para a v2.0.
 
 ## Relacionamento
 
@@ -38,7 +38,7 @@ O item fica em coleção separada e referencia o proprietário. O endereço é s
   "_id": "ObjectId",
   "titulo": "Notebook Dell usado",
   "descricao": "Funcionando, mas com bateria fraca",
-  "categoria": "notebook",
+  "categoria": "informatica",
   "marca": "Dell",
   "modelo": "Inspiron 15",
   "condicao": "funcional_com_defeito",
@@ -62,6 +62,8 @@ O item fica em coleção separada e referencia o proprietário. O endereço é s
 | `data_modificacao` | instante UTC da última alteração |
 | `itens.valor` | campo condicional ao destino `revenda` |
 
+Categorias canônicas de `itens.categoria`: `informatica`, `notebook`, `desktop`, `telefonia`, `celular`, `tablet`, `televisao`, `audio`, `eletrodomestico`, `perifericos`, `monitor`, `impressora` e `outro`. A entrada pode usar maiúsculas, acentos, espaços ou hífen; a API normaliza para minúsculas sem acentos e com `_`.
+
 ## Decisões
 
 - item não é subdocumento: fica em `itens`, conforme a decisão de escopo da v1.0;
@@ -77,6 +79,8 @@ usuarios.email             UNIQUE
 itens.proprietario_id      índice para consultas por proprietário
 itens.status               índice para catálogo
 itens.destino              índice para filtros
+itens.categoria            índice para filtros
+itens.condicao             índice para filtros
 ```
 
 ## Sessão de acesso
