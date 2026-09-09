@@ -1,6 +1,6 @@
 # Artefatos da versão 1.0 — Primeira entrega
 
-A versão 1.0 passa a ter como meta uma base funcional com usuários e itens eletrônicos. Os itens ficam em coleção própria; somente o endereço é um subdocumento.
+A versão 1.0 tem como meta uma base funcional com usuários e itens eletrônicos. Os itens ficam em coleção própria; somente o endereço é um subdocumento do usuário.
 
 ## Escopo definido para a entrega
 
@@ -17,7 +17,9 @@ A versão 1.0 passa a ter como meta uma base funcional com usuários e itens ele
 
 ## Situação do código
 
-O backend atual implementa somente o CRUD simples de `usuarios`, ainda com `cidade` e `data_cadastro`, sem autenticação. A pasta `frontend/` existe, mas ainda está vazia. Portanto, endereço aninhado, novas datas, coleção `itens`, segurança básica e frontend estão **planejados para completar a v1.0**, mas ainda não devem ser apresentados como implementados.
+O backend atual conclui o núcleo de `usuarios`: cadastro público de doadores e beneficiários, endereço aninhado, datas de auditoria em UTC, e-mail normalizado com índice único, hash de senha, login, logout, perfil próprio e proteção de atualização/exclusão pela sessão. Listagens públicas usam resumo sem e-mail ou endereço completo.
+
+A coleção `itens` e o frontend simples continuam pendentes. O provisionamento de contas `ponto_coleta`, as permissões específicas para itens e os fluxos de interesse/coleta permanecem dependentes das próximas implementações.
 
 ## Documentos
 
@@ -27,19 +29,18 @@ O backend atual implementa somente o CRUD simples de `usuarios`, ainda com `cida
 - [casos_de_teste.md](casos_de_teste.md)
 - [matriz_rastreabilidade.md](matriz_rastreabilidade.md)
 
-## Evidências já verificadas da base atual
+## Evidências verificadas
 
-- CRUD simples de usuários executável;
-- MongoDB 7.0 validado via Docker Compose;
-- 6 testes automatizados aprovados;
-- cobertura total atual de 94,44%.
+- CRUD HTTP de usuários com endereço aninhado e auditoria temporal;
+- MongoDB 7.0 e índice único de e-mail previstos no repositório;
+- login, logout, sessão HttpOnly, perfil próprio e autorização do usuário;
+- 18 testes automatizados aprovados;
+- cobertura total atual de 92,35%.
 
 ## Pendências para fechar a v1.0
 
-- migrar usuário para `endereco`, `data_adicao` e `data_modificacao`;
 - implementar a coleção e o CRUD de `itens`;
-- implementar senha com hash, sessão simples e autorização por perfil/proprietário;
+- aplicar as permissões por tipo e propriedade aos itens;
 - implementar as telas simples de cadastro, login, perfil e catálogo/gestão de itens;
-- atualizar e ampliar os testes;
-- repetir a validação com MongoDB real;
+- validar o fluxo completo contra MongoDB real após a inclusão de itens;
 - produzir as evidências externas de GitHub e identificação da versão.

@@ -423,9 +423,10 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 
 | Evidência atual | Escopo comprovado | Resultado verificado |
 |---|---|---|
-| `tests/test_api_usuario.py` | CRUD HTTP simples de usuários, resposta `404` após exclusão e validação básica de e-mail | 2 testes aprovados |
-| `tests/test_usuario_service.py` | criação, atualização e recurso inexistente no Service atual | 3 testes aprovados |
-| `tests/test_mongo_usuario_repository.py` | persistência, consulta, listagem e exclusão no Repository com `mongomock` | 1 teste aprovado |
-| Suíte atual | Código executável anterior à evolução completa da v1.0 | 6 testes aprovados; cobertura total de 94,44% |
+| `tests/test_api_usuario.py` | cadastro com endereço/auditoria, resumos públicos, atualização autorizada, login, logout, sessão, validações, e-mail único e exclusão autorizada | 9 testes aprovados |
+| `tests/test_usuario_service.py` | criação, hash de senha, atualização temporal, unicidade, autenticação e recurso inexistente | 5 testes aprovados |
+| `tests/test_mongo_usuario_repository.py` | persistência, endereço, auditoria, índice único, consulta e exclusão com `mongomock` | 2 testes aprovados |
+| `tests/test_security.py` | hash scrypt e expiração de sessão em 30 minutos | 2 testes aprovados |
+| Suíte atual | Núcleo de usuários e autenticação executável; itens e frontend ainda pendentes | 18 testes aprovados; cobertura total de 92,35% |
 
-A automação existente cobre apenas versões simplificadas de partes dos casos de usuário. Os casos `V1-CT-01` a `V1-CT-37` deverão ser implementados ou atualizados conforme a evolução do código. A cobertura deverá ser medida novamente e permanecer igual ou superior a 70%; o percentual atual não comprova os requisitos ainda planejados.
+A automação atual comprova o núcleo de usuários e autenticação relacionado aos casos de cadastro, endereço, auditoria, privacidade, login, sessão e autorização do próprio perfil. Os casos relacionados à coleção `itens`, ao frontend e ao provisionamento de `ponto_coleta` continuam planejados e não são apresentados como implementados. A cobertura deverá ser medida novamente após essas evoluções e permanecer igual ou superior a 70%.

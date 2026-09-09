@@ -1,6 +1,6 @@
 # Regras de negócio da versão 1.0
 
-> Regras-alvo da primeira entrega. As regras de endereço, auditoria e itens ainda dependem de implementação.
+> Regras da primeira entrega. As regras específicas de itens continuam como alvo até a implementação da coleção `itens`.
 
 ## V1-RN-01 — Tipos de usuário
 
@@ -80,7 +80,7 @@ Senha deve possuir de 8 a 128 caracteres e incluir pelo menos uma letra e um nú
 
 ## V1-RN-19 — Armazenamento da senha
 
-Somente `senha_hash` é persistida, usando Argon2id ou algoritmo equivalente mantido. Senha e hash nunca aparecem em respostas ou logs.
+Somente `senha_hash` é persistida, usando scrypt com salt aleatório. Senha e hash nunca aparecem em respostas ou logs.
 
 ## V1-RN-20 — Login
 

@@ -32,13 +32,13 @@
 
 **Consequência:** há mais arquivos pequenos, mas a API não expõe diretamente documentos MongoDB e as regras não ficam nos Controllers.
 
-## ADR-005 — Começar pela coleção `usuarios`
+## ADR-005 — Concluir primeiro o núcleo `usuarios`
 
-**Decisão:** o primeiro CRUD do repositório utiliza somente a coleção `usuarios`.
+**Decisão:** a primeira entrega conclui o fluxo de usuários antes de introduzir a coleção `itens`.
 
-**Motivação:** criar uma base funcional pequena e deixar a evolução para eletrônicos e relacionamentos visível nos commits posteriores.
+**Motivação:** criar uma base funcional com endereço aninhado, auditoria temporal, cadastro seguro e autorização do próprio perfil, deixando a evolução para eletrônicos e relacionamentos visível nos commits posteriores.
 
-**Consequência:** o estado inicial ainda não executa os fluxos completos de doação, descarte e revenda.
+**Consequência:** usuários já possuem contrato estável para serem referenciados pelos itens; os fluxos completos de doação, descarte e revenda continuam fora deste marco.
 
 ## ADR-006 — Evolução para múltiplas coleções
 
@@ -71,3 +71,11 @@
 **Motivação:** garantir execução reproduzível mesmo sem Docker nos testes unitários, mantendo também uma validação de integração real para a entrega.
 
 **Consequência:** os testes unitários usam `mongomock` e a integração inicial foi validada contra MongoDB 7.0 em Docker Compose.
+
+## ADR-010 — Sessão de usuário em memória
+
+**Decisão:** autenticar com sessões temporárias armazenadas em memória e identificador aleatório enviado em cookie HttpOnly.
+
+**Motivação:** atender à segurança básica da primeira entrega sem introduzir infraestrutura adicional de persistência de sessões; a autorização permanece no backend.
+
+**Consequência:** reiniciar a aplicação invalida as sessões ativas. O cookie usa `SameSite=Lax`, `Path=/` e expiração de 30 minutos; a evolução futura poderá substituir o armazenamento quando houver necessidade de múltiplas instâncias.

@@ -10,17 +10,17 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Separar API, Service, Repository, Model, Mapper e schemas.
 - [x] Criar testes automatizados para a base de usuários.
 - [x] Validar a integração com MongoDB real via Docker Compose.
-- [x] Obter cobertura superior a 70% — resultado atual: 94,44%.
+- [x] Obter cobertura superior a 70% — resultado atual: 92,35%.
 
 ### Usuários — concluir antes da v1.0
 
-- [ ] Substituir `cidade` pelo subdocumento `endereco` com `logradouro`, `numero`, `complemento`, `cep` e `cidade`.
-- [ ] Normalizar CEP para oito dígitos.
-- [ ] Substituir `data_cadastro` por `data_adicao`.
-- [ ] Incluir `data_modificacao`.
-- [ ] Gerar e atualizar datas no servidor, em UTC.
-- [ ] Atualizar schemas, modelo, mapper, Service, Repository e API.
-- [ ] Definir regra de unicidade de e-mail.
+- [x] Substituir `cidade` pelo subdocumento `endereco` com `logradouro`, `numero`, `complemento`, `cep` e `cidade`.
+- [x] Normalizar CEP para oito dígitos.
+- [x] Substituir `data_cadastro` por `data_adicao`.
+- [x] Incluir `data_modificacao`.
+- [x] Gerar e atualizar datas no servidor, em UTC.
+- [x] Atualizar schemas, modelo, mapper, Service, Repository e API.
+- [x] Definir regra de unicidade de e-mail.
 
 ### Itens — concluir antes da v1.0
 
@@ -36,27 +36,27 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 
 ### Segurança básica — concluir antes da v1.0
 
-- [ ] Adicionar `senha` ao contrato de cadastro sem retorná-la nas respostas.
-- [ ] Persistir somente `senha_hash` com Argon2id ou equivalente mantido.
-- [ ] Normalizar e tornar o e-mail único por índice no MongoDB.
-- [ ] Implementar `POST /api/auth/login` com resposta genérica para credenciais inválidas.
-- [ ] Criar sessões temporárias em memória com identificadores aleatórios seguros.
-- [ ] Enviar o identificador em cookie `recicla_sessao` com `HttpOnly`, `SameSite=Lax` e `Path=/`.
-- [ ] Configurar expiração 30 minutos após o login.
-- [ ] Implementar `POST /api/auth/logout` para remover a sessão e expirar o cookie.
-- [ ] Implementar `GET /api/usuarios/me`.
-- [ ] Proteger atualização e exclusão do usuário pela identidade da sessão.
+- [x] Adicionar `senha` ao contrato de cadastro sem retorná-la nas respostas.
+- [x] Persistir somente `senha_hash` com Argon2id ou equivalente mantido.
+- [x] Normalizar e tornar o e-mail único por índice no MongoDB.
+- [x] Implementar `POST /api/auth/login` com resposta genérica para credenciais inválidas.
+- [x] Criar sessões temporárias em memória com identificadores aleatórios seguros.
+- [x] Enviar o identificador em cookie `recicla_sessao` com `HttpOnly`, `SameSite=Lax` e `Path=/`.
+- [x] Configurar expiração 30 minutos após o login.
+- [x] Implementar `POST /api/auth/logout` para remover a sessão e expirar o cookie.
+- [x] Implementar `GET /api/usuarios/me`.
+- [x] Proteger atualização e exclusão do usuário pela identidade da sessão.
 - [ ] Obter `proprietario_id` da sessão ao criar item.
 - [ ] Permitir alteração e exclusão de item somente pelo proprietário.
 - [ ] Aplicar permissões de `doador`, `beneficiario` e `ponto_coleta`.
-- [ ] Permitir cadastro público apenas de `doador` e `beneficiario`.
+- [x] Permitir cadastro público apenas de `doador` e `beneficiario`.
 - [ ] Criar forma controlada de provisionar conta `ponto_coleta`.
-- [ ] Tornar `tipo` imutável na atualização comum.
-- [ ] Retornar `401` para falha de autenticação e `403` para falta de autorização.
-- [ ] Ocultar e-mail, endereço completo, senha e hash nos resumos públicos.
-- [ ] Restringir CORS às origens configuradas.
+- [x] Tornar `tipo` imutável na atualização comum.
+- [x] Retornar `401` para falha de autenticação e `403` para falta de autorização.
+- [x] Ocultar e-mail, endereço completo, senha e hash nos resumos públicos.
+- [x] Restringir CORS às origens configuradas.
 - [ ] Garantir que logs não incluam senha, hash ou identificador de sessão.
-- [ ] Criar testes automatizados de autenticação, autorização e exposição de dados.
+- [x] Criar testes automatizados de autenticação, autorização e exposição de dados.
 
 ### Frontend simples — concluir antes da v1.0
 
