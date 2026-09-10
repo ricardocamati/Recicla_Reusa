@@ -24,7 +24,7 @@ artefatos/
 - testes automatizados e cobertura mínima de 70%;
 - base atual de usuários e itens validada com MongoDB 7.0 real via Docker Compose; provisionamento operacional controlado; frontend separado validado em navegador; backend e frontend também executáveis no Compose integrado.
 
-Documentos: [requisitos](v1.0/requisitos.md) · [regras de negócio](v1.0/regras_de_negocio.md) · [modelo de dados](v1.0/modelo_dados.md) · [casos de teste](v1.0/casos_de_teste.md) · [matriz](v1.0/matriz_rastreabilidade.md)
+Documentos: [requisitos](v1.0/requisitos.md) · [regras de negócio](v1.0/regras_de_negocio.md) · [modelo de dados](v1.0/modelo_dados.md) · [casos de teste](v1.0/casos_de_teste.md) · [matriz](v1.0/matriz_rastreabilidade.md) · [registro da entrega](v1.0/registro_entrega.md) · [evidências](v1.0/evidencias/)
 
 ## Versão 2.0 — Segunda entrega
 

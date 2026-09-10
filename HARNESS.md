@@ -73,6 +73,13 @@ Para executar somente o teste Selenium sem aplicar o limiar de cobertura à suí
 .venv/Scripts/python.exe -m pytest --no-cov -q tests/test_selenium_frontend.py
 ```
 
+Com uma stack Docker já iniciada, as evidências de execução podem ser reproduzidas com:
+
+```bash
+.venv/Scripts/python.exe scripts/validar_stack_docker.py --project recicla_reusa_audit
+.venv/Scripts/python.exe scripts/smoke_api_docker.py --crud
+```
+
 ## Frontend da v1.0
 
 No ambiente completo, o frontend é servido pelo Python `http.server` na porta `8080`. Para execução manual sem container, ele pode ser servido separadamente a partir de `frontend/`, por exemplo:
@@ -130,4 +137,4 @@ A validação executada confirmou:
 - smoke test funcional → cadastro `201`, login `200`, `/me` `200`, CRUD de item, logout `204` e `/me` posterior `401`;
 - frontend aberto no navegador a partir de `http://127.0.0.1:8080`.
 
-A suíte completa também foi executada: 72 testes aprovados, cobertura total de 94,28%, incluindo o teste Selenium, compilação Python, verificação `node --check` dos módulos JavaScript e `git diff --check` sem erros.
+A suíte completa também foi executada: 75 testes aprovados, cobertura total de 94,15% com `app/main.py` incluído, incluindo o teste Selenium, compilação Python, verificação `node --check` dos módulos JavaScript e `git diff --check` sem erros.

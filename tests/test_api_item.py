@@ -72,6 +72,7 @@ def cliente(
             ),
         ),
         base_url="http://testserver",
+        headers={"Origin": "http://localhost:5500"},
     )
 
 

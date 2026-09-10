@@ -64,7 +64,7 @@ Atualização preserva `id`, `data_adicao` e, no item, `proprietario_id`; `data_
 
 ## V1-RN-15 — Recurso inexistente
 
-Consulta, atualização ou exclusão de recurso inexistente retorna HTTP `404` sem criar ou alterar documentos.
+Consulta, atualização ou exclusão de recurso inexistente retorna HTTP `404` sem criar ou alterar documentos. Exceção de precedência: em `PUT` e `DELETE` de usuário, a sessão e a propriedade são verificadas antes da existência do identificador; uma sessão válida tentando atingir outro identificador recebe `403`, inclusive quando esse identificador não existe, para não revelar dados de terceiros.
 
 ## V1-RN-16 — Privacidade
 
@@ -111,7 +111,7 @@ Atualização e exclusão de usuário exigem que o usuário da sessão correspon
 
 ## V1-RN-25 — Falhas de autenticação e autorização
 
-Sessão ausente, inválida ou expirada gera HTTP `401`. Usuário autenticado sem permissão gera HTTP `403`. Recurso inexistente continua gerando HTTP `404`.
+Sessão ausente, inválida ou expirada gera HTTP `401`. Em mutações com cookie de sessão, origem ausente ou não permitida também gera HTTP `403`. Usuário autenticado sem perfil ou propriedade gera HTTP `403`. Para usuários, a propriedade é verificada antes da existência do ID; por isso, `PUT`/`DELETE` de outro ID retornam `403` mesmo quando o recurso não existe. Para itens, o Service busca o item antes da propriedade: item inexistente retorna `404`, item existente de outro proprietário retorna `403`.
 
 ## V1-RN-26 — Dados públicos de usuário
 
@@ -119,7 +119,7 @@ Resumo público contém somente `id`, `nome`, `tipo` e cidade. E-mail, endereço
 
 ## V1-RN-27 — Configuração de segurança
 
-Credenciais do banco ficam em variáveis de ambiente. CORS aceita somente origens explicitamente configuradas, permite credenciais apenas para essas origens e nunca usa origem curinga com cookies.
+Credenciais do banco ficam em variáveis de ambiente. CORS aceita somente origens explicitamente configuradas, permite credenciais apenas para essas origens e nunca usa origem curinga com cookies. Além do CORS, o backend valida `Origin` ou `Referer` em toda mutação que carrega o cookie de sessão; ausência ou divergência é rejeitada com `403`.
 
 ## V1-RN-28 — Segurança do frontend
 
@@ -135,7 +135,7 @@ O frontend da v1.0 cobre cadastro, login, perfil, catálogo, filtros e gestão d
 
 ## V1-RN-31 — Cookie da sessão
 
-O cookie `recicla_sessao` usa `HttpOnly`, `SameSite=Lax`, `Path=/` e duração máxima de 30 minutos. Em ambiente HTTPS também usa `Secure`. O servidor verifica a origem permitida nas operações de alteração.
+O cookie `recicla_sessao` usa `HttpOnly`, `SameSite=Lax`, `Path=/` e duração máxima de 30 minutos. Em ambiente HTTPS também usa `Secure`. Toda operação mutável que carrega esse cookie precisa apresentar `Origin` ou `Referer` configurado; a própria origem da API também é aceita para chamadas same-origin.
 
 ## V1-RN-32 — Encerramento da sessão
 

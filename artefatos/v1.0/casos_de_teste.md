@@ -2,7 +2,7 @@
 
 Os casos abaixo especificam os critérios de aceitação da primeira entrega. Cada cenário informa objetivo, pré-condições, dados, procedimento e resultado observável para permitir execução manual ou automação reproduzível.
 
-> **Estado atual:** o backend executável contém o CRUD de usuários e itens, autenticação básica, autorização por sessão, auditoria temporal e provisionamento controlado de `ponto_coleta`. O frontend separado em HTML, CSS e JavaScript também foi implementado e validado em navegador; os fluxos de interesse/coleta permanecem fora deste marco.
+> **Estado atual:** a v1.0 documenta **40 casos de teste**. O backend executável contém o CRUD de usuários e itens, autenticação básica, autorização por sessão, auditoria temporal, proteção de origem e provisionamento controlado de `ponto_coleta`. O frontend separado em HTML, CSS e JavaScript também foi implementado e validado em navegador; os fluxos de interesse/coleta permanecem fora deste marco.
 
 ## Convenções de execução
 
@@ -409,16 +409,17 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
   2. Repetir `GET /api/usuarios/me` com o identificador anteriormente emitido.
 - **Resultado esperado:** O logout retorna sucesso, remove a sessão em memória, expira `recicla_sessao` e a chamada protegida posterior retorna HTTP `401`.
 
-## V1-CT-37 — Validar atributos do cookie
+## V1-CT-37 — Validar cookie e proteção de origem
 
-- **Requisitos:** V1-RF-13, V1-RNF-12, V1-RN-21 e V1-RN-31.
-- **Objetivo:** Confirmar os atributos e a validade máxima do cookie de sessão em HTTP local e HTTPS.
-- **Pré-condições:** Um usuário válido pode autenticar em ambientes de teste HTTP e HTTPS com relógios sincronizados.
-- **Dados de teste:** Cabeçalhos `Set-Cookie` de logins válidos nos dois ambientes e operação de alteração originada de domínio não permitido.
+- **Requisitos:** V1-RF-13, V1-RNF-12, V1-RNF-13, V1-RN-21, V1-RN-27, V1-RN-31 e V1-RN-15.
+- **Objetivo:** Confirmar os atributos do cookie e impedir mutações autenticadas por origem ausente ou não permitida, sem deixar ambígua a precedência entre autorização e inexistência do recurso.
+- **Pré-condições:** Um usuário válido pode autenticar em ambiente HTTP local; as origens `http://localhost:5500` e `http://127.0.0.1:5500` estão configuradas.
+- **Dados de teste:** Cabeçalho `Set-Cookie` de login, atualização com origem permitida, atualização com `Origin: https://origem-nao-permitida.example`, atualização sem `Origin`/`Referer`, atualização com `Referer` permitido e atualização de outro ID inexistente.
 - **Procedimento:**
-  1. Autenticar em HTTP e HTTPS e conferir nome, `HttpOnly`, `SameSite`, `Path`, `Secure` e expiração do cookie.
-  2. Comparar a validade com a sessão no servidor e tentar a alteração a partir da origem não permitida.
-- **Resultado esperado:** `recicla_sessao` possui `HttpOnly`, `SameSite=Lax`, `Path=/` e duração máxima de 30 minutos, recebe `Secure` em HTTPS, não excede a validade do servidor e não autoriza alteração de origem não permitida.
+  1. Autenticar e conferir nome, `HttpOnly`, `SameSite`, `Path`, `Secure` e expiração do cookie.
+  2. Enviar a mesma mutação com origem permitida, origem proibida, nenhum cabeçalho de origem e `Referer` permitido.
+  3. Enviar `PUT`/`DELETE` de usuário com sessão válida para um ID diferente e inexistente.
+- **Resultado esperado:** `recicla_sessao` possui `HttpOnly`, `SameSite=Lax`, `Path=/` e duração máxima de 30 minutos; origem permitida e `Referer` permitido funcionam, origem proibida ou ausente retorna `403`, e o ID alheio retorna `403` antes da consulta de existência. Consultas de recursos inexistentes e mutações do próprio ID inexistente seguem retornando `404`.
 
 ## V1-CT-38 — Subir a aplicação completa em máquina limpa com Docker
 
@@ -446,21 +447,35 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
   3. Conferir a URL, o elemento principal de cada tela, o `color-scheme` escuro e o texto renderizado.
 - **Resultado esperado:** As seis telas carregam sem redirecionamento indevido, exibem seus elementos principais, aplicam o modo escuro e não exibem `PoC`, `ODS`, `consumo` ou `responsável`.
 
+## V1-CT-40 — Identificar a versão e as evidências externas
+
+- **Requisitos:** V1-RNF-07 e V1-RNF-08.
+- **Objetivo:** Confirmar que a entrega possui identificação de versão verificável e que o vídeo de apresentação está vinculado ao registro da v1.0.
+- **Pré-condições:** Repositório GitHub acessível, branch ou commit da entrega disponível e registro em `artefatos/v1.0/registro_entrega.md`.
+- **Dados de teste:** Tag `v1.0`, commit de referência, URLs do commit e do vídeo e documentos referenciados pelo registro.
+- **Procedimento:**
+  1. Executar `git show --no-patch v1.0` e conferir se a tag aponta para o commit final da entrega.
+  2. Abrir a URL do commit e verificar que o repositório corresponde ao projeto.
+  3. Abrir a URL do vídeo registrada no documento e verificar sua disponibilidade e aderência ao roteiro da AEP.
+- **Resultado esperado:** A tag e a URL do commit são válidas, todos os documentos da v1.0 apontam para a mesma identificação e o vídeo abre por uma URL pública verificável. Enquanto a URL do vídeo não for informada, o caso permanece pendente.
+
 ## Evidência de automação
 
 | Evidência atual | Escopo comprovado | Resultado verificado |
 |---|---|---|
-| `tests/test_api_usuario.py` | cadastro com endereço/auditoria, resumos públicos, atualização autorizada, login, logout, sessão, validações, e-mail único e exclusão autorizada | 9 testes aprovados |
-| `tests/test_usuario_service.py` | criação, hash de senha, atualização temporal, unicidade, autenticação e recurso inexistente | 5 testes aprovados |
-| `tests/test_mongo_usuario_repository.py` | persistência, endereço, auditoria, índice único, consulta e exclusão com `mongomock` | 2 testes aprovados |
-| `tests/test_security.py` | hash scrypt e expiração de sessão em 30 minutos | 2 testes aprovados |
-| `tests/test_api_item.py` | cadastro, filtros, validação, privacidade, autorização e CRUD HTTP de itens | 8 testes aprovados |
-| `tests/test_item_service.py` | proprietário, auditoria, filtros, atualização, autorização e recurso inexistente | 6 testes aprovados |
-| `tests/test_mongo_item_repository.py` | persistência, filtros, índice, conversão de ID, precisão temporal e exclusão com `mongomock` | 3 testes aprovados |
-| `tests/test_provisionamento_ponto_coleta.py` | tipo controlado, hash, duplicidade, rejeição de tipo no corpo e comando administrativo | 4 testes aprovados |
-| `tests/test_frontend.py` | páginas separadas, módulos por responsabilidade, contratos da API, segurança de armazenamento, permissões, filtro de descarte, responsividade, referências institucionais e modo escuro | 12 testes aprovados |
-| `tests/test_docker.py` | presença das imagens, serviços Compose, healthcheck/configuração e documentação de execução integrada | 3 testes aprovados |
-| `tests/test_selenium_frontend.py` | navegação das seis telas, elementos principais, modo escuro e texto visível no navegador Chrome headless | 1 teste aprovado |
-| Suíte atual | CRUD de usuários e itens, autenticação, autorização, provisionamento, auditoria, estrutura do frontend, configuração Docker e navegação real das telas | 72 testes aprovados; cobertura total de 94,28% |
+| `tests/test_api_usuario.py` | cadastro com endereço/auditoria, resumos públicos, atualização autorizada, login, logout, sessão, validações, e-mail único, exclusão autorizada e origem da requisição | 10 funções de teste |
+| `tests/test_usuario_service.py` | criação, hash de senha, atualização temporal, unicidade, autenticação e recurso inexistente | 5 funções de teste |
+| `tests/test_mongo_usuario_repository.py` | persistência, endereço, auditoria, índice único, consulta e exclusão com `mongomock` | 2 funções de teste |
+| `tests/test_security.py` | hash scrypt e expiração de sessão em 30 minutos | 2 funções de teste |
+| `tests/test_api_item.py` | cadastro, filtros, validação, privacidade, autorização e CRUD HTTP de itens | 8 funções de teste |
+| `tests/test_item_service.py` | proprietário, auditoria, filtros, atualização, autorização e recurso inexistente | 6 funções de teste |
+| `tests/test_mongo_item_repository.py` | persistência, filtros, índice, conversão de ID, precisão temporal e exclusão com `mongomock` | 3 funções de teste |
+| `tests/test_provisionamento_ponto_coleta.py` | tipo controlado, hash, duplicidade, rejeição de tipo no corpo e comando administrativo | 4 funções de teste |
+| `tests/test_frontend.py` | páginas separadas, módulos por responsabilidade, contratos da API, segurança de armazenamento, permissões, filtro de descarte, responsividade, referências institucionais e modo escuro | 12 funções de teste |
+| `tests/test_docker.py` | presença das imagens, serviços Compose, healthcheck/configuração, documentação e scripts de evidência | 4 funções de teste |
+| `tests/test_selenium_frontend.py` | navegação das seis telas, elementos principais, modo escuro e texto visível no navegador Chrome headless | 1 função de teste |
+| `scripts/validar_stack_docker.py` | Compose, serviços ativos, ping autenticado do MongoDB, health, OpenAPI e páginas HTTP | execução real registrada em `evidencias/docker.txt` |
+| `scripts/smoke_api_docker.py` | cadastro, login, `/me`, CRUD de item, logout e limpeza de usuário temporário na stack isolada | execução real registrada em `evidencias/docker.txt` |
+| Suíte atual | CRUD de usuários e itens, autenticação, autorização, proteção de origem, provisionamento, auditoria, estrutura do frontend, configuração Docker e navegação real das telas | 75 testes aprovados; cobertura total de 94,15%, incluindo `app/main.py` |
 
 A automação atual comprova o CRUD de usuários e itens, endereço, auditoria, privacidade, login, sessão, filtros, autorização por proprietário, provisionamento controlado, a estrutura modular do frontend e a configuração do ambiente Docker. A integração real também foi executada contra MongoDB 7.0 no Docker Compose, com ping, índices, CRUD dos dois recursos e limpeza dos dados temporários aprovados. O frontend foi validado em navegador tanto em servidor estático quanto no servidor Python do Compose; os fluxos de interesse/coleta e as demais capacidades administrativas da v2.0 continuam planejados; a cobertura permanece igual ou superior a 70%.

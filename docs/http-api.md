@@ -26,7 +26,7 @@ O perfil `ponto_coleta` não é criado por rota HTTP. O responsável técnico de
 
 O login grava uma sessão temporária em memória no cookie `recicla_sessao`, com `HttpOnly`, `SameSite=Lax`, `Path=/` e expiração de 30 minutos. O identificador da sessão nunca aparece no JSON.
 
-Credenciais inválidas retornam `401` com a mesma mensagem genérica, sem indicar se o e-mail existe. Rotas autenticadas sem sessão retornam `401`; tentativa de alterar ou excluir outro usuário retorna `403`.
+Credenciais inválidas retornam `401` com a mesma mensagem genérica, sem indicar se o e-mail existe. Rotas autenticadas sem sessão retornam `401`. Mutações autenticadas com cookie exigem `Origin` ou `Referer` correspondente a uma origem CORS configurada ou à própria origem da API; origem ausente ou não permitida retorna `403`.
 
 ## Corpo de cadastro
 
@@ -79,7 +79,7 @@ Exemplo de cadastro:
 }
 ```
 
-A resposta inclui `cidade_proprietario` para o catálogo, mas não inclui o endereço completo. `id`, `proprietario_id`, `status`, `data_adicao` e `data_modificacao` são controlados pelo servidor. Dados inválidos retornam `400`, sessão ausente retorna `401`, perfil sem permissão retorna `403` e item inexistente retorna `404`.
+A resposta inclui `cidade_proprietario` para o catálogo, mas não inclui o endereço completo. `id`, `proprietario_id`, `status`, `data_adicao` e `data_modificacao` são controlados pelo servidor. Dados inválidos retornam `400`, sessão ausente retorna `401`, origem inválida retorna `403`, perfil sem permissão retorna `403` e item inexistente retorna `404`.
 
 ## Corpo de atualização
 
@@ -102,4 +102,4 @@ O servidor gera `data_adicao` no cadastro e mantém esse valor imutável. `data_
 
 A lista e o acesso público a outro usuário retornam somente `id`, `nome`, `tipo` e `cidade`. E-mail e endereço completo aparecem apenas no perfil do próprio usuário autenticado. Senha e hash nunca aparecem em respostas.
 
-E-mail duplicado retorna `409`. Identificador inexistente retorna `404`. Dados inválidos retornam `400` com detalhes de validação.
+E-mail duplicado retorna `409`. Em `PUT`/`DELETE` de usuário, a sessão e a propriedade são verificadas antes da existência do ID: outro ID retorna `403` mesmo inexistente. Para consulta de usuário e para recursos de item, identificador inexistente retorna `404`; dados inválidos retornam `400` com detalhes de validação.

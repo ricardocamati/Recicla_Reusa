@@ -20,6 +20,7 @@ from app.exceptions import (
 )
 from app.repositories.mongo_item_repository import MongoItemRepository
 from app.repositories.mongo_usuario_repository import MongoUsuarioRepository
+from app.security.origins import origem_permitida, requisicao_com_sessao_mutavel
 from app.security.sessions import ArmazenamentoDeSessoes
 from app.services.item_service import ItemService, RepositorioDeItens
 from app.services.usuario_service import UsuarioService, RepositorioDeUsuarios
@@ -64,13 +65,27 @@ def criar_app(
         yield
 
     app = FastAPI(title="Recicla/Reusa", version="1.0.0", lifespan=lifespan)
+    origens_configuradas = settings.origens_cors()
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.origens_cors(),
+        allow_origins=origens_configuradas,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type"],
     )
+
+    @app.middleware("http")
+    async def proteger_mutacao_por_origem(request: Request, call_next):
+        if requisicao_com_sessao_mutavel(request) and not origem_permitida(
+            request,
+            origens_configuradas,
+        ):
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Origem não permitida"},
+            )
+        return await call_next(request)
+
     if cliente_mongo is not None:
         app.state.mongo_client = cliente_mongo
         app.state.mongo_repository = repositorio_mongo

@@ -1,0 +1,54 @@
+Ambiente isolado:
+
+```text
+docker_server=29.7.2
+project=recicla_reusa_audit
+volume=recicla_reusa_audit_mongo_data
+```
+
+`docker compose --project-name recicla_reusa_audit ps --all`:
+
+```text
+recicla_reusa_audit-backend-1    service=backend   Up (healthy)   127.0.0.1:8000->8000/tcp
+recicla_reusa_audit-frontend-1   service=frontend  Up (healthy)   127.0.0.1:8080->80/tcp
+recicla_reusa_audit-mongo-1      service=mongo     Up (healthy)   127.0.0.1:27018->27017/tcp
+```
+
+Verificador read-only:
+
+```text
+compose_config=pass
+compose_services=pass
+mongo_ping=pass
+api_health=pass
+api_docs=pass
+api_openapi=pass
+api_usuarios=pass
+frontend_home=pass
+frontend_index=pass
+stack_validation=pass
+```
+
+E2E mutável executado somente na stack e no volume isolados, com limpeza em `finally`:
+
+```text
+cadastro=201
+login=200
+me=200
+item_criacao=201
+item_atualizacao=200
+item_exclusao=204
+logout=204
+me_apos_logout=401
+cleanup_usuario=204
+smoke_crud=pass
+```
+
+Comandos dos scripts:
+
+```text
+.venv/Scripts/python.exe scripts/validar_stack_docker.py --project recicla_reusa_audit
+.venv/Scripts/python.exe scripts/smoke_api_docker.py --crud
+```
+
+Após o ajuste da limpeza do E2E, a stack isolada foi recriada com `--no-build` usando as imagens construídas acima; os dois scripts foram executados novamente e produziram os mesmos resultados `stack_validation=pass` e `smoke_crud=pass`. Uma tentativa de rebuild posterior foi interrompida pelo Docker Desktop porque seu arquivo interno de metadata estava em uso; isso não alterou as imagens nem a validação executada.

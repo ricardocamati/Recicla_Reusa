@@ -96,7 +96,7 @@ Permitir ao `ponto_coleta` previamente provisionado consultar o catálogo e filt
 
 ### V1-RF-18 — Tratar falhas de acesso
 
-Retornar HTTP `401` para sessão ausente, inválida ou expirada e HTTP `403` quando o usuário autenticado não tiver perfil ou propriedade exigidos.
+Retornar HTTP `401` para sessão ausente, inválida ou expirada e HTTP `403` quando o usuário autenticado não tiver perfil, propriedade ou origem permitida para a operação.
 
 ### V1-RF-19 — Disponibilizar frontend simples
 
@@ -165,11 +165,11 @@ Persistir senha somente por hash forte com salt, usando biblioteca mantida; nunc
 
 ### V1-RNF-12 — Sessão de acesso
 
-Usar sessão temporária mantida no servidor e identificador aleatório enviado em cookie HttpOnly. A sessão deve ser validada em todas as rotas protegidas e invalidada no logout.
+Usar sessão temporária mantida no servidor e identificador aleatório enviado em cookie HttpOnly. A sessão deve ser validada em todas as rotas protegidas e invalidada no logout. Mutações autenticadas que carregam esse cookie devem exigir `Origin` ou `Referer` correspondente a uma origem configurada ou à própria origem da API.
 
 ### V1-RNF-13 — Superfície mínima
 
-Restringir CORS às origens configuradas e manter MongoDB sem exposição pública desnecessária.
+Restringir CORS às origens configuradas, rejeitar com HTTP `403` mutações autenticadas com origem ausente ou não permitida e manter MongoDB sem exposição pública desnecessária.
 
 ### V1-RNF-14 — Respostas seguras
 

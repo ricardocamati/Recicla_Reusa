@@ -11,6 +11,7 @@ A versão 1.0 tem como meta uma base funcional com usuários e itens eletrônico
 - `data_adicao` e `data_modificacao` em todos os documentos das duas coleções;
 - autenticação básica por e-mail e senha com sessão em cookie HttpOnly;
 - autorização por tipo de usuário e propriedade do recurso;
+- proteção de origem em mutações autenticadas com cookie;
 - frontend simples em HTML, CSS e JavaScript, separado do backend;
 - API FastAPI documentada por OpenAPI;
 - testes automatizados com cobertura mínima de 70%;
@@ -29,6 +30,8 @@ O frontend simples está implementado em `frontend/`, com cadastro, login, perfi
 - [modelo_dados.md](modelo_dados.md)
 - [casos_de_teste.md](casos_de_teste.md)
 - [matriz_rastreabilidade.md](matriz_rastreabilidade.md)
+- [registro_entrega.md](registro_entrega.md)
+- [evidencias/](evidencias/)
 
 ## Evidências verificadas
 
@@ -36,12 +39,16 @@ O frontend simples está implementado em `frontend/`, com cadastro, login, perfi
 - MongoDB 7.0 real via Docker Compose, coleções `usuarios`/`itens`, índices e CRUDs completos com limpeza dos dados de teste;
 - login, logout, sessão HttpOnly, perfil próprio e autorização do usuário;
 - provisionamento controlado de `ponto_coleta` por comando local, com senha solicitada sem eco;
+- proteção `Origin`/`Referer` validada pelo backend em mutações autenticadas;
 - frontend validado em navegador com API e MongoDB ativos;
 - seis telas do frontend validadas com Selenium e Chrome headless, usando servidores locais isolados;
 - frontend servido pelo Python `http.server` e backend executados em um Compose integrado, com volume MongoDB novo;
-- 72 testes automatizados aprovados;
-- cobertura total atual de 94,28%.
+- 75 testes automatizados aprovados;
+- cobertura total atual de 94,15%, incluindo `app/main.py`;
+- verificador read-only e smoke E2E Docker/MongoDB versionados em `scripts/`, com relatórios em `evidencias/`.
 
 ## Pendências para fechar a v1.0
 
-- produzir as evidências externas de GitHub e identificação da versão.
+- informar a URL pública do vídeo de apresentação;
+- publicar a tag/release no GitHub, após autorização explícita;
+- concluir a política/teste específico de logging sem segredos, caso logging de aplicação seja adicionado.
