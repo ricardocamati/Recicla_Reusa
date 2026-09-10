@@ -169,7 +169,7 @@ Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e 
 .venv/Scripts/python.exe -m pytest
 ```
 
-A suíte deve manter cobertura mínima de **70%**, conforme a AEP. A execução validada da entrega aprovou **75 testes**, com **94,15%** de cobertura incluindo `app/main.py`. Os testes unitários do repositório usam `mongomock`; a aplicação utiliza PyMongo e MongoDB em execução normal. O teste Selenium usa Chrome headless e servidores locais isolados para verificar as seis telas do frontend. Para reproduzir a integração Docker/MongoDB, use os scripts documentados em [evidências](artefatos/v1.0/evidencias/).
+A suíte deve manter cobertura mínima de **70%**, conforme a AEP. A execução validada da entrega aprovou **77 testes**, com **94,15%** de cobertura incluindo `app/main.py`. Os testes unitários do repositório usam `mongomock`; a aplicação utiliza PyMongo e MongoDB em execução normal. O teste Selenium usa Chrome headless e servidores locais isolados para verificar as seis telas do frontend. Para reproduzir a integração Docker/MongoDB, use os scripts documentados em [evidências](artefatos/v1.0/evidencias/).
 
 ## 12. Limites atuais
 

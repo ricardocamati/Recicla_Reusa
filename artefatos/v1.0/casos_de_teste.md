@@ -463,7 +463,7 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 
 | Evidência atual | Escopo comprovado | Resultado verificado |
 |---|---|---|
-| `tests/test_api_usuario.py` | cadastro com endereço/auditoria, resumos públicos, atualização autorizada, login, logout, sessão, validações, e-mail único, exclusão autorizada e origem da requisição | 10 funções de teste |
+| `tests/test_api_usuario.py` | cadastro com endereço/auditoria, resumos públicos, atualização autorizada, login, logout, sessão, validações, e-mail único, exclusão autorizada, complemento opcional e origem da requisição | 11 funções de teste |
 | `tests/test_usuario_service.py` | criação, hash de senha, atualização temporal, unicidade, autenticação e recurso inexistente | 5 funções de teste |
 | `tests/test_mongo_usuario_repository.py` | persistência, endereço, auditoria, índice único, consulta e exclusão com `mongomock` | 2 funções de teste |
 | `tests/test_security.py` | hash scrypt e expiração de sessão em 30 minutos | 2 funções de teste |
@@ -476,6 +476,6 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 | `tests/test_selenium_frontend.py` | navegação das seis telas, elementos principais, modo escuro e texto visível no navegador Chrome headless | 1 função de teste |
 | `scripts/validar_stack_docker.py` | Compose, serviços ativos, ping autenticado do MongoDB, health, OpenAPI e páginas HTTP | execução real registrada em `evidencias/docker.txt` |
 | `scripts/smoke_api_docker.py` | cadastro, login, `/me`, CRUD de item, logout e limpeza de usuário temporário na stack isolada | execução real registrada em `evidencias/docker.txt` |
-| Suíte atual | CRUD de usuários e itens, autenticação, autorização, proteção de origem, provisionamento, auditoria, estrutura do frontend, configuração Docker e navegação real das telas | 75 testes aprovados; cobertura total de 94,15%, incluindo `app/main.py` |
+| Suíte atual | CRUD de usuários e itens, autenticação, autorização, proteção de origem, provisionamento, auditoria, estrutura do frontend, configuração Docker e navegação real das telas | 77 testes aprovados; cobertura total de 94,15%, incluindo `app/main.py` |
 
 A automação atual comprova o CRUD de usuários e itens, endereço, auditoria, privacidade, login, sessão, filtros, autorização por proprietário, provisionamento controlado, a estrutura modular do frontend e a configuração do ambiente Docker. A integração real também foi executada contra MongoDB 7.0 no Docker Compose, com ping, índices, CRUD dos dois recursos e limpeza dos dados temporários aprovados. O frontend foi validado em navegador tanto em servidor estático quanto no servidor Python do Compose; os fluxos de interesse/coleta e as demais capacidades administrativas da v2.0 continuam planejados; a cobertura permanece igual ou superior a 70%.

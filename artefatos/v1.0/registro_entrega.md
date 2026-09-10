@@ -6,7 +6,7 @@
 - **Commit de referência da base integrada:** [`9553ded84ac261e1a5e4dbb2012cf04ac16bb5c9`](https://github.com/ricardocamati/Recicla_Reusa/commit/9553ded84ac261e1a5e4dbb2012cf04ac16bb5c9).
 - **Tag da entrega corrigida:** `v1.0` — deve apontar para o commit final desta branch após a validação.
 - **Branch de correção:** `fix/avaliacao-v1`.
-- **Casos documentados:** 40; **funções de teste Python:** 57; **execuções Pytest verificadas:** 75.
+- **Casos documentados:** 40; **funções de teste Python:** 58; **execuções Pytest verificadas:** 77.
 - **Vídeo de apresentação:** pendente; a URL ainda não foi informada.
 
 A tag e o commit final identificam a versão que contém as correções de segurança, rastreabilidade, cobertura e evidências. A publicação da tag ou de uma release no GitHub depende de autorização explícita.

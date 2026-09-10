@@ -16,7 +16,7 @@ Name                                           Stmts   Miss  Cover
 ----------------------------------------------------------------------------
 TOTAL                                            838     49    94%
 Required test coverage of 70% reached. Total coverage: 94.15%
-75 passed in 28.26s
+77 passed in 28.96s
 ```
 
 O escopo medido inclui `app/main.py`; nenhuma exclusão de módulo da aplicação foi configurada.

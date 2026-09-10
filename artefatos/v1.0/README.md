@@ -43,7 +43,7 @@ O frontend simples está implementado em `frontend/`, com cadastro, login, perfi
 - frontend validado em navegador com API e MongoDB ativos;
 - seis telas do frontend validadas com Selenium e Chrome headless, usando servidores locais isolados;
 - frontend servido pelo Python `http.server` e backend executados em um Compose integrado, com volume MongoDB novo;
-- 75 testes automatizados aprovados;
+- 77 testes automatizados aprovados;
 - cobertura total atual de 94,15%, incluindo `app/main.py`;
 - verificador read-only e smoke E2E Docker/MongoDB versionados em `scripts/`, com relatórios em `evidencias/`.
 

@@ -99,6 +99,32 @@ async def test_cadastro_persiste_endereco_datas_e_nao_expoe_senha(
 
 
 @pytest.mark.anyio
+async def test_cadastro_aceita_endereco_sem_complemento(
+    repositorio: RepositorioEmMemoria,
+    instante: datetime,
+) -> None:
+    dados = payload(
+        email="sem-complemento@example.com",
+        tipo="beneficiario",
+        endereco={
+            "logradouro": "Rua B",
+            "numero": "10",
+            "cep": "87000-000",
+            "cidade": "Londrina",
+        },
+    )
+
+    async with cliente(repositorio, instante) as api:
+        resposta = await api.post("/api/usuarios", json=dados)
+
+    assert resposta.status_code == 201
+    assert resposta.json()["endereco"]["complemento"] is None
+    persistido = repositorio.buscar_por_email("sem-complemento@example.com")
+    assert persistido is not None
+    assert persistido.endereco.complemento is None
+
+
+@pytest.mark.anyio
 async def test_listagem_de_terceiros_expoe_somente_resumo_publico(
     repositorio: RepositorioEmMemoria,
     instante: datetime,
