@@ -37,8 +37,9 @@ O frontend simples está implementado em `frontend/`, com cadastro, login, perfi
 - login, logout, sessão HttpOnly, perfil próprio e autorização do usuário;
 - provisionamento controlado de `ponto_coleta` por comando local, com senha solicitada sem eco;
 - frontend validado em navegador com API e MongoDB ativos;
+- seis telas do frontend validadas com Selenium e Chrome headless, usando servidores locais isolados;
 - frontend servido pelo Python `http.server` e backend executados em um Compose integrado, com volume MongoDB novo;
-- 52 testes automatizados aprovados;
+- 72 testes automatizados aprovados;
 - cobertura total atual de 94,28%.
 
 ## Pendências para fechar a v1.0

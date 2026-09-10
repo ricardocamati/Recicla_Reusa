@@ -434,6 +434,18 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
   5. Encerrar com `docker compose down`, preservando o volume quando os dados forem necessários.
 - **Resultado esperado:** A configuração é aceita, as imagens do backend e frontend são construídas, os serviços ficam saudáveis, a API responde HTTP `200`, o frontend carrega no navegador e o fluxo autenticado funciona sem dependências instaladas no host.
 
+## V1-CT-39 — Navegar pelas seis telas com Selenium
+
+- **Requisitos:** V1-RF-19, V1-RNF-05, V1-RNF-06 e V1-RNF-15.
+- **Objetivo:** Validar a entrega real das seis telas HTML no navegador, incluindo os elementos principais, o modo escuro e a ausência de referências institucionais removidas da interface.
+- **Pré-condições:** Python 3.11+, dependências de desenvolvimento instaladas, Google Chrome disponível e Selenium Manager habilitado.
+- **Dados de teste:** Servidor estático local para `frontend/`, API HTTP simulada local para sessão e catálogo vazio, e Chrome em modo headless.
+- **Procedimento:**
+  1. Iniciar os servidores locais isolados pelo teste `tests/test_selenium_frontend.py`.
+  2. Abrir sequencialmente `index.html`, `cadastro.html`, `login.html`, `perfil.html`, `catalogo.html` e `itens.html`.
+  3. Conferir a URL, o elemento principal de cada tela, o `color-scheme` escuro e o texto renderizado.
+- **Resultado esperado:** As seis telas carregam sem redirecionamento indevido, exibem seus elementos principais, aplicam o modo escuro e não exibem `PoC`, `ODS`, `consumo` ou `responsável`.
+
 ## Evidência de automação
 
 | Evidência atual | Escopo comprovado | Resultado verificado |
@@ -446,8 +458,9 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 | `tests/test_item_service.py` | proprietário, auditoria, filtros, atualização, autorização e recurso inexistente | 6 testes aprovados |
 | `tests/test_mongo_item_repository.py` | persistência, filtros, índice, conversão de ID, precisão temporal e exclusão com `mongomock` | 3 testes aprovados |
 | `tests/test_provisionamento_ponto_coleta.py` | tipo controlado, hash, duplicidade, rejeição de tipo no corpo e comando administrativo | 4 testes aprovados |
-| `tests/test_frontend.py` | páginas separadas, módulos por responsabilidade, contratos da API, segurança de armazenamento, permissões, filtro de descarte e responsividade | 10 testes aprovados |
+| `tests/test_frontend.py` | páginas separadas, módulos por responsabilidade, contratos da API, segurança de armazenamento, permissões, filtro de descarte, responsividade, referências institucionais e modo escuro | 12 testes aprovados |
 | `tests/test_docker.py` | presença das imagens, serviços Compose, healthcheck/configuração e documentação de execução integrada | 3 testes aprovados |
-| Suíte atual | CRUD de usuários e itens, autenticação, autorização, provisionamento, auditoria, estrutura do frontend e configuração Docker executáveis; smoke test do frontend validado no navegador e smoke test integrado validado em stack limpo | 52 testes aprovados; cobertura total de 94,28% |
+| `tests/test_selenium_frontend.py` | navegação das seis telas, elementos principais, modo escuro e texto visível no navegador Chrome headless | 1 teste aprovado |
+| Suíte atual | CRUD de usuários e itens, autenticação, autorização, provisionamento, auditoria, estrutura do frontend, configuração Docker e navegação real das telas | 72 testes aprovados; cobertura total de 94,28% |
 
 A automação atual comprova o CRUD de usuários e itens, endereço, auditoria, privacidade, login, sessão, filtros, autorização por proprietário, provisionamento controlado, a estrutura modular do frontend e a configuração do ambiente Docker. A integração real também foi executada contra MongoDB 7.0 no Docker Compose, com ping, índices, CRUD dos dois recursos e limpeza dos dados temporários aprovados. O frontend foi validado em navegador tanto em servidor estático quanto no servidor Python do Compose; os fluxos de interesse/coleta e as demais capacidades administrativas da v2.0 continuam planejados; a cobertura permanece igual ou superior a 70%.

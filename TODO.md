@@ -10,7 +10,7 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Separar API, Service, Repository, Model, Mapper e schemas.
 - [x] Criar testes automatizados para a base de usuários.
 - [x] Validar os CRUDs de usuários e itens com MongoDB real via Docker Compose.
-- [x] Obter cobertura superior a 70% — resultado atual: 94,28% em 52 testes.
+- [x] Obter cobertura superior a 70% — resultado atual: 94,28% em 72 testes.
 
 ### Usuários — concluir antes da v1.0
 
@@ -74,15 +74,16 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Tratar validação, `401`, `403`, `404` e indisponibilidade da API.
 - [x] Configurar origem do frontend na lista CORS do backend.
 - [x] Validar o fluxo completo em navegador.
+- [x] Validar as seis telas com Selenium e Chrome headless.
 
-Evidências: `tests/test_frontend.py`, `tests/test_docker.py`, `node --check frontend/js/*.js`, smoke test manual com `python -m http.server 5500` e smoke test integrado com frontend Python (`http.server`), backend e MongoDB em Docker Compose.
+Evidências: `tests/test_frontend.py`, `tests/test_selenium_frontend.py`, `tests/test_docker.py`, `node --check frontend/js/*.js`, smoke test manual com `python -m http.server 5500`, teste Selenium com Chrome headless e smoke test integrado com frontend Python (`http.server`), backend e MongoDB em Docker Compose.
 
 ### Qualidade da v1.0
 
 - [x] Atualizar os testes de usuários para o novo contrato.
 - [x] Criar testes de Service, Repository e API para itens.
 - [x] Validar os dois CRUDs contra MongoDB real.
-- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,28% em 52 testes.
+- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,28% em 72 testes.
 - [x] Atualizar documentação HTTP e arquitetura executável.
 - [x] Validar o projeto em máquina limpa — Compose configurado sem `.env` local, imagens backend/frontend construídas com `--no-cache`, volume Mongo isolado novo, healthchecks e smoke test HTTP/navegador aprovados.
 - [ ] Publicar no GitHub e identificar a v1.0 por commit, tag ou release.

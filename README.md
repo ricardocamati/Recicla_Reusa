@@ -74,7 +74,7 @@ A coleção `itens` deverá conter uma lista de subdocumentos com o histórico d
 - FastAPI e Uvicorn;
 - MongoDB e PyMongo;
 - Pydantic;
-- Pytest, pytest-cov e mongomock;
+- Pytest, pytest-cov, mongomock e Selenium;
 - HTML, CSS e JavaScript no frontend simples da v1.0;
 - Docker Compose para o ambiente local.
 
@@ -169,7 +169,7 @@ Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e 
 .venv/Scripts/python.exe -m pytest
 ```
 
-A suíte deve manter cobertura mínima de **70%**, conforme a AEP. Os testes unitários do repositório usam `mongomock`; a aplicação utiliza PyMongo e MongoDB em execução normal.
+A suíte deve manter cobertura mínima de **70%**, conforme a AEP. Os testes unitários do repositório usam `mongomock`; a aplicação utiliza PyMongo e MongoDB em execução normal. O teste Selenium usa Chrome headless e servidores locais isolados para verificar as seis telas do frontend.
 
 ## 12. Limites atuais
 
