@@ -51,4 +51,15 @@ Comandos dos scripts:
 .venv/Scripts/python.exe scripts/smoke_api_docker.py --crud
 ```
 
-Após o ajuste da limpeza do E2E, a stack isolada foi recriada com `--no-build` usando as imagens construídas acima; os dois scripts foram executados novamente e produziram os mesmos resultados `stack_validation=pass` e `smoke_crud=pass`. Uma tentativa de rebuild posterior foi interrompida pelo Docker Desktop porque seu arquivo interno de metadata estava em uso; isso não alterou as imagens nem a validação executada.
+Após a mudança para campos planos, a stack foi reconstruída com `docker compose build --no-cache backend frontend` e iniciada novamente com healthchecks aprovados. O smoke CRUD e a inspeção direta de um usuário temporário no MongoDB confirmaram a forma persistida:
+
+```text
+mongo_flat_shape=pass
+has_endereco=false
+logradouro=Rua de Evidência
+numero=100
+cep=87000000
+cidade=Maringá
+```
+
+O usuário temporário da inspeção foi removido automaticamente ao final do comando.

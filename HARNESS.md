@@ -137,4 +137,4 @@ A validação executada confirmou:
 - smoke test funcional → cadastro `201`, login `200`, `/me` `200`, CRUD de item, logout `204` e `/me` posterior `401`;
 - frontend aberto no navegador a partir de `http://127.0.0.1:8080`.
 
-A suíte completa também foi executada: 77 testes aprovados, cobertura total de 94,15% com `app/main.py` incluído, incluindo o teste Selenium, compilação Python, verificação `node --check` dos módulos JavaScript e `git diff --check` sem erros.
+A suíte completa também foi executada: 77 testes aprovados, cobertura total de 94,87% com `app/main.py` incluído, incluindo o teste Selenium, compilação Python, verificação `node --check` dos módulos JavaScript e `git diff --check` sem erros.

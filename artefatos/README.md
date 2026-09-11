@@ -17,7 +17,7 @@ artefatos/
 
 - coleções `usuarios` e `itens`;
 - CRUD de usuários e itens;
-- endereço como subdocumento de usuário;
+- campos de endereço planos no documento de usuário;
 - `data_adicao` e `data_modificacao` nas duas coleções;
 - autenticação por sessão simples e autorização básica por perfil e propriedade;
 - frontend simples em HTML, CSS e JavaScript;

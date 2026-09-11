@@ -18,13 +18,13 @@
 
 O e-mail deve conter `@` e pelo menos um ponto depois do `@`.
 
-## V1-RN-04 — Endereço aninhado
+## V1-RN-04 — Campos planos do endereço
 
-`endereco` é subdocumento de usuário com `logradouro`, `numero`, `complemento`, `cep` e `cidade`.
+O contrato HTTP agrupa `logradouro`, `numero`, `complemento`, `cep` e `cidade` em `endereco`, mas o modelo de domínio e o documento MongoDB mantêm esses campos no nível raiz; `usuarios.endereco` não é persistido.
 
 ## V1-RN-05 — Obrigatoriedade do endereço
 
-`logradouro`, `numero`, `cep` e `cidade` são obrigatórios; `complemento` é opcional. Espaços externos são removidos.
+`logradouro`, `numero`, `cep` e `cidade` são obrigatórios; `complemento` é opcional. Espaços externos são removidos antes da gravação dos campos planos.
 
 ## V1-RN-06 — CEP e número
 

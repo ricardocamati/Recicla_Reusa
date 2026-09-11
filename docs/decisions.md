@@ -36,7 +36,7 @@
 
 **Decisão:** a primeira entrega conclui o fluxo de usuários antes de introduzir a coleção `itens`.
 
-**Motivação:** criar uma base funcional com endereço aninhado, auditoria temporal, cadastro seguro e autorização do próprio perfil, deixando a evolução para eletrônicos e relacionamentos visível nos commits posteriores.
+**Motivação:** criar uma base funcional com endereço, auditoria temporal, cadastro seguro e autorização do próprio perfil, deixando a evolução para eletrônicos e relacionamentos visível nos commits posteriores.
 
 **Consequência:** usuários já possuem contrato estável para serem referenciados pelos itens; os fluxos completos de doação, descarte e revenda continuam fora deste marco.
 
@@ -84,9 +84,9 @@
 
 **Decisão:** persistir itens na coleção `itens`, relacionando-os a `usuarios` por `proprietario_id`; no cadastro, esse identificador será obtido exclusivamente da sessão autenticada.
 
-**Motivação:** impedir que o cliente associe um item a outro usuário, manter o endereço normalizado em um único documento e permitir filtros independentes de catálogo.
+**Motivação:** impedir que o cliente associe um item a outro usuário, manter os campos de endereço no documento do usuário e permitir filtros independentes de catálogo.
 
-**Consequência:** o Service coordena a validação do proprietário e a autorização de alteração/exclusão. A resposta pode derivar a cidade do usuário, mas o item não duplica o subdocumento `endereco`. Status inicial, identificador e auditoria permanecem controlados pelo servidor.
+**Consequência:** o Service coordena a validação do proprietário e a autorização de alteração/exclusão. A resposta pode derivar a cidade do usuário, mas o item não duplica os campos de endereço. Status inicial, identificador e auditoria permanecem controlados pelo servidor.
 
 ## ADR-012 — Provisionamento local de ponto de coleta
 
@@ -127,3 +127,11 @@
 **Motivação:** um relato manual não permite auditar a execução real de Docker, MongoDB e navegador.
 
 **Consequência:** `scripts/validar_stack_docker.py` valida a stack sem mutação; `scripts/smoke_api_docker.py --crud` executa o fluxo E2E em ambiente isolado e remove apenas os dados temporários criados pelo próprio teste; o Selenium possui relatório próprio.
+
+## ADR-017 — Campos de endereço planos na persistência
+
+**Decisão:** persistir `logradouro`, `numero`, `complemento`, `cep` e `cidade` como campos no nível raiz de `usuarios`, sem o subdocumento MongoDB `endereco`. O objeto `endereco` permanece somente nos DTOs HTTP.
+
+**Motivação:** simplificar o documento persistido e atender à decisão de não usar subdocumentos para o endereço, sem quebrar o contrato JSON já consumido pelo frontend.
+
+**Consequência:** o Mapper converte o objeto HTTP para campos planos antes de chamar o Repository e reconstrói o agrupamento somente nas respostas. A v1.0 não grava nem duplica `usuarios.endereco`; subdocumentos previstos para históricos e especificações continuam pertencendo ao escopo futuro da v2.0.

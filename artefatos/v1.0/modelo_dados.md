@@ -8,7 +8,9 @@
 usuarios 1 ---- N itens
 ```
 
-O item fica em coleção separada e referencia o proprietário. O endereço é subdocumento apenas do usuário.
+O item fica em coleção separada e referencia o proprietário por `proprietario_id`. Na v1.0, os campos de endereço ficam no nível raiz do documento de `usuarios`; não existe o subdocumento MongoDB `usuarios.endereco`.
+
+O contrato HTTP mantém um objeto `endereco` para agrupar a entrada e a resposta da API. Esse agrupamento é convertido pelo Mapper para campos planos antes da persistência e reconstruído somente na resposta.
 
 ## Coleção `usuarios`
 
@@ -19,13 +21,11 @@ O item fica em coleção separada e referencia o proprietário. O endereço é s
   "email": "maria@example.com",
   "senha_hash": "hash scrypt com salt; nunca retornado pela API",
   "tipo": "doador",
-  "endereco": {
-    "logradouro": "Avenida Brasil",
-    "numero": "1200",
-    "complemento": "Sala 3",
-    "cep": "87000000",
-    "cidade": "Maringá"
-  },
+  "logradouro": "Avenida Brasil",
+  "numero": "1200",
+  "complemento": "Sala 3",
+  "cep": "87000000",
+  "cidade": "Maringá",
   "data_adicao": "2026-09-08T12:00:00Z",
   "data_modificacao": "2026-09-08T12:00:00Z"
 }
@@ -55,7 +55,11 @@ O item fica em coleção separada e referencia o proprietário. O endereço é s
 
 | Estrutura | Papel |
 |---|---|
-| `usuarios.endereco` | subdocumento lido e atualizado junto com o usuário |
+| `usuarios.logradouro` | campo plano obrigatório do endereço |
+| `usuarios.numero` | campo plano obrigatório do endereço, armazenado como texto |
+| `usuarios.complemento` | campo plano opcional; pode ser `null` |
+| `usuarios.cep` | campo plano com oito dígitos |
+| `usuarios.cidade` | campo plano obrigatório usado também no resumo público |
 | `usuarios.senha_hash` | hash com salt; campo privado e nunca retornado |
 | `itens.proprietario_id` | referência para `usuarios._id` |
 | `data_adicao` | instante UTC de criação, imutável |
@@ -67,8 +71,9 @@ Categorias canônicas de `itens.categoria`: `informatica`, `notebook`, `desktop`
 ## Decisões
 
 - item não é subdocumento: fica em `itens`, conforme a decisão de escopo da v1.0;
-- endereço é subdocumento porque pertence ao usuário e não precisa de ciclo de vida independente;
-- item não duplica o endereço do proprietário;
+- campos de endereço são planos em `usuarios`, simplificando a consulta e evitando aninhamento no documento persistido;
+- o agrupamento `endereco` é exclusivo dos DTOs HTTP e não é gravado no MongoDB;
+- item não duplica os campos de endereço do proprietário;
 - `historico` e `especificacoes` aninhados entram na v2.0;
 - interesses, pontos de coleta e notificações entram na v2.0.
 

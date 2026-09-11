@@ -2,7 +2,7 @@
 
 Os casos abaixo especificam os critérios de aceitação da primeira entrega. Cada cenário informa objetivo, pré-condições, dados, procedimento e resultado observável para permitir execução manual ou automação reproduzível.
 
-> **Estado atual:** a v1.0 documenta **40 casos de teste**. O backend executável contém o CRUD de usuários e itens, autenticação básica, autorização por sessão, auditoria temporal, proteção de origem e provisionamento controlado de `ponto_coleta`. O frontend separado em HTML, CSS e JavaScript também foi implementado e validado em navegador; os fluxos de interesse/coleta permanecem fora deste marco.
+> **Estado atual:** a v1.0 documenta **40 casos de teste**. O backend executável contém o CRUD de usuários e itens, autenticação básica, autorização por sessão, auditoria temporal, endereço persistido em campos planos, proteção de origem e provisionamento controlado de `ponto_coleta`. O frontend separado em HTML, CSS e JavaScript também foi implementado e validado em navegador; os fluxos de interesse/coleta permanecem fora deste marco.
 
 ## Convenções de execução
 
@@ -15,13 +15,13 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 ## V1-CT-01 — Cadastrar usuário com endereço
 
 - **Requisitos:** V1-RF-01, V1-RN-01 a V1-RN-07.
-- **Objetivo:** Verificar o cadastro público de usuário com endereço aninhado, CEP normalizado e campos gerados pelo servidor.
+- **Objetivo:** Verificar o cadastro público de usuário com endereço agrupado no contrato HTTP, campos planos na persistência, CEP normalizado e campos gerados pelo servidor.
 - **Pré-condições:** API e MongoDB disponíveis e e-mail de teste ainda não cadastrado.
 - **Dados de teste:** `nome: "Ana Souza"`, `email: "ana@example.com"`, `senha: "Senha123"`, `tipo: "doador"` e `endereco: {logradouro: " Rua A ", numero: "12A", complemento: "Apto 3", cep: "87000-000", cidade: " Maringá "}`.
 - **Procedimento:**
   1. Enviar `POST /api/usuarios` com os dados de teste e registrar status, corpo e cabeçalho `Location`.
   2. Consultar no MongoDB o documento indicado pelo `id` retornado.
-- **Resultado esperado:** A API retorna HTTP `201` e `Location` válido, persiste um usuário com endereço aninhado, CEP `87000000`, espaços externos removidos, `id` e datas UTC iguais na criação, sem expor senha ou hash.
+- **Resultado esperado:** A API retorna HTTP `201` e `Location` válido, persiste um usuário com `logradouro`, `numero`, `complemento`, `cep` e `cidade` no nível raiz, sem `usuarios.endereco`, CEP `87000000`, espaços externos removidos, `id` e datas UTC iguais na criação, sem expor senha ou hash.
 
 ## V1-CT-02 — Rejeitar endereço incompleto
 
@@ -43,7 +43,7 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 - **Procedimento:**
   1. Enviar `POST /api/usuarios` com os dados de teste.
   2. Consultar no MongoDB o documento criado pelo `id` da resposta.
-- **Resultado esperado:** A API retorna HTTP `201` e persiste o endereço sem exigir nem inventar conteúdo para `complemento`.
+- **Resultado esperado:** A API retorna HTTP `201` e persiste os campos planos do endereço sem exigir nem inventar conteúdo para `complemento`.
 
 ## V1-CT-04 — Normalizar CEP
 
@@ -53,8 +53,8 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 - **Dados de teste:** Usuário válido com `endereco.cep: "87000-000"`.
 - **Procedimento:**
   1. Cadastrar o usuário por `POST /api/usuarios` e obter seu `id`.
-  2. Ler `endereco.cep` diretamente no documento persistido.
-- **Resultado esperado:** O cadastro retorna HTTP `201` e o banco contém exatamente `endereco.cep: "87000000"`.
+  2. Ler `cep` diretamente no documento persistido.
+- **Resultado esperado:** O cadastro retorna HTTP `201` e o banco contém exatamente `cep: "87000000"`, sem o campo `endereco`.
 
 ## V1-CT-05 — Listar e consultar usuários
 
@@ -476,6 +476,6 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 | `tests/test_selenium_frontend.py` | navegação das seis telas, elementos principais, modo escuro e texto visível no navegador Chrome headless | 1 função de teste |
 | `scripts/validar_stack_docker.py` | Compose, serviços ativos, ping autenticado do MongoDB, health, OpenAPI e páginas HTTP | execução real registrada em `evidencias/docker.txt` |
 | `scripts/smoke_api_docker.py` | cadastro, login, `/me`, CRUD de item, logout e limpeza de usuário temporário na stack isolada | execução real registrada em `evidencias/docker.txt` |
-| Suíte atual | CRUD de usuários e itens, autenticação, autorização, proteção de origem, provisionamento, auditoria, estrutura do frontend, configuração Docker e navegação real das telas | 77 testes aprovados; cobertura total de 94,15%, incluindo `app/main.py` |
+| Suíte atual | CRUD de usuários e itens, autenticação, autorização, proteção de origem, provisionamento, auditoria, estrutura do frontend, configuração Docker e navegação real das telas | 77 testes aprovados; cobertura total de 94,87%, incluindo `app/main.py` |
 
 A automação atual comprova o CRUD de usuários e itens, endereço, auditoria, privacidade, login, sessão, filtros, autorização por proprietário, provisionamento controlado, a estrutura modular do frontend e a configuração do ambiente Docker. A integração real também foi executada contra MongoDB 7.0 no Docker Compose, com ping, índices, CRUD dos dois recursos e limpeza dos dados temporários aprovados. O frontend foi validado em navegador tanto em servidor estático quanto no servidor Python do Compose; os fluxos de interesse/coleta e as demais capacidades administrativas da v2.0 continuam planejados; a cobertura permanece igual ou superior a 70%.

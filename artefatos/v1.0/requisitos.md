@@ -2,7 +2,7 @@
 
 ## 1. Objetivo
 
-Entregar a primeira versão funcional da PoC com cadastros de usuários e itens eletrônicos, endereço aninhado, auditoria temporal, POO, documentação e testes automatizados.
+Entregar a primeira versão funcional da PoC com cadastros de usuários e itens eletrônicos, campos de endereço planos na persistência, auditoria temporal, POO, documentação e testes automatizados.
 
 > **Estado atual:** o backend atende aos requisitos de usuários, itens, endereço, auditoria, sessão, autorização e provisionamento controlado de `ponto_coleta`; o frontend simples em HTML, CSS e JavaScript também está implementado e validado em navegador.
 
@@ -10,11 +10,12 @@ Entregar a primeira versão funcional da PoC com cadastros de usuários e itens 
 
 ### V1-RF-01 — Cadastrar usuário
 
-Cadastrar usuário por `POST /api/usuarios` com `nome`, `email`, `senha`, `tipo` e o subdocumento `endereco`.
+Cadastrar usuário por `POST /api/usuarios` com `nome`, `email`, `senha`, `tipo` e o agrupamento HTTP `endereco`; na coleção `usuarios`, os campos do endereço devem ser persistidos no nível raiz.
 
 **Critérios de aceitação:**
 
 - endereço contém `logradouro`, `numero`, `cep`, `cidade` e `complemento` opcional;
+- o agrupamento `endereco` do contrato HTTP não é gravado como subdocumento MongoDB;
 - servidor gera `id`, `data_adicao` e `data_modificacao`;
 - criação válida retorna HTTP `201` e cabeçalho `Location`;
 - documento é persistido em `usuarios`.
@@ -123,9 +124,9 @@ Encerrar o acesso por `POST /api/auth/logout`, removendo a sessão no servidor e
 
 Usar efetivamente MongoDB com as coleções `usuarios` e `itens`.
 
-### V1-RNF-02 — Documento aninhado
+### V1-RNF-02 — Campos planos de endereço
 
-Usar `usuarios.endereco` como subdocumento. Itens permanecem em coleção separada e referenciam usuários.
+Persistir `logradouro`, `numero`, `complemento`, `cep` e `cidade` como campos do nível raiz de `usuarios`, sem `usuarios.endereco`. Itens permanecem em coleção separada e referenciam usuários.
 
 ### V1-RNF-03 — Programação orientada a objetos
 

@@ -10,11 +10,11 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Separar API, Service, Repository, Model, Mapper e schemas.
 - [x] Criar testes automatizados para a base de usuários.
 - [x] Validar os CRUDs de usuários e itens com MongoDB real via Docker Compose.
-- [x] Obter cobertura superior a 70% — resultado atual: 94,15% em 77 testes, medindo também `app/main.py`.
+- [x] Obter cobertura superior a 70% — resultado atual: 94,87% em 77 testes, medindo também `app/main.py`.
 
 ### Usuários — concluir antes da v1.0
 
-- [x] Substituir `cidade` pelo subdocumento `endereco` com `logradouro`, `numero`, `complemento`, `cep` e `cidade`.
+- [x] Persistir `logradouro`, `numero`, `complemento`, `cep` e `cidade` como campos planos do usuário.
 - [x] Normalizar CEP para oito dígitos.
 - [x] Substituir `data_cadastro` por `data_adicao`.
 - [x] Incluir `data_modificacao`.
@@ -84,7 +84,7 @@ Evidências: `tests/test_frontend.py`, `tests/test_selenium_frontend.py`, `tests
 - [x] Atualizar os testes de usuários para o novo contrato.
 - [x] Criar testes de Service, Repository e API para itens.
 - [x] Validar os dois CRUDs contra MongoDB real.
-- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,15% em 77 testes, com `app/main.py` incluído.
+- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,87% em 77 testes, com `app/main.py` incluído.
 - [x] Atualizar documentação HTTP e arquitetura executável.
 - [x] Validar o projeto em máquina limpa — Compose configurado sem `.env` local, imagens backend/frontend construídas com `--no-cache`, volume Mongo isolado novo, healthchecks e smoke test HTTP/navegador aprovados.
 - [x] Identificar localmente a entrega por commit-base verificável e tag `v1.0`.

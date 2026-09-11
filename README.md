@@ -40,7 +40,7 @@ Cada destino terá seu próprio fluxo de status e um histórico rastreável. O s
 
 ### Estado atual do repositório
 
-A primeira entrega conclui os fluxos de usuários e itens nas coleções MongoDB `usuarios` e `itens`: cadastro público de doadores e beneficiários, endereço como subdocumento, auditoria temporal em UTC, e-mail normalizado com índice único, sessões simples em cookie HttpOnly, catálogo filtrável, autorização por proprietário e frontend simples separado em HTML, CSS e JavaScript.
+A primeira entrega conclui os fluxos de usuários e itens nas coleções MongoDB `usuarios` e `itens`: cadastro público de doadores e beneficiários, campos de endereço planos no documento de usuário, auditoria temporal em UTC, e-mail normalizado com índice único, sessões simples em cookie HttpOnly, catálogo filtrável, autorização por proprietário e frontend simples separado em HTML, CSS e JavaScript.
 
 Itens referenciam o usuário por `proprietario_id` e não duplicam o endereço. O histórico de ciclo de vida, interesses e pontos de coleta permanecem na evolução da v2.0; a implementação atual mantém a evolução visível no histórico de commits.
 
@@ -169,7 +169,7 @@ Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e 
 .venv/Scripts/python.exe -m pytest
 ```
 
-A suíte deve manter cobertura mínima de **70%**, conforme a AEP. A execução validada da entrega aprovou **77 testes**, com **94,15%** de cobertura incluindo `app/main.py`. Os testes unitários do repositório usam `mongomock`; a aplicação utiliza PyMongo e MongoDB em execução normal. O teste Selenium usa Chrome headless e servidores locais isolados para verificar as seis telas do frontend. Para reproduzir a integração Docker/MongoDB, use os scripts documentados em [evidências](artefatos/v1.0/evidencias/).
+A suíte deve manter cobertura mínima de **70%**, conforme a AEP. A execução validada da entrega aprovou **77 testes**, com **94,87%** de cobertura incluindo `app/main.py`. Os testes unitários do repositório usam `mongomock`; a aplicação utiliza PyMongo e MongoDB em execução normal. O teste Selenium usa Chrome headless e servidores locais isolados para verificar as seis telas do frontend. Para reproduzir a integração Docker/MongoDB, use os scripts documentados em [evidências](artefatos/v1.0/evidencias/).
 
 ## 12. Limites atuais
 

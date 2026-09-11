@@ -3,9 +3,9 @@
 ## Identificação
 
 - **Versão:** `v1.0`.
-- **Commit de referência da base integrada:** [`9553ded84ac261e1a5e4dbb2012cf04ac16bb5c9`](https://github.com/ricardocamati/Recicla_Reusa/commit/9553ded84ac261e1a5e4dbb2012cf04ac16bb5c9).
+- **Commit de referência da mudança de modelo:** [`190595f`](https://github.com/ricardocamati/Recicla_Reusa/commit/190595f).
 - **Tag da entrega corrigida:** `v1.0` — deve apontar para o commit final desta branch após a validação.
-- **Branch de correção:** `fix/avaliacao-v1`.
+- **Branch de correção:** `feat/endereco-sem-subdocumento`.
 - **Casos documentados:** 40; **funções de teste Python:** 58; **execuções Pytest verificadas:** 77.
 - **Vídeo de apresentação:** pendente; a URL ainda não foi informada.
 
@@ -14,7 +14,7 @@ A tag e o commit final identificam a versão que contém as correções de segur
 ## Escopo entregue
 
 - CRUD de `usuarios` e `itens` em MongoDB;
-- endereço como subdocumento de usuário e `proprietario_id` no item;
+- campos `logradouro`, `numero`, `complemento`, `cep` e `cidade` no nível raiz de `usuarios`, além de `proprietario_id` no item;
 - autenticação por sessão em memória e cookie HttpOnly;
 - autorização por perfil e propriedade;
 - validação de origem em mutações autenticadas com cookie;

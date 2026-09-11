@@ -46,7 +46,7 @@ Credenciais inválidas retornam `401` com a mesma mensagem genérica, sem indica
 }
 ```
 
-O e-mail é normalizado para minúsculas. O CEP aceita a forma com hífen na entrada, mas é persistido e devolvido com oito dígitos. `numero` permanece textual. `senha` é usada apenas para gerar `senha_hash` e nunca é retornada.
+O e-mail é normalizado para minúsculas. O CEP aceita a forma com hífen na entrada, mas é persistido e devolvido com oito dígitos. `numero` permanece textual. `senha` é usada apenas para gerar `senha_hash` e nunca é retornada. Embora a API agrupe os campos no objeto `endereco`, o MongoDB os grava como campos planos no documento `usuarios`.
 
 ## Itens
 

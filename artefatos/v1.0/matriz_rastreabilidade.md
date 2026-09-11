@@ -24,7 +24,7 @@ Esta matriz é bidirecional. A primeira tabela parte de cada requisito/regra e a
 | V1-RF-19 | V1-CT-32 a V1-CT-35, V1-CT-39 | `frontend/*.html`; `frontend/js/*.js`; `frontend/styles.css` | `tests/test_frontend.py`; `tests/test_selenium_frontend.py::test_selenium_navega_nas_seis_telas_em_modo_escuro` | automatizado / implementado |
 | V1-RF-20 | V1-CT-36 | `app/api/usuarios.py :: logout`; `app/security/sessions.py :: remover` | `tests/test_api_usuario.py::test_login_me_logout_e_sessao_http_only` | automatizado / implementado |
 | V1-RN-01 a V1-RN-03 | V1-CT-01, V1-CT-02, V1-CT-31 | `app/schemas/usuario.py :: UsuarioCreateRequest`; `app/provisionar_ponto_coleta.py :: ProvisionamentoRequest` | `tests/test_api_usuario.py`; `tests/test_provisionamento_ponto_coleta.py` | automatizado / implementado |
-| V1-RN-04 a V1-RN-06 | V1-CT-01 a V1-CT-04 | `app/schemas/usuario.py :: EnderecoRequest`; `app/mappers/usuario_mapper.py` | `tests/test_api_usuario.py::test_cadastro_persiste_endereco_datas_e_nao_expoe_senha`; `tests/test_usuario_service.py::test_criar_usuario_registra_datas_endereco_e_id` | automatizado / implementado |
+| V1-RN-04 a V1-RN-06 | V1-CT-01 a V1-CT-04 | `app/schemas/usuario.py :: EnderecoSchema`; `app/mappers/usuario_mapper.py :: campos_endereco/endereco_para_schema`; `app/repositories/mongo_usuario_repository.py :: _para_documento/_para_modelo` | `tests/test_api_usuario.py::test_cadastro_persiste_endereco_datas_e_nao_expoe_senha`; `tests/test_usuario_service.py::test_criar_usuario_registra_datas_endereco_e_id`; `tests/test_mongo_usuario_repository.py::test_repositorio_persiste_endereco_datas_e_remove_usuario` | automatizado / implementado |
 | V1-RN-07 | V1-CT-01, V1-CT-06, V1-CT-08, V1-CT-12 | `app/services/usuario_service.py`; `app/services/item_service.py`; repositories Mongo | `tests/test_api_usuario.py`; `tests/test_item_service.py`; `tests/test_mongo_*_repository.py` | automatizado / implementado |
 | V1-RN-08 | V1-CT-08, V1-CT-09, V1-CT-16 | `app/services/item_service.py :: criar/_obter_doador`; `app/mappers/item_mapper.py` | `tests/test_api_item.py::test_doador_cadastra_item_com_proprietario_da_sessao`; `tests/test_item_service.py::test_criar_item_rejeita_proprietario_inexistente` | automatizado / implementado |
 | V1-RN-09 a V1-RN-13 | V1-CT-14, V1-CT-15 | `app/schemas/item.py`; `app/mappers/item_mapper.py` | `tests/test_api_item.py::test_validacao_de_enums_e_valor_de_revenda`; `tests/test_item_service.py::test_criar_item_define_proprietario_status_e_auditoria` | automatizado / implementado |
@@ -46,7 +46,7 @@ Esta matriz é bidirecional. A primeira tabela parte de cada requisito/regra e a
 | V1-RN-32 | V1-CT-36 | `app/api/usuarios.py :: logout`; `app/security/sessions.py :: remover` | `tests/test_api_usuario.py::test_login_me_logout_e_sessao_http_only` | automatizado / implementado |
 | V1-RNF-01, V1-RNF-02 | V1-CT-16, V1-CT-17, V1-CT-38 | `app/repositories/mongo_usuario_repository.py`; `app/repositories/mongo_item_repository.py`; `app/models/*` | `tests/test_mongo_*_repository.py`; `scripts/validar_stack_docker.py` | automatizado + integração / implementado |
 | V1-RNF-03, V1-RNF-04 | V1-CT-16, V1-CT-17 | `app/api`, `app/services`, `app/repositories`, `app/models`, `app/mappers`, `app/schemas` | testes de Service/Repository/API; `docs/architecture.md` | automatizado + fonte / implementado |
-| V1-RNF-05, V1-RNF-06 | V1-CT-18, V1-CT-37, V1-CT-39 | `pyproject.toml`; diretório `tests/` | `evidencias/testes.txt`; `evidencias/selenium.txt` | 77 execuções; 94,15% incluindo `app/main.py` / implementado |
+| V1-RNF-05, V1-RNF-06 | V1-CT-18, V1-CT-37, V1-CT-39 | `pyproject.toml`; diretório `tests/` | `evidencias/testes.txt`; `evidencias/selenium.txt` | 77 execuções; 94,87% incluindo `app/main.py` / implementado |
 | V1-RNF-07 | V1-CT-38, V1-CT-40 | `README.md`; `HARNESS.md`; `docs/*.md`; `artefatos/v1.0/*` | `artefatos/v1.0/registro_entrega.md`; `evidencias/` | fonte + script / implementado |
 | V1-RNF-08 | V1-CT-40 | `artefatos/v1.0/registro_entrega.md` | commit-base verificável e tag local `v1.0`; vídeo ainda não informado | manual / pendente externo |
 | V1-RNF-09, V1-RNF-10 | V1-CT-17, V1-CT-38 | `.env.example`; `compose.yaml`; `Dockerfile`; `frontend/Dockerfile` | `scripts/validar_stack_docker.py`; `scripts/smoke_api_docker.py`; `evidencias/docker.txt` | automatizado/script / implementado |
@@ -60,10 +60,10 @@ Esta matriz é bidirecional. A primeira tabela parte de cada requisito/regra e a
 
 | Caso | Teste automatizado ou relatório | Tipo | Resultado/estado |
 |---|---|---|---|
-| V1-CT-01 | `tests/test_api_usuario.py::test_cadastro_persiste_endereco_datas_e_nao_expoe_senha` | automatizado | coberto |
+| V1-CT-01 | `tests/test_api_usuario.py::test_cadastro_persiste_endereco_datas_e_nao_expoe_senha`; `tests/test_mongo_usuario_repository.py::test_repositorio_persiste_endereco_datas_e_remove_usuario` | automatizado | coberto |
 | V1-CT-02 | `tests/test_api_usuario.py::test_cadastro_rejeita_endereco_e_senha_invalidos` | automatizado | coberto |
 | V1-CT-03 | `tests/test_api_usuario.py::test_cadastro_aceita_endereco_sem_complemento` | automatizado | coberto |
-| V1-CT-04 | `tests/test_api_usuario.py::test_cadastro_persiste_endereco_datas_e_nao_expoe_senha` | automatizado | coberto |
+| V1-CT-04 | `tests/test_mongo_usuario_repository.py::test_repositorio_persiste_endereco_datas_e_remove_usuario` | automatizado | coberto |
 | V1-CT-05 | `tests/test_api_usuario.py::test_listagem_de_terceiros_expoe_somente_resumo_publico` | automatizado | coberto |
 | V1-CT-06 | `tests/test_api_usuario.py::test_atualizacao_autenticada_preserva_tipo_e_data_adicao` | automatizado | coberto |
 | V1-CT-07 | `tests/test_api_usuario.py::test_exclusao_exige_sessao_e_propriedade` | automatizado | coberto |
@@ -103,7 +103,7 @@ Esta matriz é bidirecional. A primeira tabela parte de cada requisito/regra e a
 
 ## Estado resumido
 
-- **Implementado:** usuários e itens com endereço aninhado, auditoria temporal, hash, sessão, autorização, proteção de origem em mutações autenticadas, filtros, frontend modular, Selenium e documentação bidirecional.
+- **Implementado:** usuários e itens com campos de endereço planos na persistência, auditoria temporal, hash, sessão, autorização, proteção de origem em mutações autenticadas, filtros, frontend modular, Selenium e documentação bidirecional.
 - **Concluído na base de backend:** validação dos dois CRUDs contra MongoDB 7.0 real via Docker Compose, incluindo índices e limpeza dos dados de teste — evidência reproduzível em `evidencias/docker.txt`.
 - **Concluído no frontend:** telas separadas de cadastro, login, perfil, catálogo e gestão de itens, com smoke test no navegador e validação Selenium em Chrome headless.
 - **Pendente externamente:** logs específicos e URL pública do vídeo; a publicação da tag/release no GitHub depende de autorização explícita.
