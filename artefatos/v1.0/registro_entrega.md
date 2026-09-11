@@ -3,9 +3,9 @@
 ## Identificação
 
 - **Versão:** `v1.0`.
-- **Commit de referência da mudança de modelo:** [`190595f`](https://github.com/ricardocamati/Recicla_Reusa/commit/190595f).
+- **Commit de referência da mudança de contrato:** [`f7e913b`](https://github.com/ricardocamati/Recicla_Reusa/commit/f7e913b).
 - **Tag da entrega corrigida:** `v1.0` — deve apontar para o commit final desta branch após a validação.
-- **Branch de correção:** `feat/endereco-sem-subdocumento`.
+- **Branch de correção:** `feat/endereco-plano-em-todas-camadas`.
 - **Casos documentados:** 40; **funções de teste Python:** 58; **execuções Pytest verificadas:** 77.
 - **Vídeo de apresentação:** pendente; a URL ainda não foi informada.
 

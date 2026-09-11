@@ -15,9 +15,9 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 ## V1-CT-01 — Cadastrar usuário com endereço
 
 - **Requisitos:** V1-RF-01, V1-RN-01 a V1-RN-07.
-- **Objetivo:** Verificar o cadastro público de usuário com endereço agrupado no contrato HTTP, campos planos na persistência, CEP normalizado e campos gerados pelo servidor.
+- **Objetivo:** Verificar o cadastro público de usuário com todos os campos de endereço no nível raiz do contrato HTTP e da persistência, CEP normalizado e campos gerados pelo servidor.
 - **Pré-condições:** API e MongoDB disponíveis e e-mail de teste ainda não cadastrado.
-- **Dados de teste:** `nome: "Ana Souza"`, `email: "ana@example.com"`, `senha: "Senha123"`, `tipo: "doador"` e `endereco: {logradouro: " Rua A ", numero: "12A", complemento: "Apto 3", cep: "87000-000", cidade: " Maringá "}`.
+- **Dados de teste:** `nome: "Ana Souza"`, `email: "ana@example.com"`, `senha: "Senha123"`, `tipo: "doador"`, `logradouro: " Rua A "`, `numero: "12A"`, `complemento: "Apto 3"`, `cep: "87000-000"` e `cidade: " Maringá "`.
 - **Procedimento:**
   1. Enviar `POST /api/usuarios` com os dados de teste e registrar status, corpo e cabeçalho `Location`.
   2. Consultar no MongoDB o documento indicado pelo `id` retornado.
@@ -50,7 +50,7 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 - **Requisitos:** V1-RN-06.
 - **Objetivo:** Verificar que um CEP recebido com hífen é armazenado no formato canônico de oito dígitos.
 - **Pré-condições:** Cadastro de usuário disponível e e-mail de teste ainda não utilizado.
-- **Dados de teste:** Usuário válido com `endereco.cep: "87000-000"`.
+- **Dados de teste:** Usuário válido com `cep: "87000-000"`.
 - **Procedimento:**
   1. Cadastrar o usuário por `POST /api/usuarios` e obter seu `id`.
   2. Ler `cep` diretamente no documento persistido.
@@ -476,6 +476,6 @@ Os casos abaixo especificam os critérios de aceitação da primeira entrega. Ca
 | `tests/test_selenium_frontend.py` | navegação das seis telas, elementos principais, modo escuro e texto visível no navegador Chrome headless | 1 função de teste |
 | `scripts/validar_stack_docker.py` | Compose, serviços ativos, ping autenticado do MongoDB, health, OpenAPI e páginas HTTP | execução real registrada em `evidencias/docker.txt` |
 | `scripts/smoke_api_docker.py` | cadastro, login, `/me`, CRUD de item, logout e limpeza de usuário temporário na stack isolada | execução real registrada em `evidencias/docker.txt` |
-| Suíte atual | CRUD de usuários e itens, autenticação, autorização, proteção de origem, provisionamento, auditoria, estrutura do frontend, configuração Docker e navegação real das telas | 77 testes aprovados; cobertura total de 94,87%, incluindo `app/main.py` |
+| Suíte atual | CRUD de usuários e itens, autenticação, autorização, proteção de origem, provisionamento, auditoria, estrutura do frontend, configuração Docker e navegação real das telas | 77 testes aprovados; cobertura total de 94,81%, incluindo `app/main.py` |
 
 A automação atual comprova o CRUD de usuários e itens, endereço, auditoria, privacidade, login, sessão, filtros, autorização por proprietário, provisionamento controlado, a estrutura modular do frontend e a configuração do ambiente Docker. A integração real também foi executada contra MongoDB 7.0 no Docker Compose, com ping, índices, CRUD dos dois recursos e limpeza dos dados temporários aprovados. O frontend foi validado em navegador tanto em servidor estático quanto no servidor Python do Compose; os fluxos de interesse/coleta e as demais capacidades administrativas da v2.0 continuam planejados; a cobertura permanece igual ou superior a 70%.

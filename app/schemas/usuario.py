@@ -7,7 +7,9 @@ TipoUsuario = Literal["doador", "beneficiario", "ponto_coleta"]
 TipoCadastro = Literal["doador", "beneficiario"]
 
 
-class EnderecoSchema(BaseModel):
+class CamposEndereco(BaseModel):
+    """Campos de endereço no nível raiz dos contratos HTTP."""
+
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     logradouro: str = Field(min_length=1, max_length=160)
@@ -32,13 +34,10 @@ class EnderecoSchema(BaseModel):
         return valor or None
 
 
-class DadosUsuarioRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
-
+class DadosUsuarioRequest(CamposEndereco):
     nome: str = Field(min_length=3, max_length=120)
     email: str = Field(min_length=5, max_length=160)
     senha: str = Field(min_length=8, max_length=128)
-    endereco: EnderecoSchema
 
     @field_validator("nome", "email")
     @classmethod
@@ -75,12 +74,9 @@ class PontoColetaProvisionRequest(DadosUsuarioRequest):
     pass
 
 
-class UsuarioUpdateRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
-
+class UsuarioUpdateRequest(CamposEndereco):
     nome: str = Field(min_length=3, max_length=120)
     email: str = Field(min_length=5, max_length=160)
-    endereco: EnderecoSchema
 
     @field_validator("nome")
     @classmethod
@@ -114,12 +110,11 @@ class LoginRequest(BaseModel):
         return valor.strip().lower()
 
 
-class UsuarioResponse(BaseModel):
+class UsuarioResponse(CamposEndereco):
     id: str
     nome: str
     email: str
     tipo: TipoUsuario
-    endereco: EnderecoSchema
     data_adicao: datetime
     data_modificacao: datetime
 

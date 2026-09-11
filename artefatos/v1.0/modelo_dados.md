@@ -10,7 +10,7 @@ usuarios 1 ---- N itens
 
 O item fica em coleção separada e referencia o proprietário por `proprietario_id`. Na v1.0, os campos de endereço ficam no nível raiz do documento de `usuarios`; não existe o subdocumento MongoDB `usuarios.endereco`.
 
-O contrato HTTP mantém um objeto `endereco` para agrupar a entrada e a resposta da API. Esse agrupamento é convertido pelo Mapper para campos planos antes da persistência e reconstruído somente na resposta.
+O contrato HTTP também usa os cinco campos no nível raiz da entrada e da resposta. Não existe a chave `endereco` no contrato, no modelo de domínio ou no documento MongoDB da v1.0.
 
 ## Coleção `usuarios`
 
@@ -72,7 +72,7 @@ Categorias canônicas de `itens.categoria`: `informatica`, `notebook`, `desktop`
 
 - item não é subdocumento: fica em `itens`, conforme a decisão de escopo da v1.0;
 - campos de endereço são planos em `usuarios`, simplificando a consulta e evitando aninhamento no documento persistido;
-- o agrupamento `endereco` é exclusivo dos DTOs HTTP e não é gravado no MongoDB;
+- não existe agrupamento `endereco`; os campos são transportados e persistidos diretamente no nível raiz;
 - item não duplica os campos de endereço do proprietário;
 - `historico` e `especificacoes` aninhados entram na v2.0;
 - interesses, pontos de coleta e notificações entram na v2.0.

@@ -20,7 +20,7 @@ O e-mail deve conter `@` e pelo menos um ponto depois do `@`.
 
 ## V1-RN-04 — Campos planos do endereço
 
-O contrato HTTP agrupa `logradouro`, `numero`, `complemento`, `cep` e `cidade` em `endereco`, mas o modelo de domínio e o documento MongoDB mantêm esses campos no nível raiz; `usuarios.endereco` não é persistido.
+Os campos `logradouro`, `numero`, `complemento`, `cep` e `cidade` pertencem diretamente ao modelo de usuário, ao corpo HTTP e ao documento MongoDB; a chave `endereco` não existe na representação da v1.0.
 
 ## V1-RN-05 — Obrigatoriedade do endereço
 

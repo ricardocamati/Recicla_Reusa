@@ -130,8 +130,8 @@
 
 ## ADR-017 — Campos de endereço planos na persistência
 
-**Decisão:** persistir `logradouro`, `numero`, `complemento`, `cep` e `cidade` como campos no nível raiz de `usuarios`, sem o subdocumento MongoDB `endereco`. O objeto `endereco` permanece somente nos DTOs HTTP.
+**Decisão:** representar `logradouro`, `numero`, `complemento`, `cep` e `cidade` como campos no nível raiz do modelo de domínio, dos DTOs HTTP e de `usuarios`, sem o subdocumento `endereco` em nenhuma camada da v1.0.
 
-**Motivação:** simplificar o documento persistido e atender à decisão de não usar subdocumentos para o endereço, sem quebrar o contrato JSON já consumido pelo frontend.
+**Motivação:** manter uma representação única e simples do endereço em todo o fluxo, evitando divergência entre o contrato JSON, o domínio e o documento MongoDB.
 
-**Consequência:** o Mapper converte o objeto HTTP para campos planos antes de chamar o Repository e reconstrói o agrupamento somente nas respostas. A v1.0 não grava nem duplica `usuarios.endereco`; subdocumentos previstos para históricos e especificações continuam pertencendo ao escopo futuro da v2.0.
+**Consequência:** o Mapper transporta os campos planos diretamente entre request, domínio, response e Repository. A v1.0 não grava nem aceita `usuarios.endereco`; subdocumentos previstos para históricos e especificações continuam pertencendo ao escopo futuro da v2.0.

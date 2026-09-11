@@ -67,13 +67,11 @@ def payload(**alteracoes: Any) -> dict[str, Any]:
         "email": "maria@example.com",
         "senha": "Senha123",
         "tipo": "doador",
-        "endereco": {
-            "logradouro": "Avenida Brasil",
-            "numero": "1200",
-            "complemento": "Sala 3",
-            "cep": "87000-000",
-            "cidade": "Maringá",
-        },
+        "logradouro": "Avenida Brasil",
+        "numero": "1200",
+        "complemento": "Sala 3",
+        "cep": "87000-000",
+        "cidade": "Maringá",
     }
     dados.update(alteracoes)
     return dados
@@ -89,7 +87,12 @@ async def test_cadastro_persiste_endereco_datas_e_nao_expoe_senha(
 
     assert resposta.status_code == 201
     corpo = resposta.json()
-    assert corpo["endereco"]["cep"] == "87000000"
+    assert corpo["cep"] == "87000000"
+    assert corpo["logradouro"] == "Avenida Brasil"
+    assert corpo["numero"] == "1200"
+    assert corpo["complemento"] == "Sala 3"
+    assert corpo["cidade"] == "Maringá"
+    assert "endereco" not in corpo
     assert corpo["data_adicao"] == corpo["data_modificacao"]
     assert "senha" not in corpo
     assert "senha_hash" not in corpo
@@ -106,19 +109,18 @@ async def test_cadastro_aceita_endereco_sem_complemento(
     dados = payload(
         email="sem-complemento@example.com",
         tipo="beneficiario",
-        endereco={
-            "logradouro": "Rua B",
-            "numero": "10",
-            "cep": "87000-000",
-            "cidade": "Londrina",
-        },
+        logradouro="Rua B",
+        numero="10",
+        complemento=None,
+        cep="87000-000",
+        cidade="Londrina",
     )
 
     async with cliente(repositorio, instante) as api:
         resposta = await api.post("/api/usuarios", json=dados)
 
     assert resposta.status_code == 201
-    assert resposta.json()["endereco"]["complemento"] is None
+    assert resposta.json()["complemento"] is None
     persistido = repositorio.buscar_por_email("sem-complemento@example.com")
     assert persistido is not None
     assert persistido.complemento is None
@@ -158,12 +160,10 @@ async def test_atualizacao_autenticada_preserva_tipo_e_data_adicao(
             json={
                 "nome": "Maria Silva Atualizada",
                 "email": "maria.atualizada@example.com",
-                "endereco": {
-                    "logradouro": "Rua Nova",
-                    "numero": "10",
-                    "cep": "87000001",
-                    "cidade": "Sarandi",
-                },
+                "logradouro": "Rua Nova",
+                "numero": "10",
+                "cep": "87000001",
+                "cidade": "Sarandi",
             },
         )
 
@@ -172,7 +172,7 @@ async def test_atualizacao_autenticada_preserva_tipo_e_data_adicao(
     assert corpo["tipo"] == "doador"
     assert corpo["data_adicao"] == "2026-09-08T12:00:00Z"
     assert corpo["data_modificacao"] == "2026-09-08T12:01:00Z"
-    assert corpo["endereco"]["cep"] == "87000001"
+    assert corpo["cep"] == "87000001"
 
 
 @pytest.mark.anyio
@@ -192,7 +192,11 @@ async def test_atualizacao_de_outro_usuario_retorna_403(
             json={
                 "nome": "Alteração indevida",
                 "email": "joao.novo@example.com",
-                "endereco": payload()["endereco"],
+                "logradouro": payload()["logradouro"],
+                "numero": payload()["numero"],
+                "complemento": payload()["complemento"],
+                "cep": payload()["cep"],
+                "cidade": payload()["cidade"],
             },
         )
 
@@ -278,9 +282,21 @@ async def test_cadastro_rejeita_endereco_e_senha_invalidos(
     instante: datetime,
 ) -> None:
     async with cliente(repositorio, instante) as api:
+        formato_legado = payload()
+        for campo in ("logradouro", "numero", "complemento", "cep", "cidade"):
+            formato_legado.pop(campo)
+        formato_legado["endereco"] = {
+            "logradouro": "Rua antiga",
+            "numero": "1",
+            "cep": "87000000",
+            "cidade": "Maringá",
+        }
+        legado = await api.post("/api/usuarios", json=formato_legado)
+        assert legado.status_code == 400
+
         endereco = await api.post(
             "/api/usuarios",
-            json=payload(endereco={"logradouro": "Rua A", "numero": "1", "cep": "123", "cidade": "Maringá"}),
+            json=payload(logradouro="Rua A", numero="1", cep="123", cidade="Maringá"),
         )
         senha = await api.post(
             "/api/usuarios",
@@ -330,7 +346,11 @@ async def test_mutacao_autenticada_valida_origem_e_prioriza_403(
         dados_atualizacao = {
             "nome": "Maria protegida",
             "email": "maria.protegida@example.com",
-            "endereco": payload()["endereco"],
+            "logradouro": payload()["logradouro"],
+            "numero": payload()["numero"],
+            "complemento": payload()["complemento"],
+            "cep": payload()["cep"],
+            "cidade": payload()["cidade"],
         }
 
         origem_invalida = await api.put(

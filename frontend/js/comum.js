@@ -162,7 +162,7 @@ export function userPayloadFromForm(form) {
     email: String(data.get("email") || "").trim(),
     senha: String(data.get("senha") || ""),
     tipo: String(data.get("tipo") || "doador"),
-    endereco: addressFromForm(data),
+    ...addressFromForm(data),
   };
 }
 
@@ -171,7 +171,7 @@ export function profilePayloadFromForm(form) {
   return {
     nome: String(data.get("nome") || "").trim(),
     email: String(data.get("email") || "").trim(),
-    endereco: addressFromForm(data),
+    ...addressFromForm(data),
   };
 }
 
@@ -191,18 +191,18 @@ export function itemPayloadFromForm(form) {
   };
 }
 
-export function fillAddress(form, endereco) {
-  form.elements.logradouro.value = endereco?.logradouro || "";
-  form.elements.numero.value = endereco?.numero || "";
-  form.elements.complemento.value = endereco?.complemento || "";
-  form.elements.cep.value = endereco?.cep || "";
-  form.elements.cidade.value = endereco?.cidade || "";
+export function fillAddress(form, camposEndereco) {
+  form.elements.logradouro.value = camposEndereco?.logradouro || "";
+  form.elements.numero.value = camposEndereco?.numero || "";
+  form.elements.complemento.value = camposEndereco?.complemento || "";
+  form.elements.cep.value = camposEndereco?.cep || "";
+  form.elements.cidade.value = camposEndereco?.cidade || "";
 }
 
 export function fillProfileForm(form, usuario) {
   form.elements.nome.value = usuario.nome || "";
   form.elements.email.value = usuario.email || "";
-  fillAddress(form, usuario.endereco);
+  fillAddress(form, usuario);
 }
 
 export function roleDescription(tipo) {

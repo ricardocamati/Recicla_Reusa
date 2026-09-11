@@ -40,13 +40,11 @@ class ServidorApi(BaseHTTPRequestHandler):
         "nome": "Usuário Selenium",
         "email": "selenium@example.com",
         "tipo": "doador",
-        "endereco": {
-            "logradouro": "Rua de Teste",
-            "numero": "100",
-            "complemento": None,
-            "cep": "87000000",
-            "cidade": "Maringá",
-        },
+        "logradouro": "Rua de Teste",
+        "numero": "100",
+        "complemento": None,
+        "cep": "87000000",
+        "cidade": "Maringá",
     }
 
     def log_message(self, *_args) -> None:

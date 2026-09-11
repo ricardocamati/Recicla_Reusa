@@ -14,9 +14,9 @@ ______________ coverage: platform win32, python 3.11.15-final-0 _______________
 
 Name                                           Stmts   Miss  Cover
 ----------------------------------------------------------------------------
-TOTAL                                            839     43    95%
-Required test coverage of 70% reached. Total coverage: 94.87%
-77 passed in 29.58s
+TOTAL                                            829     43    95%
+Required test coverage of 70% reached. Total coverage: 94.81%
+77 passed in 31.12s
 ```
 
 O escopo medido inclui `app/main.py`; nenhuma exclusão de módulo da aplicação foi configurada.
