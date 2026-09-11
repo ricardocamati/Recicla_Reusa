@@ -36,17 +36,15 @@ Credenciais inválidas retornam `401` com a mesma mensagem genérica, sem indica
   "email": "maria@example.com",
   "senha": "Senha123",
   "tipo": "doador",
-  "endereco": {
-    "logradouro": "Rua das Flores",
-    "numero": "10A",
-    "complemento": "Casa 2",
-    "cep": "87000-000",
-    "cidade": "Maringá"
-  }
+  "logradouro": "Rua das Flores",
+  "numero": "10A",
+  "complemento": "Casa 2",
+  "cep": "87000-000",
+  "cidade": "Maringá"
 }
 ```
 
-O e-mail é normalizado para minúsculas. O CEP aceita a forma com hífen na entrada, mas é persistido e devolvido com oito dígitos. `numero` permanece textual. `senha` é usada apenas para gerar `senha_hash` e nunca é retornada. Embora a API agrupe os campos no objeto `endereco`, o MongoDB os grava como campos planos no documento `usuarios`.
+O e-mail é normalizado para minúsculas. O CEP aceita a forma com hífen na entrada, mas é persistido e devolvido com oito dígitos. `numero` permanece textual. `senha` é usada apenas para gerar `senha_hash` e nunca é retornada. Os cinco campos do endereço ficam no nível raiz do corpo HTTP e do documento `usuarios`.
 
 ## Itens
 
@@ -87,12 +85,11 @@ A resposta inclui `cidade_proprietario` para o catálogo, mas não inclui o ende
 {
   "nome": "Maria Silva",
   "email": "maria.silva@example.com",
-  "endereco": {
-    "logradouro": "Avenida Brasil",
-    "numero": "200",
-    "cep": "87010000",
-    "cidade": "Sarandi"
-  }
+  "logradouro": "Avenida Brasil",
+  "numero": "200",
+  "complemento": null,
+  "cep": "87010000",
+  "cidade": "Sarandi"
 }
 ```
 

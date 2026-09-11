@@ -10,12 +10,12 @@ Entregar a primeira versão funcional da PoC com cadastros de usuários e itens 
 
 ### V1-RF-01 — Cadastrar usuário
 
-Cadastrar usuário por `POST /api/usuarios` com `nome`, `email`, `senha`, `tipo` e o agrupamento HTTP `endereco`; na coleção `usuarios`, os campos do endereço devem ser persistidos no nível raiz.
+Cadastrar usuário por `POST /api/usuarios` com `nome`, `email`, `senha`, `tipo`, `logradouro`, `numero`, `complemento`, `cep` e `cidade`, todos no nível raiz do corpo e da coleção `usuarios`.
 
 **Critérios de aceitação:**
 
-- endereço contém `logradouro`, `numero`, `cep`, `cidade` e `complemento` opcional;
-- o agrupamento `endereco` do contrato HTTP não é gravado como subdocumento MongoDB;
+- `logradouro`, `numero`, `cep` e `cidade` são obrigatórios; `complemento` é opcional;
+- a chave `endereco` não faz parte do contrato HTTP v1.0 nem é gravada como subdocumento MongoDB;
 - servidor gera `id`, `data_adicao` e `data_modificacao`;
 - criação válida retorna HTTP `201` e cabeçalho `Location`;
 - documento é persistido em `usuarios`.

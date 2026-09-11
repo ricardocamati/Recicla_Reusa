@@ -69,7 +69,7 @@ Um documento persistido possui a seguinte forma lógica:
 }
 ```
 
-O agrupamento `endereco` existe somente nos DTOs JSON de entrada e saída para manter o contrato HTTP legível; o `Usuario` de domínio e o documento MongoDB usam os cinco campos no nível raiz. O `_id` do MongoDB é convertido para `id` nos DTOs. `data_adicao` e `data_modificacao` são geradas pelo servidor em UTC. O índice `usuario_email_unico` impede duplicidade depois da normalização do e-mail.
+O `Usuario`, os DTOs JSON de entrada e saída e o documento MongoDB usam os cinco campos de endereço no nível raiz. Não existe a chave `endereco` no contrato v1.0 nem o subdocumento `usuarios.endereco`. O `_id` do MongoDB é convertido para `id` nos DTOs. `data_adicao` e `data_modificacao` são geradas pelo servidor em UTC. O índice `usuario_email_unico` impede duplicidade depois da normalização do e-mail.
 
 Listagens públicas usam DTOs resumidos. O perfil completo exige que a sessão corresponda ao usuário consultado; a autorização de alteração e exclusão também é validada no backend.
 
