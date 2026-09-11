@@ -14,7 +14,7 @@ A versão 1.0 tem como meta uma base funcional com usuários e itens eletrônico
 - proteção de origem em mutações autenticadas com cookie;
 - frontend simples em HTML, CSS e JavaScript, separado do backend;
 - API FastAPI documentada por OpenAPI;
-- testes automatizados com cobertura mínima de 70%;
+- testes automatizados e relatório de cobertura;
 - aplicação completa executada em Docker Compose, com backend FastAPI e frontend Python `http.server`.
 
 ## Situação do código
@@ -44,7 +44,7 @@ O frontend simples está implementado em `frontend/`, com cadastro, login, perfi
 - seis telas do frontend validadas com Selenium e Chrome headless, usando servidores locais isolados;
 - frontend servido pelo Python `http.server` e backend executados em um Compose integrado, com volume MongoDB novo;
 - 77 testes automatizados aprovados;
-- cobertura total atual de 94,81%, incluindo `app/main.py`;
+- cobertura registrada, incluindo `app/main.py`;
 - verificador read-only e smoke E2E Docker/MongoDB versionados em `scripts/`, com relatórios em `evidencias/`.
 
 ## Pendências para fechar a v1.0

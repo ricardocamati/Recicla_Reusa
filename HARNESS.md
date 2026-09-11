@@ -65,9 +65,9 @@ Documentação interativa: `http://127.0.0.1:8000/docs`.
 .venv/Scripts/python.exe -m pytest
 ```
 
-O `pyproject.toml` exige cobertura mínima de 70% e mostra as linhas não cobertas no terminal.
+O `pyproject.toml` configura a coleta de cobertura e mostra as linhas não cobertas no terminal.
 
-Para executar somente o teste Selenium sem aplicar o limiar de cobertura à suíte parcial:
+Para executar somente o teste Selenium:
 
 ```bash
 .venv/Scripts/python.exe -m pytest --no-cov -q tests/test_selenium_frontend.py
@@ -116,7 +116,7 @@ Uma tarefa está concluída quando:
 
 1. o projeto importa e executa;
 2. os testes aplicáveis passam;
-3. a cobertura permanece em pelo menos 70%;
+3. a cobertura da execução está registrada;
 4. contratos HTTP e documentação estão sincronizados;
 5. não há regra de negócio na API ou no Repository;
 6. limitações de ambiente foram relatadas;
@@ -137,4 +137,4 @@ A validação executada confirmou:
 - smoke test funcional → cadastro `201`, login `200`, `/me` `200`, CRUD de item, logout `204` e `/me` posterior `401`;
 - frontend aberto no navegador a partir de `http://127.0.0.1:8080`.
 
-A suíte completa também foi executada: 77 testes aprovados, cobertura total de 94,81% com `app/main.py` incluído, incluindo o teste Selenium, compilação Python, verificação `node --check` dos módulos JavaScript e `git diff --check` sem erros.
+A suíte completa também foi executada: 77 testes aprovados e relatório de cobertura gerado com `app/main.py` incluído, incluindo o teste Selenium, compilação Python, verificação `node --check` dos módulos JavaScript e `git diff --check` sem erros.

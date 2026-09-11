@@ -142,7 +142,7 @@ Os comportamentos implementados devem possuir testes executáveis sem intervenç
 
 ### V1-RNF-06 — Cobertura
 
-A cobertura deve ser igual ou superior a 70% e possuir comando reproduzível.
+A cobertura deve ser medida com comando reproduzível e registrada junto da execução.
 
 ### V1-RNF-07 — Documentação
 

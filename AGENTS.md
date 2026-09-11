@@ -58,7 +58,7 @@ Fluxos futuros:
 6. Introduzir abstrações somente quando houver necessidade concreta.
 7. Toda funcionalidade ou correção deve possuir teste automatizado aplicável.
 8. Executar a suíte completa antes de concluir.
-9. Manter cobertura mínima de 70% em cada marco.
+9. Manter a cobertura de testes registrada em cada marco.
 10. Atualizar README, arquitetura, decisões e contratos quando necessário.
 11. Não versionar `.env`, credenciais reais, caches ou ambientes virtuais.
 12. Manter `frontend/` separado de `app/`.

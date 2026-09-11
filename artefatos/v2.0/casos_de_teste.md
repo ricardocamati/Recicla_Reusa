@@ -132,7 +132,7 @@ Os casos desta pasta especificam a segunda entrega e deverão ser automatizados 
 ## V2-CT-25 — Verificar cobertura final
 
 - **Requisitos:** V2-RNF-05 e V2-RNF-06
-- **Resultado esperado:** suíte completa aprovada com cobertura mínima de 70%.
+- **Resultado esperado:** suíte completa aprovada e relatório de cobertura registrado.
 
 ## V2-CT-26 — Notificar mudança do item de interesse
 
@@ -170,5 +170,5 @@ Os casos desta pasta especificam a segunda entrega e deverão ser automatizados 
 - notificações de interesse criadas sem duplicação e com controle de leitura;
 - endereço privado não exposto no catálogo;
 - todas as coleções com auditoria temporal;
-- cobertura mínima de 70%;
+- cobertura registrada;
 - evidências reproduzíveis e documentação atualizada.

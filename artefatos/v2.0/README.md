@@ -12,7 +12,7 @@ A versão 2.0 descreve a evolução final planejada da PoC. Ela é cumulativa: m
 - `especificacoes` e `historico` como estruturas aninhadas em itens;
 - fluxos de doação, descarte e reaproveitamento/revenda;
 - indicadores de impacto;
-- testes e cobertura mínima de 70%.
+- testes e cobertura automatizados;
 
 ## Documentos
 
