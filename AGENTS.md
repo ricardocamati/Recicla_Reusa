@@ -4,7 +4,7 @@
 
 O Recicla/Reusa é uma PoC acadêmica de Engenharia de Software alinhada ao ODS 12. O produto completo deverá apoiar doação, descarte formal e reaproveitamento/revenda de eletrônicos, com rastreamento do ciclo de vida.
 
-O estado inicial possui somente o CRUD da coleção MongoDB `usuarios`. Essa limitação é intencional para que a evolução arquitetural e funcional permaneça visível no histórico do projeto.
+O estado atual da v1.0 possui CRUD das coleções MongoDB `usuarios` e `itens`, autenticação por sessão, frontend modular e validação Docker/Selenium. Fluxos de interesse, histórico completo e pontos de coleta detalhados continuam reservados para a v2.0.
 
 ## Stack
 
@@ -12,8 +12,9 @@ O estado inicial possui somente o CRUD da coleção MongoDB `usuarios`. Essa lim
 - FastAPI e Uvicorn
 - PyMongo e MongoDB
 - Pydantic
-- Pytest, pytest-cov e mongomock
+- Pytest, pytest-cov, mongomock e Selenium
 - Docker Compose
+- scripts versionados de evidência E2E
 - frontend simples da v1.0 em HTML, CSS e JavaScript
 
 ## Arquitetura

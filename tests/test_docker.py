@@ -41,3 +41,21 @@ def test_documentacao_explica_subida_integrada_em_docker() -> None:
     assert "http://127.0.0.1:8080" in readme
     assert "http://127.0.0.1:8000/health" in readme
     assert "docker compose down" in readme
+
+
+def test_evidencia_docker_possui_verificador_reprodutivel() -> None:
+    caminho = RAIZ / "scripts" / "validar_stack_docker.py"
+    assert caminho.is_file()
+
+    script = caminho.read_text(encoding="utf-8")
+    assert '"docker", "compose"' in script
+    assert "mongosh" in script
+    assert "/health" in script
+    assert "127.0.0.1:8080" in script
+
+    smoke = RAIZ / "scripts" / "smoke_api_docker.py"
+    assert smoke.is_file()
+    smoke_script = smoke.read_text(encoding="utf-8")
+    assert "HTTPCookieProcessor" in smoke_script
+    assert "/api/itens" in smoke_script
+    assert "finally" in smoke_script

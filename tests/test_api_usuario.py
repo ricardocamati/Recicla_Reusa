@@ -57,6 +57,7 @@ def cliente(
             app=criar_app(repositorio, relogio=relogio),
         ),
         base_url="http://testserver",
+        headers={"Origin": "http://localhost:5500"},
     )
 
 
@@ -93,8 +94,34 @@ async def test_cadastro_persiste_endereco_datas_e_nao_expoe_senha(
     assert "senha" not in corpo
     assert "senha_hash" not in corpo
     persistido = next(iter(repositorio.usuarios.values()))
-    assert persistido.endereco.cidade == "Maringá"
+    assert persistido.cidade == "Maringá"
     assert persistido.senha_hash != "Senha123"
+
+
+@pytest.mark.anyio
+async def test_cadastro_aceita_endereco_sem_complemento(
+    repositorio: RepositorioEmMemoria,
+    instante: datetime,
+) -> None:
+    dados = payload(
+        email="sem-complemento@example.com",
+        tipo="beneficiario",
+        endereco={
+            "logradouro": "Rua B",
+            "numero": "10",
+            "cep": "87000-000",
+            "cidade": "Londrina",
+        },
+    )
+
+    async with cliente(repositorio, instante) as api:
+        resposta = await api.post("/api/usuarios", json=dados)
+
+    assert resposta.status_code == 201
+    assert resposta.json()["endereco"]["complemento"] is None
+    persistido = repositorio.buscar_por_email("sem-complemento@example.com")
+    assert persistido is not None
+    assert persistido.complemento is None
 
 
 @pytest.mark.anyio
@@ -289,3 +316,45 @@ async def test_exclusao_exige_sessao_e_propriedade(
     assert outro.status_code == 403
     assert proprio.status_code == 204
     assert depois.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_mutacao_autenticada_valida_origem_e_prioriza_403(
+    repositorio: RepositorioEmMemoria,
+    instante: datetime,
+) -> None:
+    async with cliente(repositorio, instante) as api:
+        criado = await api.post("/api/usuarios", json=payload())
+        usuario_id = criado.json()["id"]
+        await api.post("/api/auth/login", json={"email": "maria@example.com", "senha": "Senha123"})
+        dados_atualizacao = {
+            "nome": "Maria protegida",
+            "email": "maria.protegida@example.com",
+            "endereco": payload()["endereco"],
+        }
+
+        origem_invalida = await api.put(
+            f"/api/usuarios/{usuario_id}",
+            json=dados_atualizacao,
+            headers={"Origin": "https://origem-nao-permitida.example"},
+        )
+        api.headers.pop("Origin", None)
+        sem_origem = await api.put(
+            f"/api/usuarios/{usuario_id}",
+            json=dados_atualizacao,
+        )
+        referer_permitido = await api.put(
+            f"/api/usuarios/{usuario_id}",
+            json=dados_atualizacao,
+            headers={"Referer": "http://localhost:5500/perfil.html"},
+        )
+        outro_id_inexistente = await api.put(
+            "/api/usuarios/nao-existe",
+            json=dados_atualizacao,
+            headers={"Origin": "http://localhost:5500"},
+        )
+
+    assert origem_invalida.status_code == 403
+    assert sem_origem.status_code == 403
+    assert referer_permitido.status_code == 200
+    assert outro_id_inexistente.status_code == 403

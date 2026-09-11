@@ -21,6 +21,7 @@ dev = [
     "mongomock>=4.3,<5.0",
     "pytest>=8.3,<9.0",
     "pytest-cov>=6.0,<7.0",
+    "selenium>=4.20,<5.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -29,9 +30,6 @@ include = ["app*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=app --cov-report=term-missing --cov-fail-under=70"
-
-[tool.coverage.run]
-omit = ["app/main.py"]
 
 [tool.coverage.report]
 show_missing = true

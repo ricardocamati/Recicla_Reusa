@@ -5,7 +5,8 @@ Este arquivo reúne os comandos de instalação, execução e validação do pro
 ## Pré-requisitos
 
 - Python 3.11 ou superior para a execução manual e os testes;
-- Docker e Docker Compose v2 para executar o ambiente completo.
+- Docker e Docker Compose v2 para executar o ambiente completo;
+- Google Chrome para executar o teste de navegador com Selenium; o Selenium Manager resolve o driver compatível.
 
 ## Preparação
 
@@ -66,6 +67,19 @@ Documentação interativa: `http://127.0.0.1:8000/docs`.
 
 O `pyproject.toml` exige cobertura mínima de 70% e mostra as linhas não cobertas no terminal.
 
+Para executar somente o teste Selenium sem aplicar o limiar de cobertura à suíte parcial:
+
+```bash
+.venv/Scripts/python.exe -m pytest --no-cov -q tests/test_selenium_frontend.py
+```
+
+Com uma stack Docker já iniciada, as evidências de execução podem ser reproduzidas com:
+
+```bash
+.venv/Scripts/python.exe scripts/validar_stack_docker.py --project recicla_reusa_audit
+.venv/Scripts/python.exe scripts/smoke_api_docker.py --crud
+```
+
 ## Frontend da v1.0
 
 No ambiente completo, o frontend é servido pelo Python `http.server` na porta `8080`. Para execução manual sem container, ele pode ser servido separadamente a partir de `frontend/`, por exemplo:
@@ -82,7 +96,8 @@ Os testes atuais usam:
 - API com transporte ASGI;
 - Repository com `mongomock`;
 - API executada contra MongoDB real em Docker Compose, com CRUD completo validado;
-- aplicação completa executável no Compose com backend FastAPI e frontend Python `http.server`.
+- aplicação completa executável no Compose com backend FastAPI e frontend Python `http.server`;
+- Selenium com Chrome headless, usando servidores locais isolados para frontend e API simulada.
 
 A validação real realizada confirmou os serviços `mongo`, `backend` e `frontend` em execução saudável e os fluxos HTTP de criação, listagem, consulta, atualização e exclusão.
 
@@ -122,4 +137,4 @@ A validação executada confirmou:
 - smoke test funcional → cadastro `201`, login `200`, `/me` `200`, CRUD de item, logout `204` e `/me` posterior `401`;
 - frontend aberto no navegador a partir de `http://127.0.0.1:8080`.
 
-A suíte completa também foi executada: 52 testes aprovados, cobertura total de 94,28%, compilação Python, verificação `node --check` dos módulos JavaScript e `git diff --check` sem erros.
+A suíte completa também foi executada: 77 testes aprovados, cobertura total de 94,87% com `app/main.py` incluído, incluindo o teste Selenium, compilação Python, verificação `node --check` dos módulos JavaScript e `git diff --check` sem erros.

@@ -98,7 +98,7 @@ class ItemService:
             raise UsuarioNaoEncontradoError(item.proprietario_id)
         return ItemMapper.para_resposta(
             item,
-            cidade_proprietario=proprietario.endereco.cidade,
+            cidade_proprietario=proprietario.cidade,
         )
 
     def _buscar_proprietarios(self, itens: list[Item]) -> dict[str, Usuario]:

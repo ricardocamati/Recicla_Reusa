@@ -1,0 +1,22 @@
+Comando:
+
+```text
+.venv/Scripts/python.exe -m pytest -q --cov=app --cov-report=term-missing
+```
+
+Saída real resumida:
+
+```text
+........................................................................ [ 93%]
+.....                                                                    [100%]
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.11.15-final-0 _______________
+
+Name                                           Stmts   Miss  Cover
+----------------------------------------------------------------------------
+TOTAL                                            839     43    95%
+Required test coverage of 70% reached. Total coverage: 94.87%
+77 passed in 29.58s
+```
+
+O escopo medido inclui `app/main.py`; nenhuma exclusão de módulo da aplicação foi configurada.

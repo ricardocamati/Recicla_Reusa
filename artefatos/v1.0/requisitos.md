@@ -2,7 +2,7 @@
 
 ## 1. Objetivo
 
-Entregar a primeira versão funcional da PoC com cadastros de usuários e itens eletrônicos, endereço aninhado, auditoria temporal, POO, documentação e testes automatizados.
+Entregar a primeira versão funcional da PoC com cadastros de usuários e itens eletrônicos, campos de endereço planos na persistência, auditoria temporal, POO, documentação e testes automatizados.
 
 > **Estado atual:** o backend atende aos requisitos de usuários, itens, endereço, auditoria, sessão, autorização e provisionamento controlado de `ponto_coleta`; o frontend simples em HTML, CSS e JavaScript também está implementado e validado em navegador.
 
@@ -10,11 +10,12 @@ Entregar a primeira versão funcional da PoC com cadastros de usuários e itens 
 
 ### V1-RF-01 — Cadastrar usuário
 
-Cadastrar usuário por `POST /api/usuarios` com `nome`, `email`, `senha`, `tipo` e o subdocumento `endereco`.
+Cadastrar usuário por `POST /api/usuarios` com `nome`, `email`, `senha`, `tipo` e o agrupamento HTTP `endereco`; na coleção `usuarios`, os campos do endereço devem ser persistidos no nível raiz.
 
 **Critérios de aceitação:**
 
 - endereço contém `logradouro`, `numero`, `cep`, `cidade` e `complemento` opcional;
+- o agrupamento `endereco` do contrato HTTP não é gravado como subdocumento MongoDB;
 - servidor gera `id`, `data_adicao` e `data_modificacao`;
 - criação válida retorna HTTP `201` e cabeçalho `Location`;
 - documento é persistido em `usuarios`.
@@ -96,7 +97,7 @@ Permitir ao `ponto_coleta` previamente provisionado consultar o catálogo e filt
 
 ### V1-RF-18 — Tratar falhas de acesso
 
-Retornar HTTP `401` para sessão ausente, inválida ou expirada e HTTP `403` quando o usuário autenticado não tiver perfil ou propriedade exigidos.
+Retornar HTTP `401` para sessão ausente, inválida ou expirada e HTTP `403` quando o usuário autenticado não tiver perfil, propriedade ou origem permitida para a operação.
 
 ### V1-RF-19 — Disponibilizar frontend simples
 
@@ -123,9 +124,9 @@ Encerrar o acesso por `POST /api/auth/logout`, removendo a sessão no servidor e
 
 Usar efetivamente MongoDB com as coleções `usuarios` e `itens`.
 
-### V1-RNF-02 — Documento aninhado
+### V1-RNF-02 — Campos planos de endereço
 
-Usar `usuarios.endereco` como subdocumento. Itens permanecem em coleção separada e referenciam usuários.
+Persistir `logradouro`, `numero`, `complemento`, `cep` e `cidade` como campos do nível raiz de `usuarios`, sem `usuarios.endereco`. Itens permanecem em coleção separada e referenciam usuários.
 
 ### V1-RNF-03 — Programação orientada a objetos
 
@@ -165,11 +166,11 @@ Persistir senha somente por hash forte com salt, usando biblioteca mantida; nunc
 
 ### V1-RNF-12 — Sessão de acesso
 
-Usar sessão temporária mantida no servidor e identificador aleatório enviado em cookie HttpOnly. A sessão deve ser validada em todas as rotas protegidas e invalidada no logout.
+Usar sessão temporária mantida no servidor e identificador aleatório enviado em cookie HttpOnly. A sessão deve ser validada em todas as rotas protegidas e invalidada no logout. Mutações autenticadas que carregam esse cookie devem exigir `Origin` ou `Referer` correspondente a uma origem configurada ou à própria origem da API.
 
 ### V1-RNF-13 — Superfície mínima
 
-Restringir CORS às origens configuradas e manter MongoDB sem exposição pública desnecessária.
+Restringir CORS às origens configuradas, rejeitar com HTTP `403` mutações autenticadas com origem ausente ou não permitida e manter MongoDB sem exposição pública desnecessária.
 
 ### V1-RNF-14 — Respostas seguras
 

@@ -40,7 +40,7 @@ Cada destino terá seu próprio fluxo de status e um histórico rastreável. O s
 
 ### Estado atual do repositório
 
-A primeira entrega conclui os fluxos de usuários e itens nas coleções MongoDB `usuarios` e `itens`: cadastro público de doadores e beneficiários, endereço como subdocumento, auditoria temporal em UTC, e-mail normalizado com índice único, sessões simples em cookie HttpOnly, catálogo filtrável, autorização por proprietário e frontend simples separado em HTML, CSS e JavaScript.
+A primeira entrega conclui os fluxos de usuários e itens nas coleções MongoDB `usuarios` e `itens`: cadastro público de doadores e beneficiários, campos de endereço planos no documento de usuário, auditoria temporal em UTC, e-mail normalizado com índice único, sessões simples em cookie HttpOnly, catálogo filtrável, autorização por proprietário e frontend simples separado em HTML, CSS e JavaScript.
 
 Itens referenciam o usuário por `proprietario_id` e não duplicam o endereço. O histórico de ciclo de vida, interesses e pontos de coleta permanecem na evolução da v2.0; a implementação atual mantém a evolução visível no histórico de commits.
 
@@ -74,7 +74,7 @@ A coleção `itens` deverá conter uma lista de subdocumentos com o histórico d
 - FastAPI e Uvicorn;
 - MongoDB e PyMongo;
 - Pydantic;
-- Pytest, pytest-cov e mongomock;
+- Pytest, pytest-cov, mongomock e Selenium;
 - HTML, CSS e JavaScript no frontend simples da v1.0;
 - Docker Compose para o ambiente local.
 
@@ -89,7 +89,7 @@ A separação entre API, DTOs, serviços, repositórios, modelos e mapeadores ma
 
 Consulte [docs/architecture.md](docs/architecture.md), [docs/decisions.md](docs/decisions.md), [docs/http-api.md](docs/http-api.md) e [TODO.md](TODO.md).
 
-Os artefatos estão separados por entrega em [artefatos/v1.0/](artefatos/v1.0/) e [artefatos/v2.0/](artefatos/v2.0/), com requisitos, regras de negócio, modelo de dados, casos de teste e matriz próprios para cada versão.
+Os artefatos estão separados por entrega em [artefatos/v1.0/](artefatos/v1.0/) e [artefatos/v2.0/](artefatos/v2.0/), com requisitos, regras de negócio, modelo de dados, casos de teste e matriz próprios para cada versão. O [registro da entrega v1.0](artefatos/v1.0/registro_entrega.md) vincula a base ao commit verificável e reúne as [evidências reproduzíveis](artefatos/v1.0/evidencias/).
 
 ## 8. Estrutura do repositório
 
@@ -128,7 +128,7 @@ Acesse:
 - documentação OpenAPI: <http://127.0.0.1:8000/docs>;
 - Mongo Express opcional: <http://127.0.0.1:18081>.
 
-O backend usa o nome de serviço `mongo` para acessar o banco dentro da rede Docker. O navegador acessa a API pela porta publicada `8000`, e o Compose acrescenta as origens das portas `5500` e `8080` à configuração CORS. `SECURE_COOKIES=false` é intencional no ambiente HTTP local; em produção, use HTTPS e uma configuração própria.
+O backend usa o nome de serviço `mongo` para acessar o banco dentro da rede Docker. O navegador acessa a API pela porta publicada `8000`, e o Compose acrescenta as origens das portas `5500` e `8080` à configuração CORS. Além do CORS, mutações que transportam o cookie de sessão exigem `Origin` ou `Referer` permitido. `SECURE_COOKIES=false` é intencional no ambiente HTTP local; em produção, use HTTPS e uma configuração própria.
 
 Para acompanhar os logs e encerrar o ambiente:
 
@@ -169,7 +169,7 @@ Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e 
 .venv/Scripts/python.exe -m pytest
 ```
 
-A suíte deve manter cobertura mínima de **70%**, conforme a AEP. Os testes unitários do repositório usam `mongomock`; a aplicação utiliza PyMongo e MongoDB em execução normal.
+A suíte deve manter cobertura mínima de **70%**, conforme a AEP. A execução validada da entrega aprovou **77 testes**, com **94,87%** de cobertura incluindo `app/main.py`. Os testes unitários do repositório usam `mongomock`; a aplicação utiliza PyMongo e MongoDB em execução normal. O teste Selenium usa Chrome headless e servidores locais isolados para verificar as seis telas do frontend. Para reproduzir a integração Docker/MongoDB, use os scripts documentados em [evidências](artefatos/v1.0/evidencias/).
 
 ## 12. Limites atuais
 

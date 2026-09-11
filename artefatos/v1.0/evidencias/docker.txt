@@ -1,0 +1,65 @@
+Ambiente isolado:
+
+```text
+docker_server=29.7.2
+project=recicla_reusa_audit
+volume=recicla_reusa_audit_mongo_data
+```
+
+`docker compose --project-name recicla_reusa_audit ps --all`:
+
+```text
+recicla_reusa_audit-backend-1    service=backend   Up (healthy)   127.0.0.1:8000->8000/tcp
+recicla_reusa_audit-frontend-1   service=frontend  Up (healthy)   127.0.0.1:8080->80/tcp
+recicla_reusa_audit-mongo-1      service=mongo     Up (healthy)   127.0.0.1:27018->27017/tcp
+```
+
+Verificador read-only:
+
+```text
+compose_config=pass
+compose_services=pass
+mongo_ping=pass
+api_health=pass
+api_docs=pass
+api_openapi=pass
+api_usuarios=pass
+frontend_home=pass
+frontend_index=pass
+stack_validation=pass
+```
+
+E2E mutável executado somente na stack e no volume isolados, com limpeza em `finally`:
+
+```text
+cadastro=201
+login=200
+me=200
+item_criacao=201
+item_atualizacao=200
+item_exclusao=204
+logout=204
+me_apos_logout=401
+cleanup_usuario=204
+smoke_crud=pass
+```
+
+Comandos dos scripts:
+
+```text
+.venv/Scripts/python.exe scripts/validar_stack_docker.py --project recicla_reusa_audit
+.venv/Scripts/python.exe scripts/smoke_api_docker.py --crud
+```
+
+Após a mudança para campos planos, a stack foi reconstruída com `docker compose build --no-cache backend frontend` e iniciada novamente com healthchecks aprovados. O smoke CRUD e a inspeção direta de um usuário temporário no MongoDB confirmaram a forma persistida:
+
+```text
+mongo_flat_shape=pass
+has_endereco=false
+logradouro=Rua de Evidência
+numero=100
+cep=87000000
+cidade=Maringá
+```
+
+O usuário temporário da inspeção foi removido automaticamente ao final do comando.

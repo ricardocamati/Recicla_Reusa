@@ -32,7 +32,7 @@ O frontend é servido como conteúdo estático pelo Python `http.server`. A API 
 - **Schemas (`app/schemas`)**: contratos Pydantic específicos para criação, atualização, login e resposta.
 - **Services (`app/services`)**: regras de negócio, autenticação, unicidade e coordenação dos casos de uso.
 - **Repositories (`app/repositories`)**: persistência e consultas MongoDB, incluindo o índice único de e-mail.
-- **Models (`app/models`)**: representação dos documentos persistidos, incluindo o endereço aninhado e auditoria temporal.
+- **Models (`app/models`)**: representação dos documentos persistidos, com os campos de endereço no nível raiz e auditoria temporal.
 - **Mappers (`app/mappers`)**: conversões explícitas entre contratos e modelos, sem expor `senha_hash`.
 - **Security (`app/security`)**: hash de senha com scrypt, sessões em memória e identificadores aleatórios.
 - **Exceptions**: falhas do domínio tratadas de forma centralizada pela API.
@@ -58,20 +58,18 @@ Um documento persistido possui a seguinte forma lógica:
   "nome": "Maria Silva",
   "email": "maria@example.com",
   "tipo": "doador",
-  "endereco": {
-    "logradouro": "Rua das Flores",
-    "numero": "10A",
-    "complemento": "Casa 2",
-    "cep": "87000000",
-    "cidade": "Maringá"
-  },
+  "logradouro": "Rua das Flores",
+  "numero": "10A",
+  "complemento": "Casa 2",
+  "cep": "87000000",
+  "cidade": "Maringá",
   "senha_hash": "scrypt$...",
   "data_adicao": "2026-09-07T12:00:00Z",
   "data_modificacao": "2026-09-07T12:00:00Z"
 }
 ```
 
-O `_id` do MongoDB é convertido para `id` nos DTOs. `data_adicao` e `data_modificacao` são geradas pelo servidor em UTC. O índice `usuario_email_unico` impede duplicidade depois da normalização do e-mail.
+O agrupamento `endereco` existe somente nos DTOs JSON de entrada e saída para manter o contrato HTTP legível; o `Usuario` de domínio e o documento MongoDB usam os cinco campos no nível raiz. O `_id` do MongoDB é convertido para `id` nos DTOs. `data_adicao` e `data_modificacao` são geradas pelo servidor em UTC. O índice `usuario_email_unico` impede duplicidade depois da normalização do e-mail.
 
 Listagens públicas usam DTOs resumidos. O perfil completo exige que a sessão corresponda ao usuário consultado; a autorização de alteração e exclusão também é validada no backend.
 

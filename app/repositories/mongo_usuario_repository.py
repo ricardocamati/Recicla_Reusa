@@ -8,7 +8,7 @@ from pymongo.collection import Collection
 from pymongo.errors import DuplicateKeyError
 
 from app.exceptions import EmailDuplicadoError
-from app.models.usuario import Endereco, Usuario
+from app.models.usuario import Usuario
 
 
 class MongoUsuarioRepository:
@@ -98,5 +98,4 @@ class MongoUsuarioRepository:
     def _para_modelo(documento: dict[str, Any]) -> Usuario:
         dados = dict(documento)
         dados["id"] = str(dados.pop("_id"))
-        dados["endereco"] = Endereco(**dados["endereco"])
         return Usuario(**dados)

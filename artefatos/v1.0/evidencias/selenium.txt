@@ -1,0 +1,14 @@
+Comando:
+
+```text
+.venv/Scripts/python.exe -m pytest --no-cov -q tests/test_selenium_frontend.py
+```
+
+Saída real:
+
+```text
+.                                                                        [100%]
+1 passed in 5.61s
+```
+
+O teste usou Google Chrome headless, servidor estático local para `frontend/` e API simulada local com CORS explícito. Nenhum dado de aplicação foi criado.

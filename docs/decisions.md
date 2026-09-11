@@ -36,7 +36,7 @@
 
 **Decisão:** a primeira entrega conclui o fluxo de usuários antes de introduzir a coleção `itens`.
 
-**Motivação:** criar uma base funcional com endereço aninhado, auditoria temporal, cadastro seguro e autorização do próprio perfil, deixando a evolução para eletrônicos e relacionamentos visível nos commits posteriores.
+**Motivação:** criar uma base funcional com endereço, auditoria temporal, cadastro seguro e autorização do próprio perfil, deixando a evolução para eletrônicos e relacionamentos visível nos commits posteriores.
 
 **Consequência:** usuários já possuem contrato estável para serem referenciados pelos itens; os fluxos completos de doação, descarte e revenda continuam fora deste marco.
 
@@ -62,7 +62,7 @@
 
 **Motivação:** permitir evolução independente do cliente web e do backend.
 
-**Consequência:** a pasta existe desde o início, mas não contém implementação neste marco.
+**Consequência:** a pasta contém as seis telas HTML, o tema escuro e módulos JavaScript separados; o frontend é servido sem etapa de build obrigatória.
 
 ## ADR-009 — Estratégia de testes
 
@@ -84,9 +84,9 @@
 
 **Decisão:** persistir itens na coleção `itens`, relacionando-os a `usuarios` por `proprietario_id`; no cadastro, esse identificador será obtido exclusivamente da sessão autenticada.
 
-**Motivação:** impedir que o cliente associe um item a outro usuário, manter o endereço normalizado em um único documento e permitir filtros independentes de catálogo.
+**Motivação:** impedir que o cliente associe um item a outro usuário, manter os campos de endereço no documento do usuário e permitir filtros independentes de catálogo.
 
-**Consequência:** o Service coordena a validação do proprietário e a autorização de alteração/exclusão. A resposta pode derivar a cidade do usuário, mas o item não duplica o subdocumento `endereco`. Status inicial, identificador e auditoria permanecem controlados pelo servidor.
+**Consequência:** o Service coordena a validação do proprietário e a autorização de alteração/exclusão. A resposta pode derivar a cidade do usuário, mas o item não duplica os campos de endereço. Status inicial, identificador e auditoria permanecem controlados pelo servidor.
 
 ## ADR-012 — Provisionamento local de ponto de coleta
 
@@ -103,3 +103,35 @@
 **Motivação:** permitir que uma máquina limpa execute a PoC sem instalar Python, Node.js ou dependências da aplicação, preservando também a execução manual para desenvolvimento.
 
 **Consequência:** o backend usa `mongo` como hostname interno, o frontend continua sem etapa de build e o CORS inclui as origens das portas estáticas configuradas. O volume do MongoDB é persistente por padrão; a remoção exige `docker compose down -v` explícito.
+
+## ADR-014 — Proteção de origem para sessões por cookie
+
+**Decisão:** CORS não será tratado como única proteção contra CSRF. Toda mutação (`POST`, `PUT`, `PATCH` ou `DELETE`) que carrega o cookie de sessão deve validar `Origin` ou `Referer` contra as origens configuradas; a origem da própria API também é permitida.
+
+**Motivação:** CORS controla a leitura da resposta, mas não impede sozinho o envio de uma requisição cross-site com efeito colateral.
+
+**Consequência:** `app/main.py` responde `403` quando a origem está ausente ou não permitida. O comportamento é coberto por `tests/test_api_usuario.py::test_mutacao_autenticada_valida_origem_e_prioriza_403`.
+
+## ADR-015 — Precedência dos códigos 403 e 404
+
+**Decisão:** nas operações `PUT` e `DELETE` de usuário, a API autentica a sessão e verifica a propriedade antes de consultar a existência do identificador. Em operações de item, o Service consulta o item antes de verificar a propriedade.
+
+**Motivação:** evita revelar a existência de identificadores de usuários a uma sessão que não é titular, sem alterar o contrato útil do catálogo de itens.
+
+**Consequência:** usuário com ID diferente da sessão recebe `403`, inclusive se o ID não existir; consulta ou mutação do próprio ID inexistente pode retornar `404`. Item inexistente retorna `404`; item existente de outro proprietário retorna `403`. A regra está em `V1-RN-15`, `V1-RN-25` e `docs/http-api.md`.
+
+## ADR-016 — Evidências versionadas de execução
+
+**Decisão:** as validações externas à suíte unitária devem ter scripts reproduzíveis e relatórios sem credenciais em `artefatos/v1.0/evidencias/`.
+
+**Motivação:** um relato manual não permite auditar a execução real de Docker, MongoDB e navegador.
+
+**Consequência:** `scripts/validar_stack_docker.py` valida a stack sem mutação; `scripts/smoke_api_docker.py --crud` executa o fluxo E2E em ambiente isolado e remove apenas os dados temporários criados pelo próprio teste; o Selenium possui relatório próprio.
+
+## ADR-017 — Campos de endereço planos na persistência
+
+**Decisão:** persistir `logradouro`, `numero`, `complemento`, `cep` e `cidade` como campos no nível raiz de `usuarios`, sem o subdocumento MongoDB `endereco`. O objeto `endereco` permanece somente nos DTOs HTTP.
+
+**Motivação:** simplificar o documento persistido e atender à decisão de não usar subdocumentos para o endereço, sem quebrar o contrato JSON já consumido pelo frontend.
+
+**Consequência:** o Mapper converte o objeto HTTP para campos planos antes de chamar o Repository e reconstrói o agrupamento somente nas respostas. A v1.0 não grava nem duplica `usuarios.endereco`; subdocumentos previstos para históricos e especificações continuam pertencendo ao escopo futuro da v2.0.

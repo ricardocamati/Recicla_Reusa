@@ -10,11 +10,11 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Separar API, Service, Repository, Model, Mapper e schemas.
 - [x] Criar testes automatizados para a base de usuários.
 - [x] Validar os CRUDs de usuários e itens com MongoDB real via Docker Compose.
-- [x] Obter cobertura superior a 70% — resultado atual: 94,28% em 52 testes.
+- [x] Obter cobertura superior a 70% — resultado atual: 94,87% em 77 testes, medindo também `app/main.py`.
 
 ### Usuários — concluir antes da v1.0
 
-- [x] Substituir `cidade` pelo subdocumento `endereco` com `logradouro`, `numero`, `complemento`, `cep` e `cidade`.
+- [x] Persistir `logradouro`, `numero`, `complemento`, `cep` e `cidade` como campos planos do usuário.
 - [x] Normalizar CEP para oito dígitos.
 - [x] Substituir `data_cadastro` por `data_adicao`.
 - [x] Incluir `data_modificacao`.
@@ -55,6 +55,7 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Retornar `401` para falha de autenticação e `403` para falta de autorização.
 - [x] Ocultar e-mail, endereço completo, senha e hash nos resumos públicos.
 - [x] Restringir CORS às origens configuradas.
+- [x] Validar `Origin` ou `Referer` em mutações autenticadas com cookie e rejeitar origem ausente ou não permitida.
 - [ ] Garantir que logs não incluam senha, hash ou identificador de sessão.
 - [x] Criar testes automatizados de autenticação, autorização e exposição de dados.
 
@@ -74,15 +75,17 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Tratar validação, `401`, `403`, `404` e indisponibilidade da API.
 - [x] Configurar origem do frontend na lista CORS do backend.
 - [x] Validar o fluxo completo em navegador.
+- [x] Validar as seis telas com Selenium e Chrome headless.
 
-Evidências: `tests/test_frontend.py`, `tests/test_docker.py`, `node --check frontend/js/*.js`, smoke test manual com `python -m http.server 5500` e smoke test integrado com frontend Python (`http.server`), backend e MongoDB em Docker Compose.
+Evidências: `tests/test_frontend.py`, `tests/test_selenium_frontend.py`, `tests/test_docker.py`, `scripts/validar_stack_docker.py`, `scripts/smoke_api_docker.py`, `node --check frontend/js/*.js`, smoke test manual com `python -m http.server 5500`, teste Selenium com Chrome headless e smoke test integrado com frontend Python (`http.server`), backend e MongoDB em Docker Compose.
 
 ### Qualidade da v1.0
 
 - [x] Atualizar os testes de usuários para o novo contrato.
 - [x] Criar testes de Service, Repository e API para itens.
 - [x] Validar os dois CRUDs contra MongoDB real.
-- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,28% em 52 testes.
+- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,87% em 77 testes, com `app/main.py` incluído.
 - [x] Atualizar documentação HTTP e arquitetura executável.
 - [x] Validar o projeto em máquina limpa — Compose configurado sem `.env` local, imagens backend/frontend construídas com `--no-cache`, volume Mongo isolado novo, healthchecks e smoke test HTTP/navegador aprovados.
-- [ ] Publicar no GitHub e identificar a v1.0 por commit, tag ou release.
+- [x] Identificar localmente a entrega por commit-base verificável e tag `v1.0`.
+- [ ] Publicar a tag/release no GitHub e vincular o vídeo da apresentação.
