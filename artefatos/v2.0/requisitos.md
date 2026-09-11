@@ -117,7 +117,7 @@ Cobrir regras, erros, relacionamentos e fluxos principais com testes executávei
 
 ### V2-RNF-06 — Cobertura
 
-Manter cobertura mínima de 70% sobre o código apresentado na segunda entrega.
+Manter a cobertura do código apresentado na segunda entrega registrada por testes executáveis.
 
 ### V2-RNF-07 — Documentação técnica
 

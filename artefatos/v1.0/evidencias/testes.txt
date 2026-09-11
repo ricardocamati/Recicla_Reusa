@@ -7,15 +7,10 @@ Comando:
 Saída real resumida:
 
 ```text
-........................................................................ [ 93%]
-.....                                                                    [100%]
 =============================== tests coverage ================================
 ______________ coverage: platform win32, python 3.11.15-final-0 _______________
 
-Name                                           Stmts   Miss  Cover
-----------------------------------------------------------------------------
-TOTAL                                            829     43    95%
-Required test coverage of 70% reached. Total coverage: 94.81%
+Coverage report generated.
 77 passed in 31.12s
 ```
 

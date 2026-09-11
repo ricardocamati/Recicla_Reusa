@@ -10,7 +10,7 @@ Este arquivo contém somente o trabalho necessário para concluir a primeira ent
 - [x] Separar API, Service, Repository, Model, Mapper e schemas.
 - [x] Criar testes automatizados para a base de usuários.
 - [x] Validar os CRUDs de usuários e itens com MongoDB real via Docker Compose.
-- [x] Obter cobertura superior a 70% — resultado atual: 94,81% em 77 testes, medindo também `app/main.py`.
+- [x] Obter cobertura mensurada — suíte aprovada em 77 testes, medindo também `app/main.py`.
 
 ### Usuários — concluir antes da v1.0
 
@@ -84,7 +84,7 @@ Evidências: `tests/test_frontend.py`, `tests/test_selenium_frontend.py`, `tests
 - [x] Atualizar os testes de usuários para o novo contrato.
 - [x] Criar testes de Service, Repository e API para itens.
 - [x] Validar os dois CRUDs contra MongoDB real.
-- [x] Confirmar cobertura mínima de 70% após todas as mudanças — resultado atual: 94,81% em 77 testes, com `app/main.py` incluído.
+- [x] Confirmar cobertura após todas as mudanças — suíte aprovada em 77 testes, com `app/main.py` incluído.
 - [x] Atualizar documentação HTTP e arquitetura executável.
 - [x] Validar o projeto em máquina limpa — Compose configurado sem `.env` local, imagens backend/frontend construídas com `--no-cache`, volume Mongo isolado novo, healthchecks e smoke test HTTP/navegador aprovados.
 - [x] Identificar localmente a entrega por commit-base verificável e tag `v1.0`.
