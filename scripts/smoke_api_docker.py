@@ -60,18 +60,26 @@ def exigir(status: int, esperado: int | set[int], etapa: str) -> None:
         raise RuntimeError(f"{etapa}: esperado {esperado_texto}, recebido {status}")
 
 
+def exigir_usuario_plano(usuario: dict[str, Any]) -> None:
+    campos = ("logradouro", "numero", "complemento", "cep", "cidade")
+    ausentes = [campo for campo in campos if campo not in usuario]
+    if "endereco" in usuario or ausentes:
+        raise RuntimeError(
+            "contrato_usuario: resposta deve usar campos planos; "
+            f"ausentes={','.join(ausentes) or 'nenhum'}"
+        )
+
+
 def payload_usuario(email: str) -> dict[str, Any]:
     return {
         "nome": "Smoke Docker",
         "email": email,
         "senha": "Smoke2026",
         "tipo": "doador",
-        "endereco": {
-            "logradouro": "Rua de Evidência",
-            "numero": "100",
-            "cep": "87000-000",
-            "cidade": "Maringá",
-        },
+        "logradouro": "Rua de Evidência",
+        "numero": "100",
+        "cep": "87000-000",
+        "cidade": "Maringá",
     }
 
 
@@ -107,8 +115,10 @@ def executar_crud(args: argparse.Namespace) -> int:
             dados=payload_usuario(email),
         )
         exigir(status, 201, "cadastro")
+        exigir_usuario_plano(usuario)
         usuario_id = usuario["id"]
         print("cadastro=201")
+        print("contrato_usuario_plano=pass")
 
         status, _ = cliente.requisitar(
             "/api/auth/login",

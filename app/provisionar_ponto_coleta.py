@@ -36,13 +36,11 @@ def main(argumentos: Sequence[str] | None = None) -> int:
             nome=args.nome,
             email=args.email,
             senha=senha,
-            endereco={
-                "logradouro": args.logradouro,
-                "numero": args.numero,
-                "complemento": args.complemento,
-                "cep": args.cep,
-                "cidade": args.cidade,
-            },
+            logradouro=args.logradouro,
+            numero=args.numero,
+            complemento=args.complemento,
+            cep=args.cep,
+            cidade=args.cidade,
         )
     except ValidationError as erro:
         parser.error(f"dados inválidos: {erro.errors()[0]['msg']}")

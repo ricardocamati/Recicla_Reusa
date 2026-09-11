@@ -46,13 +46,11 @@ def request(
         email=email,
         senha="Senha123",
         tipo="doador",
-        endereco={
-            "logradouro": "Rua das Flores",
-            "numero": "10A",
-            "complemento": "Casa 2",
-            "cep": "87000000",
-            "cidade": "Maringá",
-        },
+        logradouro="Rua das Flores",
+        numero="10A",
+        complemento="Casa 2",
+        cep="87000000",
+        cidade="Maringá",
     )
 
 
@@ -63,12 +61,10 @@ def update_request(
     return UsuarioUpdateRequest(
         nome=nome,
         email=email,
-        endereco={
-            "logradouro": "Avenida Brasil",
-            "numero": "200",
-            "cep": "87010000",
-            "cidade": "Sarandi",
-        },
+        logradouro="Avenida Brasil",
+        numero="200",
+        cep="87010000",
+        cidade="Sarandi",
     )
 
 
@@ -81,7 +77,7 @@ def test_criar_usuario_registra_datas_endereco_e_id() -> None:
 
     assert resposta.id == "1"
     assert resposta.nome == "Maria"
-    assert resposta.endereco.cep == "87000000"
+    assert resposta.cep == "87000000"
     assert resposta.data_adicao == instante
     assert resposta.data_modificacao == instante
     assert repositorio.usuarios["1"].senha_hash != "Senha123"
@@ -104,7 +100,7 @@ def test_atualizar_preserva_id_tipo_e_data_adicao_e_altera_modificacao() -> None
     assert resposta.tipo == "doador"
     assert resposta.data_adicao == datetime(2026, 9, 7, 12, 0, tzinfo=UTC)
     assert resposta.data_modificacao == datetime(2026, 9, 7, 13, 0, tzinfo=UTC)
-    assert resposta.endereco.cidade == "Sarandi"
+    assert resposta.cidade == "Sarandi"
 
 
 def test_email_normalizado_nao_pode_ser_repetido() -> None:

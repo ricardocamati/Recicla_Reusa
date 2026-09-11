@@ -5,7 +5,7 @@ import pytest
 
 from app.exceptions import EmailDuplicadoError
 from app.models.usuario import Usuario
-from app.schemas.usuario import EnderecoSchema, PontoColetaProvisionRequest
+from app.schemas.usuario import PontoColetaProvisionRequest
 from app.services.usuario_service import UsuarioService
 
 
@@ -29,12 +29,10 @@ def request(**alteracoes) -> PontoColetaProvisionRequest:
         "nome": "Ponto de Coleta Central",
         "email": "coleta.central@example.com",
         "senha": "Senha123",
-        "endereco": {
-            "logradouro": "Rua da Reciclagem",
-            "numero": "100",
-            "cep": "87000-000",
-            "cidade": "Maringá",
-        },
+        "logradouro": "Rua da Reciclagem",
+        "numero": "100",
+        "cep": "87000-000",
+        "cidade": "Maringá",
     }
     dados.update(alteracoes)
     return PontoColetaProvisionRequest(**dados)
