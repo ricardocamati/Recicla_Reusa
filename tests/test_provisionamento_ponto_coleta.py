@@ -55,7 +55,7 @@ def test_provisiona_ponto_coleta_por_servico_sem_expor_senha() -> None:
     persistido = repositorio.usuarios[resposta.id]
     assert persistido.tipo == "ponto_coleta"
     assert persistido.senha_hash != "Senha123"
-    assert persistido.endereco.cidade == "Maringá"
+    assert persistido.cidade == "Maringá"
 
 
 def test_provisionamento_rejeita_email_duplicado() -> None:

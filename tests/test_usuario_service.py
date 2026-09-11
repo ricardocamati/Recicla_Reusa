@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import pytest
 
 from app.exceptions import EmailDuplicadoError, UsuarioNaoEncontradoError
-from app.models.usuario import Endereco, Usuario
+from app.models.usuario import Usuario
 from app.schemas.usuario import UsuarioCreateRequest, UsuarioUpdateRequest
 from app.services.usuario_service import UsuarioService
 

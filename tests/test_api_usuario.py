@@ -94,7 +94,7 @@ async def test_cadastro_persiste_endereco_datas_e_nao_expoe_senha(
     assert "senha" not in corpo
     assert "senha_hash" not in corpo
     persistido = next(iter(repositorio.usuarios.values()))
-    assert persistido.endereco.cidade == "Maringá"
+    assert persistido.cidade == "Maringá"
     assert persistido.senha_hash != "Senha123"
 
 
@@ -121,7 +121,7 @@ async def test_cadastro_aceita_endereco_sem_complemento(
     assert resposta.json()["endereco"]["complemento"] is None
     persistido = repositorio.buscar_por_email("sem-complemento@example.com")
     assert persistido is not None
-    assert persistido.endereco.complemento is None
+    assert persistido.complemento is None
 
 
 @pytest.mark.anyio

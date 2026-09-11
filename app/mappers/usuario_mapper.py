@@ -1,4 +1,4 @@
-from app.models.usuario import Endereco, Usuario
+from app.models.usuario import Usuario
 from app.schemas.usuario import (
     EnderecoSchema,
     PontoColetaProvisionRequest,
@@ -10,23 +10,25 @@ from app.schemas.usuario import (
 from app.security.passwords import hash_password
 
 
-def endereco_para_modelo(endereco: EnderecoSchema) -> Endereco:
-    return Endereco(
-        logradouro=endereco.logradouro,
-        numero=endereco.numero,
-        complemento=endereco.complemento,
-        cep=endereco.cep,
-        cidade=endereco.cidade,
-    )
+def campos_endereco(endereco: EnderecoSchema) -> dict[str, str | None]:
+    """Converte o agrupamento HTTP em campos planos do modelo persistido."""
+    return {
+        "logradouro": endereco.logradouro,
+        "numero": endereco.numero,
+        "complemento": endereco.complemento,
+        "cep": endereco.cep,
+        "cidade": endereco.cidade,
+    }
 
 
-def endereco_para_schema(endereco: Endereco) -> EnderecoSchema:
+def endereco_para_schema(usuario: Usuario) -> EnderecoSchema:
+    """Reconstrói o agrupamento do contrato HTTP sem criar subdocumento."""
     return EnderecoSchema(
-        logradouro=endereco.logradouro,
-        numero=endereco.numero,
-        complemento=endereco.complemento,
-        cep=endereco.cep,
-        cidade=endereco.cidade,
+        logradouro=usuario.logradouro,
+        numero=usuario.numero,
+        complemento=usuario.complemento,
+        cep=usuario.cep,
+        cidade=usuario.cidade,
     )
 
 
@@ -49,7 +51,7 @@ class UsuarioMapper:
             nome=request.nome,
             email=request.email,
             tipo=tipo,
-            endereco=endereco_para_modelo(request.endereco),
+            **campos_endereco(request.endereco),
             senha_hash=hash_password(request.senha),
             data_adicao=instante,
             data_modificacao=instante,
@@ -64,7 +66,7 @@ class UsuarioMapper:
             nome=usuario.nome,
             email=usuario.email,
             tipo=usuario.tipo,
-            endereco=endereco_para_schema(usuario.endereco),
+            endereco=endereco_para_schema(usuario),
             data_adicao=usuario.data_adicao,
             data_modificacao=usuario.data_modificacao,
         )
@@ -77,12 +79,17 @@ class UsuarioMapper:
             id=usuario.id,
             nome=usuario.nome,
             tipo=usuario.tipo,
-            cidade=usuario.endereco.cidade,
+            cidade=usuario.cidade,
         )
 
     @staticmethod
     def atualizar_modelo(request: UsuarioUpdateRequest, usuario: Usuario, *, instante) -> None:
         usuario.nome = request.nome
         usuario.email = request.email
-        usuario.endereco = endereco_para_modelo(request.endereco)
+        dados_endereco = campos_endereco(request.endereco)
+        usuario.logradouro = dados_endereco["logradouro"]
+        usuario.numero = dados_endereco["numero"]
+        usuario.complemento = dados_endereco["complemento"]
+        usuario.cep = dados_endereco["cep"]
+        usuario.cidade = dados_endereco["cidade"]
         usuario.data_modificacao = instante

@@ -5,7 +5,7 @@ import pytest
 
 from app.exceptions import ItemNaoAutorizadoError, ItemNaoEncontradoError, UsuarioNaoEncontradoError
 from app.models.item import Item
-from app.models.usuario import Endereco, Usuario
+from app.models.usuario import Usuario
 from app.schemas.item import FiltrosItem, ItemCreateRequest, ItemUpdateRequest
 from app.services.item_service import ItemService
 
@@ -66,13 +66,11 @@ def usuario_doador(usuario_id: str = "u1") -> Usuario:
         nome="Maria",
         email=f"{usuario_id}@example.com",
         tipo="doador",
-        endereco=Endereco(
-            logradouro="Rua A",
-            numero="10",
-            cep="87000000",
-            cidade="Maringá",
-            complemento=None,
-        ),
+        logradouro="Rua A",
+        numero="10",
+        cep="87000000",
+        cidade="Maringá",
+        complemento=None,
         senha_hash="hash",
         data_adicao=instante,
         data_modificacao=instante,
