@@ -128,3 +128,5 @@ As regras de transição e as exigências de referência de cada etapa (ponto de
 ## Testabilidade
 
 Services recebem o repositório por injeção de dependência e o relógio por injeção opcional. Isso permite testar datas, expiração de sessão e regras sem depender do relógio do sistema. Os testes do repositório usam `mongomock`; a aplicação utiliza PyMongo e MongoDB em execução normal.
+
+O frontend não tem lógica de autorização própria: o catálogo só oferece o botão de interesse quando o item é de outra pessoa, está disponível e não é descarte, e a tela de itens mostra apenas a próxima transição válida de cada fluxo, com seleção de ponto compatível ou de comprador quando a regra exige. O backend rejeita qualquer atalho. `scripts/validar_jornadas_v2.py` percorre doação, descarte e revenda pela interface, confere as referências gravadas, audita as datas em UTC e remove somente os documentos criados por ele.

@@ -183,3 +183,29 @@ def test_css_aplica_modo_escuro() -> None:
         "--hero: #142d22",
     ):
         assert superficie in css
+
+def test_catalogo_permite_manifestar_interesse() -> None:
+    catalogo = ler("js/catalogo.js")
+    assert 'data-acao' in catalogo or "dataset.acao" in catalogo
+    assert "interesse" in catalogo
+    assert "/api/interesses" in catalogo
+    # Descarte é coletado por ponto de coleta, não disputado por interessados.
+    assert 'item.destino !== "descarte"' in catalogo
+    assert "item.proprietario_id !== usuario.id" in catalogo
+
+
+def test_itens_oferece_acoes_do_fluxo_ao_proprietario() -> None:
+    itens = ler("js/itens.js")
+    for chave in (
+        '"doacao:reservado"',
+        '"descarte:disponivel"',
+        '"descarte:encaminhado"',
+        '"revenda:disponivel"',
+        '"revenda:em_avaliacao"',
+        '"revenda:recondicionado"',
+    ):
+        assert chave in itens, chave
+    assert "ponto_coleta_id" in itens
+    assert "comprador_id" in itens
+    assert "/api/pontos-coleta" in itens
+    assert "/api/usuarios" in itens
