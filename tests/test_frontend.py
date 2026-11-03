@@ -125,10 +125,38 @@ def test_frontend_nao_mantem_monolito_js() -> None:
     assert not (FRONTEND / "app.js").exists()
 
 
-def test_catalogo_forca_descarte_para_ponto_de_coleta() -> None:
-    javascript = ler("js/catalogo.js")
+def test_catalogo_nao_oferece_descarte_e_filtra_por_texto_e_preco() -> None:
+    html = ler("catalogo.html")
+    assert '<option value="descarte">' not in html
+    assert 'name="texto"' in html
+    assert 'name="preco_min"' in html and 'name="preco_max"' in html
+    assert 'name="incluir_reservados"' in html
+    js = ler("js/catalogo.js")
+    assert '"texto", "categoria", "condicao", "destino", "preco_min", "preco_max"' in js
+    assert "incluir_reservados" in js
+    # Catálogo não pede status: a API só devolve publicado e, se solicitado, reservado.
+    assert '"status"' not in js.split("function clearFilters")[0]
 
-    assert 'params.set("destino", "descarte")' in javascript
+
+def test_itens_guia_cadastro_por_intencao_caracteristicas_e_revisao() -> None:
+    html = ler("itens.html")
+    for marca in (
+        'data-passo="1"',
+        'data-passo="2"',
+        'data-passo="3"',
+        'id="save-draft"',
+        'id="item-review"',
+        'data-grupo="ativos"',
+        'data-grupo="em_andamento"',
+        'data-grupo="encerrados"',
+    ):
+        assert marca in html, marca
+    js = ler("js/itens.js")
+    assert "/api/itens/meus?grupo=" in js
+    assert '"publicar"' in js
+    assert '"arquivar"' in js
+    assert "publicar" in js and "rascunho" in js
+
 
 
 def test_css_tem_layout_responsivo_e_foco_acessivel() -> None:

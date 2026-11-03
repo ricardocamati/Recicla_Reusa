@@ -48,28 +48,59 @@ def criar_router_itens(
     @router.get("", response_model=list[ItemResponse])
     def listar(
         request: Request,
+        texto: str | None = Query(default=None, min_length=1, max_length=120),
         categoria: CategoriaItem | None = Query(default=None),
         condicao: CondicaoItem | None = Query(default=None),
         destino: DestinoItem | None = Query(default=None),
-        status_item: StatusItem | None = Query(default=None, alias="status"),
         cidade: str | None = Query(default=None, min_length=1, max_length=160),
+        preco_min: float | None = Query(default=None, ge=0),
+        preco_max: float | None = Query(default=None, ge=0),
+        incluir_reservados: bool = Query(default=False),
         offset: int = Query(default=0, ge=0),
         limite: int = Query(default=20, ge=1, le=100),
     ) -> list[ItemResponse]:
         sessao_obrigatoria(request)
         filtros = FiltrosItem(
+            texto=texto,
             categoria=categoria,
             condicao=condicao,
             destino=destino,
-            status=status_item,
             cidade=cidade,
+            preco_min=preco_min,
+            preco_max=preco_max,
+            incluir_reservados=incluir_reservados,
         )
         return servico.listar(filtros, offset=offset, limite=limite)
+
+    @router.get("/meus", response_model=list[ItemResponse])
+    def listar_meus(
+        request: Request,
+        grupo: str = Query(default="ativos", pattern="^(ativos|em_andamento|encerrados)$"),
+        offset: int = Query(default=0, ge=0),
+        limite: int = Query(default=20, ge=1, le=100),
+    ) -> list[ItemResponse]:
+        sessao = sessao_obrigatoria(request)
+        exigir_pessoa(sessao)
+        return servico.listar_meus(
+            sessao.usuario_id, grupo=grupo, offset=offset, limite=limite
+        )
 
     @router.get("/{item_id}", response_model=ItemResponse)
     def buscar_por_id(item_id: str, request: Request) -> ItemResponse:
         sessao_obrigatoria(request)
         return servico.buscar_por_id(item_id)
+
+    @router.post("/{item_id}/publicar", response_model=ItemResponse)
+    def publicar(item_id: str, request: Request) -> ItemResponse:
+        sessao = sessao_obrigatoria(request)
+        exigir_pessoa(sessao)
+        return servico.publicar(item_id, proprietario_id=sessao.usuario_id)
+
+    @router.post("/{item_id}/arquivar", response_model=ItemResponse)
+    def arquivar(item_id: str, request: Request) -> ItemResponse:
+        sessao = sessao_obrigatoria(request)
+        exigir_pessoa(sessao)
+        return servico.arquivar(item_id, proprietario_id=sessao.usuario_id)
 
     @router.put("/{item_id}", response_model=ItemResponse)
     def atualizar(

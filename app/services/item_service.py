@@ -44,6 +44,15 @@ class RepositorioDeItens(Protocol):
         proprietario_ids: set[str] | None = None,
         offset: int = 0,
         limite: int = 20,
+        somente_catalogo: bool = False,
+    ) -> list[Item]: ...
+    def listar_por_proprietario(
+        self,
+        proprietario_id: str,
+        statuses: tuple[str, ...],
+        *,
+        offset: int = 0,
+        limite: int = 20,
     ) -> list[Item]: ...
     def buscar_por_id(self, item_id: str) -> Item | None: ...
     def atualizar(
@@ -95,13 +104,56 @@ class ItemService:
 
     def criar(self, request: ItemCreateRequest, *, proprietario_id: str) -> ItemResponse:
         proprietario = self._obter_pessoa(proprietario_id)
+        status = "disponivel" if request.publicar else "rascunho"
         item = ItemMapper.para_modelo(
             request,
             proprietario_id=proprietario_id,
             instante=self._relogio(),
+            status=status,
         )
         criado = self._repositorio.criar(item)
         return self._resposta(criado, proprietario)
+
+    def publicar(self, item_id: str, *, proprietario_id: str) -> ItemResponse:
+        """Publica um rascunho; descarte também sai do rascunho, mas fora do catálogo."""
+        item = self._buscar_item(item_id)
+        proprietario = self._obter_pessoa(proprietario_id)
+        if item.proprietario_id != proprietario_id:
+            raise ItemNaoAutorizadoError()
+        if item.status != "rascunho":
+            raise TransicaoInvalidaError(item.status, "disponivel")
+        instante = self._relogio()
+        item.status = "disponivel"
+        item.data_modificacao = instante
+        ItemMapper.registrar_transicao(
+            item,
+            novo_status="disponivel",
+            responsavel_id=proprietario_id,
+            instante=instante,
+            observacao="Item publicado",
+        )
+        return self._resposta(self._repositorio.atualizar(item), proprietario)
+
+    def arquivar(self, item_id: str, *, proprietario_id: str) -> ItemResponse:
+        """Encerra a gestão sem apagar o item nem as referências dele."""
+        item = self._buscar_item(item_id)
+        proprietario = self._obter_pessoa(proprietario_id)
+        if item.proprietario_id != proprietario_id:
+            raise ItemNaoAutorizadoError()
+        if item.status == "arquivado":
+            return self._resposta(item, proprietario)
+        instante = self._relogio()
+        anterior = item.status
+        item.status = "arquivado"
+        item.data_modificacao = instante
+        ItemMapper.registrar_transicao(
+            item,
+            novo_status="arquivado",
+            responsavel_id=proprietario_id,
+            instante=instante,
+            observacao=f"Item arquivado a partir de {anterior}",
+        )
+        return self._resposta(self._repositorio.atualizar(item), proprietario)
 
     def listar(
         self,
@@ -110,6 +162,17 @@ class ItemService:
         offset: int = 0,
         limite: int = 20,
     ) -> list[ItemResponse]:
+        if filtros.destino == "descarte":
+            raise FluxoItemError(400, "Descarte não aparece no catálogo")
+        tem_faixa = filtros.preco_min is not None or filtros.preco_max is not None
+        if tem_faixa and filtros.destino not in (None, "revenda"):
+            raise FluxoItemError(400, "Faixa de preço só se aplica a revenda")
+        if (
+            filtros.preco_min is not None
+            and filtros.preco_max is not None
+            and filtros.preco_min > filtros.preco_max
+        ):
+            raise FluxoItemError(400, "Faixa de preço inválida")
         proprietario_ids = None
         if filtros.cidade:
             proprietario_ids = set(
@@ -120,6 +183,32 @@ class ItemService:
             proprietario_ids=proprietario_ids,
             offset=offset,
             limite=limite,
+            somente_catalogo=True,
+        )
+        proprietarios = self._buscar_proprietarios(itens)
+        return [
+            self._resposta(item, proprietario=proprietarios.get(item.proprietario_id))
+            for item in itens
+        ]
+
+    def listar_meus(
+        self,
+        proprietario_id: str,
+        *,
+        grupo: str = "ativos",
+        offset: int = 0,
+        limite: int = 20,
+    ) -> list[ItemResponse]:
+        grupos = {
+            "ativos": ("rascunho", "disponivel"),
+            "em_andamento": ("reservado", "encaminhado", "em_avaliacao", "recondicionado"),
+            "encerrados": ("doado", "coletado", "vendido", "arquivado"),
+        }
+        if grupo not in grupos:
+            raise FluxoItemError(400, "Grupo inválido")
+        self._obter_pessoa(proprietario_id)
+        itens = self._repositorio.listar_por_proprietario(
+            proprietario_id, grupos[grupo], offset=offset, limite=limite
         )
         proprietarios = self._buscar_proprietarios(itens)
         return [
@@ -155,14 +244,18 @@ class ItemService:
                 request.destino != item.destino
             ):
                 raise TransicaoInvalidaError(item.status, novo_status or request.destino)
+        if novo_status in ("rascunho", "arquivado"):
+            raise FluxoItemError(
+                400, "Publicação e arquivamento usam os comandos próprios do item"
+            )
         if request.destino != item.destino:
-            if status_anterior != "disponivel":
+            if status_anterior != "rascunho":
                 raise FluxoItemError(
-                    400, "Destino não pode mudar depois de iniciado o fluxo"
+                    400, "Modalidade só pode mudar enquanto o item é rascunho"
                 )
             if novo_status not in (None, status_anterior):
                 raise FluxoItemError(
-                    400, "Altere o destino antes de iniciar o fluxo do item"
+                    400, "Altere a modalidade antes de publicar o item"
                 )
 
         transicao = novo_status is not None and novo_status != status_anterior

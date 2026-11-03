@@ -121,20 +121,22 @@ class Navegador:
     def aguardar_sem_botao(self, lista: str, titulo: str, seletor: str) -> None:
         def sem_botao(driver) -> bool:
             card = self._cartao(lista, titulo)
-            return card is not None and not card.find_elements(By.CSS_SELECTOR, seletor)
+            # Após a transição o item pode sair do grupo exibido.
+            return card is None or not card.find_elements(By.CSS_SELECTOR, seletor)
 
         self.espera.until(sem_botao)
 
     def aguardar_sem_texto(self, lista: str, titulo: str, texto: str) -> None:
         def sem_texto(driver) -> bool:
             card = self._cartao(lista, titulo)
-            return card is not None and texto not in [
+            return card is None or texto not in [
                 botao.text for botao in card.find_elements(By.TAG_NAME, "button")
             ]
 
         self.espera.until(sem_texto)
 
-    def cadastrar(self, nome: str, email: str, tipo: str) -> None:
+    def cadastrar(self, nome: str, email: str, tipo: str | None = None) -> None:
+        # Desde a conta única de pessoa o cadastro público não escolhe perfil.
         self.abrir("cadastro.html", "#register-form")
         for campo, valor in (
             ("nome", nome),
@@ -146,7 +148,6 @@ class Navegador:
             ("cep", "87000000"),
         ):
             self.preencher(campo, valor)
-        self.selecionar("tipo", tipo)
         self.clicar(self.driver.find_element(By.CSS_SELECTOR, "#register-form button[type='submit']"))
         self.espera.until(
             lambda d: "Conta criada" in d.find_element(By.ID, "register-message").text
@@ -170,6 +171,15 @@ class Navegador:
 
     def criar_item(self, titulo: str, destino: str, categoria: str, valor: str | None = None) -> None:
         self.abrir("itens.html", "#item-form")
+        # Passo 1: intenção.
+        rotulo = {"Revenda": "Venda"}.get(destino, destino)
+        self.selecionar("destino", rotulo, escopo="#item-form")
+        self.clicar(
+            self.driver.find_element(
+                By.CSS_SELECTOR, "#item-form [data-passo-acao='proximo']"
+            )
+        )
+        # Passo 2: características.
         for campo, texto in (
             ("titulo", titulo),
             ("descricao", "Item criado pela jornada automatizada"),
@@ -179,9 +189,14 @@ class Navegador:
             self.preencher(campo, texto, escopo="#item-form")
         self.selecionar("categoria", categoria, escopo="#item-form")
         self.selecionar("condicao", "Funcional", escopo="#item-form")
-        self.selecionar("destino", destino, escopo="#item-form")
         if valor is not None:
             self.preencher("valor", valor, escopo="#item-form")
+        self.clicar(
+            self.driver.find_element(
+                By.CSS_SELECTOR, "#item-form [data-passo-acao='proximo']"
+            )
+        )
+        # Passo 3: revisão e publicação.
         self.clicar(self.driver.find_element(By.CSS_SELECTOR, "#item-form button[type='submit']"))
         self.espera.until(
             lambda d: any(
@@ -212,7 +227,15 @@ class Navegador:
         self.aguardar_sem_texto("recebidos-interesses-list", titulo, "Aceitar")
 
     def avancar(self, titulo: str, status: str, referencia: tuple[str, str] | None = None) -> None:
-        self.abrir("itens.html", "#my-items-list")
+        documento = itens.find_one({"titulo": titulo})
+        situacao = documento.get("status") if documento else None
+        if situacao in {"doado", "coletado", "vendido", "arquivado"}:
+            grupo = "encerrados"
+        elif situacao in {"reservado", "encaminhado", "em_avaliacao", "recondicionado"}:
+            grupo = "em_andamento"
+        else:
+            grupo = "ativos"
+        self.abrir(f"itens.html?grupo={grupo}", "#my-items-list")
         cartao = self.cartao("my-items-list", titulo)
         if referencia is not None:
             papel, texto = referencia

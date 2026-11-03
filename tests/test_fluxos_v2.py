@@ -368,15 +368,18 @@ async def test_destino_pode_ser_corrigido_antes_do_fluxo(
 ) -> None:
     async with cliente(app_para(repositorio_usuarios, repositorio_itens)) as api:
         await autenticar_doador(api)
-        criado = (await api.post("/api/itens", json=payload_item())).json()
+        criado = (await api.post("/api/itens", json=payload_item(publicar=False))).json()
         corrigido = await api.put(
             f"/api/itens/{criado['id']}",
             json=corpo(criado, destino="revenda", valor=75.0),
         )
+        publicado = await api.post(f"/api/itens/{criado['id']}/publicar")
 
     assert corrigido.status_code == 200, corrigido.text
     assert corrigido.json()["destino"] == "revenda"
-    assert corrigido.json()["status"] == "disponivel"
+    assert corrigido.json()["status"] == "rascunho"
+    assert publicado.status_code == 200, publicado.text
+    assert publicado.json()["status"] == "disponivel"
 
 
 @pytest.mark.anyio

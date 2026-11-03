@@ -121,11 +121,11 @@ Referências: V21-RF-01 · V21-CT-01, V21-CT-29.
 
 Referências: V21-RF-02, V21-RF-03, V21-RF-14 · V21-CT-02, V21-CT-03, V21-CT-04, V21-CT-24.
 
-- [ ] Separar modalidade de condição física e fixar a modalidade no ciclo do item.
-- [ ] Publicar catálogo apenas com ofertas disponíveis, excluindo descarte, rascunho, arquivado e concluído.
-- [ ] Guiar o cadastro em intenção, características e revisão, com rascunho e publicação.
-- [ ] Exibir Ativos, Em andamento e Encerrados, com arquivamento sem apagar referências.
-- [ ] Atualizar testes de catálogo, cadastro e arquivamento.
+- [x] Separar modalidade de condição física e fixar a modalidade no ciclo do item.
+- [x] Publicar catálogo apenas com ofertas disponíveis, excluindo descarte, rascunho, arquivado e concluído.
+- [x] Guiar o cadastro em intenção, características e revisão, com rascunho e publicação.
+- [x] Exibir Ativos, Em andamento e Encerrados, com arquivamento sem apagar referências.
+- [x] Atualizar testes de catálogo, cadastro e arquivamento.
 
 ## Etapa 11 — Interesse, retomada e reserva
 

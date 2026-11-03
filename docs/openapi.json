@@ -328,6 +328,11 @@
             "title": "Modelo",
             "type": "string"
           },
+          "publicar": {
+            "default": true,
+            "title": "Publicar",
+            "type": "boolean"
+          },
           "titulo": {
             "maxLength": 120,
             "minLength": 3,
@@ -483,6 +488,7 @@
           },
           "status": {
             "enum": [
+              "rascunho",
               "disponivel",
               "reservado",
               "doado",
@@ -490,7 +496,8 @@
               "coletado",
               "em_avaliacao",
               "recondicionado",
-              "vendido"
+              "vendido",
+              "arquivado"
             ],
             "title": "Status",
             "type": "string"
@@ -633,10 +640,16 @@
             ],
             "title": "Ponto Coleta Id"
           },
+          "publicar": {
+            "default": true,
+            "title": "Publicar",
+            "type": "boolean"
+          },
           "status": {
             "anyOf": [
               {
                 "enum": [
+                  "rascunho",
                   "disponivel",
                   "reservado",
                   "doado",
@@ -644,7 +657,8 @@
                   "coletado",
                   "em_avaliacao",
                   "recondicionado",
-                  "vendido"
+                  "vendido",
+                  "arquivado"
                 ],
                 "type": "string"
               },
@@ -994,10 +1008,8 @@
             "type": "string"
           },
           "tipo": {
-            "enum": [
-              "doador",
-              "beneficiario"
-            ],
+            "const": "pessoa",
+            "default": "pessoa",
             "title": "Tipo",
             "type": "string"
           }
@@ -1006,8 +1018,7 @@
           "nome",
           "email",
           "senha",
-          "endereco",
-          "tipo"
+          "endereco"
         ],
         "title": "UsuarioCreateRequest",
         "type": "object"
@@ -1041,8 +1052,7 @@
           },
           "tipo": {
             "enum": [
-              "doador",
-              "beneficiario",
+              "pessoa",
               "ponto_coleta"
             ],
             "title": "Tipo",
@@ -1077,8 +1087,7 @@
           },
           "tipo": {
             "enum": [
-              "doador",
-              "beneficiario",
+              "pessoa",
               "ponto_coleta"
             ],
             "title": "Tipo",
@@ -1514,6 +1523,24 @@
         "parameters": [
           {
             "in": "query",
+            "name": "texto",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Texto"
+            }
+          },
+          {
+            "in": "query",
             "name": "categoria",
             "required": false,
             "schema": {
@@ -1589,32 +1616,6 @@
           },
           {
             "in": "query",
-            "name": "status",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "enum": [
-                    "disponivel",
-                    "reservado",
-                    "doado",
-                    "encaminhado",
-                    "coletado",
-                    "em_avaliacao",
-                    "recondicionado",
-                    "vendido"
-                  ],
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
-            }
-          },
-          {
-            "in": "query",
             "name": "cidade",
             "required": false,
             "schema": {
@@ -1629,6 +1630,50 @@
                 }
               ],
               "title": "Cidade"
+            }
+          },
+          {
+            "in": "query",
+            "name": "preco_min",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Preco Min"
+            }
+          },
+          {
+            "in": "query",
+            "name": "preco_max",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Preco Max"
+            }
+          },
+          {
+            "in": "query",
+            "name": "incluir_reservados",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Incluir Reservados",
+              "type": "boolean"
             }
           },
           {
@@ -1721,6 +1766,77 @@
           }
         },
         "summary": "Criar",
+        "tags": [
+          "itens"
+        ]
+      }
+    },
+    "/api/itens/meus": {
+      "get": {
+        "operationId": "listar_meus_api_itens_meus_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "grupo",
+            "required": false,
+            "schema": {
+              "default": "ativos",
+              "pattern": "^(ativos|em_andamento|encerrados)$",
+              "title": "Grupo",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limite",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ItemResponse"
+                  },
+                  "title": "Response Listar Meus Api Itens Meus Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listar Meus",
         "tags": [
           "itens"
         ]
@@ -1846,6 +1962,90 @@
           }
         },
         "summary": "Atualizar",
+        "tags": [
+          "itens"
+        ]
+      }
+    },
+    "/api/itens/{item_id}/arquivar": {
+      "post": {
+        "operationId": "arquivar_api_itens__item_id__arquivar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Arquivar",
+        "tags": [
+          "itens"
+        ]
+      }
+    },
+    "/api/itens/{item_id}/publicar": {
+      "post": {
+        "operationId": "publicar_api_itens__item_id__publicar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publicar",
         "tags": [
           "itens"
         ]

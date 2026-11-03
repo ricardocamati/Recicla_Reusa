@@ -32,6 +32,7 @@ class RepositorioItensFake:
         proprietario_ids: set[str] | None = None,
         offset: int = 0,
         limite: int = 20,
+        somente_catalogo: bool = False,
     ) -> list[Item]:
         return [
             item
@@ -39,8 +40,21 @@ class RepositorioItensFake:
             if (filtros.categoria is None or item.categoria == filtros.categoria)
             and (filtros.condicao is None or item.condicao == filtros.condicao)
             and (filtros.destino is None or item.destino == filtros.destino)
-            and (filtros.status is None or item.status == filtros.status)
             and (proprietario_ids is None or item.proprietario_id in proprietario_ids)
+        ]
+
+    def listar_por_proprietario(
+        self,
+        proprietario_id: str,
+        statuses: tuple[str, ...],
+        *,
+        offset: int = 0,
+        limite: int = 20,
+    ) -> list[Item]:
+        return [
+            item
+            for item in self.itens.values()
+            if item.proprietario_id == proprietario_id and item.status in statuses
         ][offset : offset + limite]
 
     def buscar_por_id(self, item_id: str) -> Item | None:

@@ -32,6 +32,7 @@ class RepositorioItensEmMemoria:
         proprietario_ids: set[str] | None = None,
         offset: int = 0,
         limite: int = 20,
+        somente_catalogo: bool = False,
     ) -> list[Item]:
         itens = [
             item
@@ -39,14 +40,44 @@ class RepositorioItensEmMemoria:
             if (filtros.categoria is None or item.categoria == filtros.categoria)
             and (filtros.condicao is None or item.condicao == filtros.condicao)
             and (filtros.destino is None or item.destino == filtros.destino)
-            and (filtros.status is None or item.status == filtros.status)
+            and (
+                not filtros.texto
+                or filtros.texto.lower() in (item.titulo + " " + item.descricao).lower()
+            )
+            and (filtros.preco_min is None or (item.valor or 0) >= filtros.preco_min)
+            and (filtros.preco_max is None or (item.valor or 0) <= filtros.preco_max)
             and (proprietario_ids is None or item.proprietario_id in proprietario_ids)
         ]
+        if somente_catalogo:
+            itens = [
+                item
+                for item in itens
+                if item.destino != "descarte"
+                and item.status in (
+                    ["disponivel", "reservado"]
+                    if filtros.incluir_reservados
+                    else ["disponivel"]
+                )
+            ]
         return itens[offset : offset + limite]
 
     def buscar_por_id(self, item_id: str) -> Item | None:
         encontrado = self.itens.get(item_id)
         return self._copiar(encontrado) if encontrado else None
+
+    def listar_por_proprietario(
+        self,
+        proprietario_id: str,
+        statuses: tuple[str, ...],
+        *,
+        offset: int = 0,
+        limite: int = 20,
+    ) -> list[Item]:
+        return [
+            self._copiar(item)
+            for item in self.itens.values()
+            if item.proprietario_id == proprietario_id and item.status in statuses
+        ][offset : offset + limite]
 
     def atualizar(
         self,
@@ -200,14 +231,12 @@ async def test_listar_filtra_itens_por_categoria_destino_e_status(
             "/api/itens",
             json=payload_item(categoria="telefonia", condicao="reparavel", destino="revenda", valor=100),
         )
-        repositorio_itens.itens[segundo.json()["id"]].status = "doado"
         resposta = await api.get(
             "/api/itens",
             params={
                 "categoria": "telefonia",
                 "condicao": "reparavel",
                 "destino": "revenda",
-                "status": "doado",
             },
         )
 
@@ -330,7 +359,7 @@ async def test_cadastro_registra_primeiro_evento_e_nao_copia_endereco(
     assert corpo["especificacoes"] == {"memoria_ram": "8 GB", "tela": "14"}
     assert len(corpo["historico"]) == 1
     evento = corpo["historico"][0]
-    assert evento["etapa"] == "cadastro"
+    assert evento["etapa"] == "publicacao"
     assert evento["status"] == "disponivel"
     assert evento["responsavel_id"] == corpo["proprietario_id"]
     assert evento["data_evento"] == corpo["data_adicao"]
@@ -468,3 +497,130 @@ async def test_catalogo_filtra_por_cidade_e_pagina(
     }
     assert ids == set()
     assert Londres.json() == []
+
+
+@pytest.mark.anyio
+async def test_catalogo_exclui_rascunho_arquivado_concluido_e_descarte(
+    repositorio_usuarios: RepositorioEmMemoria,
+    repositorio_itens: RepositorioItensEmMemoria,
+    instante: datetime,
+) -> None:
+    async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
+        await cadastrar_usuario(api)
+        await autenticar(api, "maria@example.com")
+        publicado = (await api.post("/api/itens", json=payload_item(titulo="Publicado"))).json()
+        rascunho = (
+            await api.post("/api/itens", json=payload_item(titulo="Rascunho", publicar=False))
+        ).json()
+        await api.post("/api/itens", json=payload_item(titulo="Descarte", destino="descarte"))
+        arquivado = (
+            await api.post("/api/itens", json=payload_item(titulo="Arquivado"))
+        ).json()
+        await api.post(f"/api/itens/{arquivado['id']}/arquivar")
+        concluido = (
+            await api.post(
+                "/api/itens",
+                json=payload_item(titulo="Concluido", destino="revenda", valor=10.0),
+            )
+        ).json()
+        repositorio_itens.itens[concluido["id"]].status = "vendido"
+        catalogo = await api.get("/api/itens")
+
+    assert catalogo.status_code == 200
+    titulos = [item["titulo"] for item in catalogo.json()]
+    assert titulos == ["Publicado"]
+    assert rascunho["status"] == "rascunho"
+    assert publicado["id"] not in {item["id"] for item in catalogo.json() if item["titulo"] != "Publicado"}
+
+
+@pytest.mark.anyio
+async def test_incluir_reservados_mostra_reservado_mas_nunca_descarte(
+    repositorio_usuarios: RepositorioEmMemoria,
+    repositorio_itens: RepositorioItensEmMemoria,
+    instante: datetime,
+) -> None:
+    async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
+        await cadastrar_usuario(api)
+        await autenticar(api, "maria@example.com")
+        padrao = (await api.post("/api/itens", json=payload_item(titulo="Disponivel"))).json()
+        reservado = (await api.post("/api/itens", json=payload_item(titulo="Reservado"))).json()
+        repositorio_itens.itens[reservado["id"]].status = "reservado"
+        await api.post("/api/itens", json=payload_item(titulo="Descarte", destino="descarte"))
+        sem_reserva = await api.get("/api/itens")
+        com_reserva = await api.get("/api/itens", params={"incluir_reservados": True})
+
+    assert [item["titulo"] for item in sem_reserva.json()] == ["Disponivel"]
+    assert {item["titulo"] for item in com_reserva.json()} == {"Disponivel", "Reservado"}
+    assert padrao["id"] in {item["id"] for item in com_reserva.json()}
+
+
+@pytest.mark.anyio
+async def test_faixa_de_preco_so_vale_para_revenda_e_rejeita_intervalo_invalido(
+    repositorio_usuarios: RepositorioEmMemoria,
+    repositorio_itens: RepositorioItensEmMemoria,
+    instante: datetime,
+) -> None:
+    async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
+        await cadastrar_usuario(api)
+        await autenticar(api, "maria@example.com")
+        await api.post(
+            "/api/itens", json=payload_item(titulo="Barato", destino="revenda", valor=50.0)
+        )
+        await api.post(
+            "/api/itens", json=payload_item(titulo="Caro", destino="revenda", valor=500.0)
+        )
+        doacao = await api.get("/api/itens", params={"destino": "doacao", "preco_min": 10})
+        invertida = await api.get("/api/itens", params={"preco_min": 100, "preco_max": 10})
+        faixa = await api.get("/api/itens", params={"preco_min": 40, "preco_max": 100})
+
+    assert doacao.status_code == 400
+    assert invertida.status_code == 400
+    assert [item["titulo"] for item in faixa.json()] == ["Barato"]
+
+
+@pytest.mark.anyio
+async def test_busca_textual_nao_interpreta_expressao_regular(
+    repositorio_usuarios: RepositorioEmMemoria,
+    repositorio_itens: RepositorioItensEmMemoria,
+    instante: datetime,
+) -> None:
+    async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
+        await cadastrar_usuario(api)
+        await autenticar(api, "maria@example.com")
+        await api.post("/api/itens", json=payload_item(titulo="Notebook Dell"))
+        await api.post("/api/itens", json=payload_item(titulo="Monitor LG", categoria="monitor"))
+        exato = await api.get("/api/itens", params={"texto": "notebook"})
+        literal = await api.get("/api/itens", params={"texto": ".*"})
+
+    assert [item["titulo"] for item in exato.json()] == ["Notebook Dell"]
+    assert literal.status_code == 200
+    assert literal.json() == []
+
+
+@pytest.mark.anyio
+async def test_publicar_arquivar_e_agrupar_meus_itens(
+    repositorio_usuarios: RepositorioEmMemoria,
+    repositorio_itens: RepositorioItensEmMemoria,
+    instante: datetime,
+) -> None:
+    async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
+        await cadastrar_usuario(api)
+        await autenticar(api, "maria@example.com")
+        rascunho = (
+            await api.post("/api/itens", json=payload_item(titulo="Rascunho", publicar=False))
+        ).json()
+        ativos = await api.get("/api/itens/meus", params={"grupo": "ativos"})
+        publicado = await api.post(f"/api/itens/{rascunho['id']}/publicar")
+        publicado_novamente = await api.post(f"/api/itens/{rascunho['id']}/publicar")
+        arquivado = await api.post(f"/api/itens/{rascunho['id']}/arquivar")
+        encerrados = await api.get("/api/itens/meus", params={"grupo": "encerrados"})
+        removido = await api.delete(f"/api/itens/{rascunho['id']}")
+
+    assert [item["status"] for item in ativos.json()] == ["rascunho"]
+    assert publicado.status_code == 200
+    assert publicado.json()["status"] == "disponivel"
+    assert publicado_novamente.status_code == 400
+    assert arquivado.status_code == 200
+    assert arquivado.json()["status"] == "arquivado"
+    assert [item["id"] for item in encerrados.json()] == [rascunho["id"]]
+    assert removido.status_code == 409

@@ -28,18 +28,21 @@ class ItemMapper:
         *,
         proprietario_id: str,
         instante,
+        status: str = "rascunho",
     ) -> Item:
         return Item(
             **_dados_comuns(request),
-            status="disponivel",
+            status=status,
             proprietario_id=proprietario_id,
             historico=[
                 EventoHistorico(
-                    etapa="cadastro",
-                    status="disponivel",
+                    etapa="cadastro" if status == "rascunho" else "publicacao",
+                    status=status,
                     data_evento=instante,
                     responsavel_id=proprietario_id,
-                    observacao="Item cadastrado",
+                    observacao=(
+                        "Rascunho criado" if status == "rascunho" else "Item publicado no cadastro"
+                    ),
                 )
             ],
             data_adicao=instante,

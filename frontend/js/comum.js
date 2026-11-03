@@ -40,9 +40,11 @@ export const ROTULOS = {
     doado: "Doado",
     encaminhado: "Encaminhado",
     coletado: "Coletado",
+    rascunho: "Rascunho",
     em_avaliacao: "Em avaliação",
     recondicionado: "Recondicionado",
     vendido: "Vendido",
+    arquivado: "Arquivado",
   },
 };
 

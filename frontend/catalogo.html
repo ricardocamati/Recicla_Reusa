@@ -56,6 +56,9 @@
           </div>
         </div>
         <form id="catalog-form" class="filter-bar">
+          <label class="field">Buscar
+            <input id="catalog-search" name="texto" type="search" maxlength="120" placeholder="Notebook, Dell, monitor...">
+          </label>
           <label class="field">Categoria
             <select id="catalog-category" name="categoria">
               <option value="">Todas</option>
@@ -78,32 +81,28 @@
             <select id="catalog-condition" name="condicao">
               <option value="">Todas</option>
               <option value="funcional">Funcional</option>
-              <option value="funcional_com_defeito">Com defeito</option>
+              <option value="funcional_com_defeito">Funcional com defeito</option>
               <option value="reparavel">Reparável</option>
               <option value="sem_conserto">Sem conserto</option>
               <option value="recondicionado">Recondicionado</option>
             </select>
           </label>
-          <label class="field">Destino
+          <label class="field">Modalidade
             <select id="catalog-destination" name="destino">
-              <option value="">Todos</option>
+              <option value="">Doação e venda</option>
               <option value="doacao">Doação</option>
-              <option value="descarte">Descarte</option>
-              <option value="revenda">Revenda</option>
+              <option value="revenda">Venda</option>
             </select>
           </label>
-          <label class="field">Status
-            <select id="catalog-status" name="status">
-              <option value="">Todos</option>
-              <option value="disponivel">Disponível</option>
-              <option value="reservado">Reservado</option>
-              <option value="doado">Doado</option>
-              <option value="encaminhado">Encaminhado</option>
-              <option value="coletado">Coletado</option>
-              <option value="em_avaliacao">Em avaliação</option>
-              <option value="recondicionado">Recondicionado</option>
-              <option value="vendido">Vendido</option>
-            </select>
+          <label class="field">Preço mínimo
+            <input id="catalog-price-min" name="preco_min" type="number" min="0" step="0.01" inputmode="decimal">
+          </label>
+          <label class="field">Preço máximo
+            <input id="catalog-price-max" name="preco_max" type="number" min="0" step="0.01" inputmode="decimal">
+          </label>
+          <label class="field checkbox-field">
+            <input id="catalog-include-reserved" name="incluir_reservados" type="checkbox" value="true">
+            Incluir reservados
           </label>
           <div class="filter-actions">
             <button class="button button-primary" type="submit">Filtrar</button>
