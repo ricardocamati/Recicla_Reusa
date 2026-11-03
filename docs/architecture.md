@@ -115,15 +115,15 @@ Coleções planejadas:
 
 `itens.historico` será uma lista de subdocumentos contendo etapa, status, data, responsável e observação opcional.
 
-## Fluxos de negócio planejados
+## Fluxos de negócio
 
-| Destino | Fluxo inicial previsto |
+| Destino | Fluxo |
 |---|---|
 | Doação | disponível → reservado → doado |
 | Descarte | disponível → encaminhado → coletado |
 | Reaproveitamento/revenda | disponível → em avaliação → recondicionado → vendido |
 
-As regras de transição deverão permanecer no Service. Uma abstração como Strategy ou State somente será introduzida quando os três fluxos estiverem implementados e justificarem o custo adicional.
+As regras de transição e as exigências de referência de cada etapa (ponto de coleta no encaminhamento, interesse aceito na doação e comprador na venda) ficam no Service, em um único mapa de transições. A duplicação é pequena e não justifica Strategy ou State neste escopo.
 
 ## Testabilidade
 

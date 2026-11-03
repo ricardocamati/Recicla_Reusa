@@ -88,6 +88,49 @@ def test_repositorio_normaliza_datas_na_precisao_do_mongodb() -> None:
     assert recuperado.data_modificacao == criado.data_modificacao
 
 
+def test_repositorio_persiste_referencias_do_fluxo() -> None:
+    colecao = mongomock.MongoClient(tz_aware=True).teste.itens
+    repositorio = MongoItemRepository(colecao)
+    ponto_id = ObjectId()
+    comprador_id = ObjectId()
+    criado = repositorio.criar(
+        replace(item(), destino="descarte", ponto_coleta_id=str(ponto_id))
+    )
+
+    recuperado = repositorio.buscar_por_id(criado.id or "")
+
+    assert recuperado is not None
+    assert recuperado.ponto_coleta_id == str(ponto_id)
+    assert recuperado.comprador_id is None
+    documento = colecao.find_one({"_id": ObjectId(criado.id)})
+    assert documento["ponto_coleta_id"] == ponto_id
+
+    criado.destino = "revenda"
+    criado.ponto_coleta_id = None
+    criado.comprador_id = str(comprador_id)
+    repositorio.atualizar(criado)
+    relido = repositorio.buscar_por_id(criado.id or "")
+    assert relido.comprador_id == str(comprador_id)
+    assert relido.ponto_coleta_id is None
+
+
+def test_leitura_de_documento_antigo_sem_campos_de_fluxo() -> None:
+    colecao = mongomock.MongoClient(tz_aware=True).teste.itens
+    repositorio = MongoItemRepository(colecao)
+    documento = repositorio._para_documento(item())
+    assert documento.pop("ponto_coleta_id") is None
+    assert documento.pop("beneficiario_id") is None
+    assert documento.pop("comprador_id") is None
+    identificador = colecao.insert_one(documento).inserted_id
+
+    relido = repositorio.buscar_por_id(str(identificador))
+
+    assert relido is not None
+    assert relido.ponto_coleta_id is None
+    assert relido.beneficiario_id is None
+    assert relido.comprador_id is None
+
+
 def test_leitura_ignora_selecao_interna_do_interesse():
     colecao = mongomock.MongoClient(tz_aware=True).teste.itens
     repo = MongoItemRepository(colecao)

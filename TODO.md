@@ -62,11 +62,13 @@ Validações: [API, MongoDB real e Docker](docs/verificacao-interesses.md).
 
 Referências: V2-RF-11, V2-RF-12, V2-RF-13 · V2-CT-17 a V2-CT-21.
 
-- [ ] Definir as transições de cada destino e validar saltos e estados terminais.
-- [ ] Encaminhar descarte para ponto de coleta ativo e compatível.
-- [ ] Exigir valor positivo apenas na revenda.
-- [ ] Concluir doação, descarte e revenda uma única vez, atualizando item, histórico e indicador na mesma transação.
-- [ ] Testar transições inválidas, segunda conclusão e rollback.
+- [x] Definir as transições de cada destino e validar saltos e estados terminais.
+- [x] Encaminhar descarte para ponto de coleta cadastrado e compatível com a categoria.
+- [x] Exigir valor não negativo e restrito à revenda, sem preço em doação ou descarte.
+- [x] Concluir doação, descarte e revenda uma única vez, gravando item e histórico na mesma unidade; os indicadores entram na Etapa 7.
+- [x] Testar transições inválidas, segunda conclusão e ausência de escrita parcial.
+
+Validações: [fluxos completos em API e MongoDB real](docs/verificacao-fluxos.md).
 
 ## Etapa 6 — Notificações
 

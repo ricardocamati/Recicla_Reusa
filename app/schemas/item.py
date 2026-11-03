@@ -87,6 +87,9 @@ class ItemCreateRequest(BaseModel):
 
 class ItemUpdateRequest(ItemCreateRequest):
     status: StatusItem | None = None
+    ponto_coleta_id: str | None = None
+    comprador_id: str | None = None
+    observacao: str | None = Field(default=None, max_length=300)
 
 
 class FiltrosItem(BaseModel):
@@ -120,6 +123,9 @@ class ItemResponse(BaseModel):
     status: StatusItem
     proprietario_id: str
     cidade_proprietario: str
+    ponto_coleta_id: str | None = None
+    beneficiario_id: str | None = None
+    comprador_id: str | None = None
     especificacoes: dict[str, str]
     historico: list[EventoHistoricoResponse]
     data_adicao: datetime

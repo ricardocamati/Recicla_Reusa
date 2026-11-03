@@ -4,6 +4,7 @@ from typing import Protocol
 
 from app.exceptions import (
     ConflitoEstadoError,
+    FluxoItemError,
     ItemNaoAutorizadoError,
     ItemNaoEncontradoError,
     TransicaoInvalidaError,
@@ -48,6 +49,14 @@ class RepositorioDeItens(Protocol):
     def excluir(self, item_id: str) -> None: ...
 
 
+class RepositorioDeInteressesParaItens(Protocol):
+    def buscar_aceito_por_item(self, item_id: str) -> str | None: ...
+
+
+class CompatibilidadeDePontos(Protocol):
+    def garantir_compatibilidade(self, ponto_id: str, categoria: str): ...
+
+
 class RepositorioDeUsuariosParaItens(Protocol):
     def buscar_por_id(self, usuario_id: str) -> Usuario | None: ...
     def buscar_por_ids(self, usuario_ids: Iterable[str]) -> dict[str, Usuario]: ...
@@ -61,12 +70,21 @@ class ItemService:
         repositorio_usuarios: RepositorioDeUsuariosParaItens,
         *,
         relogio: Callable[[], datetime] | None = None,
-        reservas_por_interesse: bool = False,
+        reservas_por_interesse: bool | None = None,
+        interesses: RepositorioDeInteressesParaItens | None = None,
+        pontos: CompatibilidadeDePontos | None = None,
     ) -> None:
         self._repositorio = repositorio
         self._repositorio_usuarios = repositorio_usuarios
         self._relogio = relogio or (lambda: datetime.now(UTC))
-        self._reservas_por_interesse = reservas_por_interesse
+        # Com a coleção de interesses disponível, reservar deixa de ser efeito de PUT.
+        self._reservas_por_interesse = (
+            interesses is not None
+            if reservas_por_interesse is None
+            else reservas_por_interesse
+        )
+        self._interesses = interesses
+        self._pontos = pontos
 
     def criar(self, request: ItemCreateRequest, *, proprietario_id: str) -> ItemResponse:
         proprietario = self._obter_doador(proprietario_id)
@@ -130,17 +148,38 @@ class ItemService:
                 request.destino != item.destino
             ):
                 raise TransicaoInvalidaError(item.status, novo_status or request.destino)
-
-        ItemMapper.atualizar_modelo(request, item, instante=instante)
+        if request.destino != item.destino:
+            if status_anterior != "disponivel":
+                raise FluxoItemError(
+                    400, "Destino não pode mudar depois de iniciado o fluxo"
+                )
+            if novo_status not in (None, status_anterior):
+                raise FluxoItemError(
+                    400, "Altere o destino antes de iniciar o fluxo do item"
+                )
 
         transicao = novo_status is not None and novo_status != status_anterior
         if transicao:
             self._validar_transicao(item.destino, status_anterior, novo_status)
+        referencias = self._preparar_fluxo(
+            item,
+            request,
+            alvo=novo_status if transicao else None,
+        )
+
+        ItemMapper.atualizar_modelo(request, item, instante=instante)
+        item.ponto_coleta_id = referencias["ponto_coleta_id"]
+        item.comprador_id = referencias["comprador_id"]
+        if referencias["beneficiario_id"] is not None:
+            item.beneficiario_id = referencias["beneficiario_id"]
+
+        if transicao:
             ItemMapper.registrar_transicao(
                 item,
                 novo_status=novo_status,
                 responsavel_id=proprietario_id,
                 instante=instante,
+                observacao=request.observacao,
             )
 
         atualizado = self._repositorio.atualizar(
@@ -154,6 +193,12 @@ class ItemService:
         self._obter_doador(proprietario_id)
         if item.proprietario_id != proprietario_id:
             raise ItemNaoAutorizadoError()
+        if item.status != "disponivel":
+            # Excluir apagaria o histórico do fluxo e a referência que protege
+            # beneficiário, comprador e ponto de coleta.
+            raise FluxoItemError(
+                409, "Item com fluxo iniciado não pode ser excluído"
+            )
         self._repositorio.excluir(item_id)
 
     @staticmethod
@@ -161,6 +206,92 @@ class ItemService:
         permitidos = TRANSICOES.get(destino, {}).get(origem, set())
         if alvo not in permitidos:
             raise TransicaoInvalidaError(origem, alvo)
+
+    def _preparar_fluxo(
+        self,
+        item: Item,
+        request: ItemUpdateRequest,
+        *,
+        alvo: str | None,
+    ) -> dict[str, str | None]:
+        """Valida as referências do fluxo e devolve o que deve ser gravado."""
+        if request.ponto_coleta_id is not None and item.destino != "descarte":
+            raise FluxoItemError(
+                400, "ponto_coleta_id só se aplica a itens de descarte"
+            )
+        if request.comprador_id is not None and item.destino != "revenda":
+            raise FluxoItemError(400, "comprador_id só se aplica a itens de revenda")
+
+        ponto = item.ponto_coleta_id
+        if item.destino == "descarte":
+            if item.ponto_coleta_id is not None:
+                if request.ponto_coleta_id not in (None, item.ponto_coleta_id):
+                    raise FluxoItemError(
+                        409, "Ponto de coleta já definido para este item"
+                    )
+            elif alvo == "encaminhado":
+                if request.ponto_coleta_id is None:
+                    raise FluxoItemError(
+                        400, "Encaminhamento exige ponto de coleta"
+                    )
+                # A categoria do próprio PUT é a que valerá após a gravação.
+                self._garantir_ponto(request.ponto_coleta_id, request.categoria)
+                ponto = request.ponto_coleta_id
+            elif alvo == "coletado":
+                raise FluxoItemError(
+                    409, "Item sem ponto de coleta não pode ser coletado"
+                )
+            elif request.ponto_coleta_id is not None:
+                raise FluxoItemError(
+                    400, "Ponto de coleta só pode ser definido no encaminhamento"
+                )
+
+        comprador = item.comprador_id
+        if item.destino == "revenda":
+            if item.comprador_id is not None:
+                if request.comprador_id not in (None, item.comprador_id):
+                    raise FluxoItemError(
+                        409, "Comprador já definido para este item"
+                    )
+            elif alvo == "vendido":
+                if request.comprador_id is None:
+                    raise FluxoItemError(400, "Conclusão da revenda exige comprador")
+                self._validar_comprador(request.comprador_id, item.proprietario_id)
+                comprador = request.comprador_id
+            elif request.comprador_id is not None:
+                raise FluxoItemError(
+                    400, "Comprador só pode ser informado na conclusão da revenda"
+                )
+
+        beneficiario = None
+        if alvo == "doado":
+            beneficiario = (
+                self._interesses.buscar_aceito_por_item(item.id or "")
+                if self._interesses is not None
+                else None
+            )
+            if beneficiario is None:
+                raise FluxoItemError(409, "Doação exige interesse aceito")
+
+        return {
+            "ponto_coleta_id": ponto,
+            "comprador_id": comprador,
+            "beneficiario_id": beneficiario,
+        }
+
+    def _garantir_ponto(self, ponto_id: str, categoria: str) -> None:
+        if self._pontos is None:
+            raise FluxoItemError(400, "Ponto de coleta não pode ser validado")
+        self._pontos.garantir_compatibilidade(ponto_id, categoria)
+
+    def _validar_comprador(self, comprador_id: str, proprietario_id: str) -> None:
+        if comprador_id == proprietario_id:
+            raise FluxoItemError(400, "Comprador deve ser diferente do proprietário")
+        comprador = self._repositorio_usuarios.buscar_por_id(comprador_id)
+        if comprador is None:
+            raise UsuarioNaoEncontradoError(comprador_id)
+        if comprador.tipo not in {"doador", "beneficiario"}:
+            raise FluxoItemError(400, "Comprador deve ser uma pessoa cadastrada")
 
     def _buscar_item(self, item_id: str) -> Item:
         item = self._repositorio.buscar_por_id(item_id)

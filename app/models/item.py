@@ -29,4 +29,7 @@ class Item:
     historico: list[EventoHistorico]
     data_adicao: datetime
     data_modificacao: datetime
+    ponto_coleta_id: str | None = None
+    beneficiario_id: str | None = None
+    comprador_id: str | None = None
     id: str | None = None

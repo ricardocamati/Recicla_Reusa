@@ -20,10 +20,12 @@ class MongoUsuarioRepository:
         criar_indice: bool = True,
         colecao_pontos_coleta: Collection[dict[str, Any]] | None = None,
         colecao_interesses: Collection[dict[str, Any]] | None = None,
+        colecao_itens: Collection[dict[str, Any]] | None = None,
     ) -> None:
         self._colecao = colecao
         self._colecao_pontos_coleta = colecao_pontos_coleta
         self._colecao_interesses = colecao_interesses
+        self._colecao_itens = colecao_itens
         if criar_indice:
             self.criar_indice_email()
 
@@ -92,6 +94,15 @@ class MongoUsuarioRepository:
             return
         if (self._colecao_interesses is not None
                 and self._colecao_interesses.count_documents({"usuario_id": object_id})):
+            raise ReferenciaAtivaError()
+        if (self._colecao_itens is not None
+                and self._colecao_itens.count_documents({
+                    "$or": [
+                        {"proprietario_id": object_id},
+                        {"beneficiario_id": object_id},
+                        {"comprador_id": object_id},
+                    ]
+                })):
             raise ReferenciaAtivaError()
         if self._colecao_pontos_coleta is not None:
             vinculados = self._colecao_pontos_coleta.count_documents(

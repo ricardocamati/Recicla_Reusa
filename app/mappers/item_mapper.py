@@ -56,6 +56,9 @@ class ItemMapper:
             status=item.status,
             proprietario_id=item.proprietario_id,
             cidade_proprietario=cidade_proprietario,
+            ponto_coleta_id=item.ponto_coleta_id,
+            beneficiario_id=item.beneficiario_id,
+            comprador_id=item.comprador_id,
             historico=[
                 EventoHistoricoResponse(
                     etapa=evento.etapa,
@@ -88,6 +91,7 @@ class ItemMapper:
         novo_status: str,
         responsavel_id: str,
         instante,
+        observacao: str | None = None,
     ) -> None:
         origem = item.status
         item.historico.append(
@@ -96,7 +100,7 @@ class ItemMapper:
                 status=novo_status,
                 data_evento=instante,
                 responsavel_id=responsavel_id,
-                observacao=f"{origem} -> {novo_status}",
+                observacao=observacao or f"{origem} -> {novo_status}",
             )
         )
         item.status = novo_status

@@ -51,6 +51,15 @@ class ReferenciaAtivaError(Exception):
         super().__init__("Registro possui referências ativas")
 
 
+class FluxoItemError(Exception):
+    """Regra de fluxo recusada, com o código HTTP correspondente."""
+
+    def __init__(self, status_code: int, detail: str) -> None:
+        super().__init__(detail)
+        self.status_code = status_code
+        self.detail = detail
+
+
 class InteresseError(Exception):
     def __init__(self, status_code: int, detail: str) -> None:
         super().__init__(detail)

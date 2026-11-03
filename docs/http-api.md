@@ -76,7 +76,22 @@ Transições permitidas, sem saltos entre fluxos:
 | `descarte` | `disponivel` → `encaminhado` → `coletado` |
 | `revenda` | `disponivel` → `em_avaliacao` → `recondicionado` → `vendido` |
 
-A atualização aceita `status` opcional; transição inválida retorna `400`, item já concluído não volta a outro fluxo e cada transição acrescenta um evento a `historico` sem apagar os anteriores.
+A atualização aceita `status` opcional; transição inválida retorna `400`, item já concluído não volta a outro fluxo e cada transição acrescenta um evento a `historico` sem apagar os anteriores. O `PUT` substitui os campos descritivos, mas `ponto_coleta_id` e `comprador_id` seguem regras próprias do fluxo.
+
+Cada destino exige as referências abaixo no momento da transição:
+
+| Transição | Exigência |
+|---|---|
+| `disponivel → encaminhado` | `ponto_coleta_id` de ponto existente que aceite a categoria do item |
+| `encaminhado → coletado` | mantém o ponto definido no encaminhamento |
+| `reservado → doado` | interesse `aceito` no item; o beneficiário vem desse interesse, nunca do corpo |
+| `recondicionado → vendido` | `comprador_id` de outra pessoa cadastrada |
+
+`ponto_coleta_id` só é aceito no encaminhamento e não pode ser trocado ou removido depois; `comprador_id` só é aceito na conclusão da revenda e também fica fixado. Campo de fluxo enviado para outro destino retorna `400`, referência já definida retorna `409`, ponto ou pessoa inexistente `404`, categoria não aceita `400` e conclusão de doação sem aceite `409`. O destino pode ser corrigido apenas enquanto o item está `disponivel` e não pode ser alterado junto com uma transição de status; depois de iniciado o fluxo, fica fixo. O encaminhamento valida a categoria enviada no próprio `PUT`. A transição aceita `observacao` opcional (até 300 caracteres), gravada no evento correspondente — por exemplo, o laudo da avaliação na revenda.
+
+A exclusão só é aceita enquanto o item está `disponivel`; depois disso retorna `409`, preservando o histórico e as referências do fluxo. `observacao` sem transição de status é ignorada.
+
+`beneficiario_id` é definido pelo servidor. `ponto_coleta_id`, `beneficiario_id` e `comprador_id` aparecem na resposta. Excluir um ponto ainda referenciado por item ou uma pessoa que seja proprietária, beneficiária ou compradora de item retorna `409`, preservando a referência.
 
 Exemplo de cadastro:
 
@@ -97,7 +112,7 @@ Exemplo de cadastro:
 }
 ```
 
-A resposta inclui `cidade_proprietario`, `especificacoes` e `historico`, mas não inclui o endereço completo. `id`, `proprietario_id`, `status`, `data_adicao` e `data_modificacao` são controlados pelo servidor. Dados inválidos retornam `400`, sessão ausente retorna `401`, origem inválida retorna `403`, perfil sem permissão retorna `403` e item inexistente retorna `404`.
+A resposta inclui `cidade_proprietario`, `especificacoes`, `historico` e, quando aplicável, `ponto_coleta_id`, `beneficiario_id` e `comprador_id`, mas não inclui o endereço completo. `id`, `proprietario_id`, `status`, `data_adicao` e `data_modificacao` são controlados pelo servidor. Dados inválidos retornam `400`, sessão ausente retorna `401`, origem inválida retorna `403`, perfil sem permissão retorna `403` e item inexistente retorna `404`.
 
 ## Corpo de atualização
 

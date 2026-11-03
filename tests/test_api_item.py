@@ -358,25 +358,31 @@ async def test_transicoes_validas_acumulam_historico(
     async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
         await cadastrar_usuario(api)
         await autenticar(api, "maria@example.com")
-        criado = (await api.post("/api/itens", json=payload_item())).json()
-        reservado = await api.put(
+        criado = (
+            await api.post("/api/itens", json=payload_item(destino="revenda", valor=100.0))
+        ).json()
+        avaliacao = await api.put(
             f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="reservado"),
+            json=corpo_atualizacao(criado, status="em_avaliacao"),
         )
-        doado = await api.put(
+        recondicionado = await api.put(
             f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="doado"),
+            json=corpo_atualizacao(criado, status="recondicionado"),
         )
 
-    assert reservado.status_code == 200
-    assert [evento["status"] for evento in reservado.json()["historico"]] == [
+    assert avaliacao.status_code == 200
+    assert [evento["status"] for evento in avaliacao.json()["historico"]] == [
         "disponivel",
-        "reservado",
+        "em_avaliacao",
     ]
-    assert doado.status_code == 200
-    historico = doado.json()["historico"]
-    assert [evento["status"] for evento in historico] == ["disponivel", "reservado", "doado"]
-    assert historico[-1]["observacao"] == "reservado -> doado"
+    assert recondicionado.status_code == 200
+    historico = recondicionado.json()["historico"]
+    assert [evento["status"] for evento in historico] == [
+        "disponivel",
+        "em_avaliacao",
+        "recondicionado",
+    ]
+    assert historico[-1]["observacao"] == "em_avaliacao -> recondicionado"
     assert len({evento["data_evento"] for evento in historico}) == 1
 
 
@@ -387,35 +393,44 @@ async def test_salto_de_status_e_reabertura_sao_rejeitados(
     instante: datetime,
 ) -> None:
     async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
+        comprador = (
+            await cadastrar_usuario(api, email="comprador@example.com", nome="Comprador")
+        ).json()
         await cadastrar_usuario(api)
         await autenticar(api, "maria@example.com")
-        criado = (await api.post("/api/itens", json=payload_item())).json()
+        criado = (
+            await api.post("/api/itens", json=payload_item(destino="revenda", valor=100.0))
+        ).json()
         salto = await api.put(
             f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="doado"),
+            json=corpo_atualizacao(criado, status="vendido"),
         )
         await api.put(
             f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="reservado"),
+            json=corpo_atualizacao(criado, status="em_avaliacao"),
+        )
+        await api.put(
+            f"/api/itens/{criado['id']}",
+            json=corpo_atualizacao(criado, status="recondicionado"),
         )
         concluido = await api.put(
             f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="doado"),
+            json=corpo_atualizacao(criado, status="vendido", comprador_id=comprador["id"]),
         )
         reabrir = await api.put(
             f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="reservado"),
+            json=corpo_atualizacao(criado, status="recondicionado"),
         )
         trocar_destino = await api.put(
             f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, destino="descarte"),
+            json=corpo_atualizacao(criado, destino="doacao", valor=None),
         )
 
     assert salto.status_code == 400
     assert concluido.status_code == 200
     assert reabrir.status_code == 400
     assert trocar_destino.status_code == 400
-    assert len(repositorio_itens.itens[criado["id"]].historico) == 3
+    assert len(repositorio_itens.itens[criado["id"]].historico) == 4
 
 
 @pytest.mark.anyio

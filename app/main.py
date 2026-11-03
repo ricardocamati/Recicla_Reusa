@@ -17,6 +17,7 @@ from app.config import Settings
 from app.exceptions import (
     ConflitoEstadoError,
     EmailDuplicadoError,
+    FluxoItemError,
     InteresseError,
     ItemNaoAutorizadoError,
     ItemNaoEncontradoError,
@@ -59,20 +60,21 @@ def criar_app(
         colecao_usuarios = banco[settings.mongo_collection_usuarios]
         colecao_pontos = banco[settings.mongo_collection_pontos_coleta]
         colecao_interesses = banco[settings.mongo_collection_interesses]
+        colecao_itens = banco[settings.mongo_collection_itens]
         repositorio_mongo = MongoUsuarioRepository(
             colecao_usuarios,
             criar_indice=False,
             colecao_pontos_coleta=colecao_pontos,
             colecao_interesses=colecao_interesses,
+            colecao_itens=colecao_itens,
         )
         repositorio = repositorio_mongo
-        colecao_itens = banco[settings.mongo_collection_itens]
         repositorio_itens_mongo = MongoItemRepository(
             colecao_itens, criar_indices=False, colecao_interesses=colecao_interesses,
         )
         repositorio_itens = repositorio_itens_mongo
         repositorio_pontos_mongo = MongoPontoColetaRepository(
-            colecao_pontos, criar_indices=False
+            colecao_pontos, criar_indices=False, colecao_itens=colecao_itens
         )
         repositorio_pontos = repositorio_pontos_mongo
         repositorio_interesses_mongo = MongoInteresseRepository(
@@ -86,15 +88,16 @@ def criar_app(
     relogio = relogio or (lambda: datetime.now(UTC))
     sessoes = sessoes or ArmazenamentoDeSessoes(relogio=relogio)
     servico = UsuarioService(repositorio, relogio=relogio)
-    servico_itens = (
-        ItemService(repositorio_itens, repositorio, relogio=relogio,
-                    reservas_por_interesse=repositorio_interesses is not None)
-        if repositorio_itens is not None
-        else None
-    )
     servico_pontos = (
         PontoColetaService(repositorio_pontos, repositorio, relogio=relogio)
         if repositorio_pontos is not None
+        else None
+    )
+    servico_itens = (
+        ItemService(repositorio_itens, repositorio, relogio=relogio,
+                    interesses=repositorio_interesses,
+                    pontos=servico_pontos)
+        if repositorio_itens is not None
         else None
     )
     servico_interesses = (
@@ -164,6 +167,10 @@ def criar_app(
 
     @app.exception_handler(InteresseError)
     async def interesse_handler(request: Request, exc: InteresseError) -> JSONResponse:
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    @app.exception_handler(FluxoItemError)
+    async def fluxo_item_handler(request: Request, exc: FluxoItemError) -> JSONResponse:
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
     @app.exception_handler(EmailDuplicadoError)

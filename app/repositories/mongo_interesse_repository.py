@@ -153,6 +153,17 @@ class MongoInteresseRepository:
 
         return self._transacao(operacao)
 
+    def buscar_aceito_por_item(self, item_id: str) -> str | None:
+        """Interessado do aceite vigente, usado pela conclusão da doação."""
+        item_oid = self._id(item_id)
+        if item_oid is None:
+            return None
+        documento = self._colecao.find_one(
+            {"item_id": item_oid, "status": "aceito"},
+            sort=[("data_modificacao", -1)],
+        )
+        return str(documento["usuario_id"]) if documento else None
+
     def _transacao(self, operacao: Callable):
         try:
             with self._colecao.database.client.start_session() as session:
