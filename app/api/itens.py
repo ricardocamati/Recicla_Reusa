@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
 from app.schemas.item import (
+    DestinacaoInformadaRequest,
     CategoriaItem,
     CondicaoItem,
     DestinoItem,
@@ -87,14 +88,32 @@ def criar_router_itens(
 
     @router.get("/{item_id}", response_model=ItemResponse)
     def buscar_por_id(item_id: str, request: Request) -> ItemResponse:
-        sessao_obrigatoria(request)
-        return servico.buscar_por_id(item_id)
+        sessao = sessao_obrigatoria(request)
+        return servico.buscar_por_id(item_id, sessao.usuario_id)
 
     @router.post("/{item_id}/publicar", response_model=ItemResponse)
     def publicar(item_id: str, request: Request) -> ItemResponse:
         sessao = sessao_obrigatoria(request)
         exigir_pessoa(sessao)
         return servico.publicar(item_id, proprietario_id=sessao.usuario_id)
+
+    @router.post("/{item_id}/destinacao", response_model=ItemResponse)
+    def informar_destinacao(
+        item_id: str,
+        dados: DestinacaoInformadaRequest,
+        request: Request,
+    ) -> ItemResponse:
+        sessao = sessao_obrigatoria(request)
+        exigir_pessoa(sessao)
+        return servico.informar_destinacao(
+            item_id, dados, proprietario_id=sessao.usuario_id
+        )
+
+    @router.delete("/{item_id}/destinacao", response_model=ItemResponse)
+    def desfazer_destinacao(item_id: str, request: Request) -> ItemResponse:
+        sessao = sessao_obrigatoria(request)
+        exigir_pessoa(sessao)
+        return servico.desfazer_destinacao(item_id, proprietario_id=sessao.usuario_id)
 
     @router.post("/{item_id}/arquivar", response_model=ItemResponse)
     def arquivar(item_id: str, request: Request) -> ItemResponse:

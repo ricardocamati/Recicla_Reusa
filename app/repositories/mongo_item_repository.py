@@ -464,6 +464,17 @@ class MongoItemRepository:
         dados["data_adicao"] = MongoItemRepository._normalizar_data(dados["data_adicao"])
         dados["data_modificacao"] = MongoItemRepository._normalizar_data(dados["data_modificacao"])
         dados.setdefault("especificacoes", {})
+        indicada = dados.get("destinacao_informada")
+        if indicada:
+            from app.models.item import DestinacaoInformada
+
+            dados["destinacao_informada"] = DestinacaoInformada(
+                tipo_local=indicada["tipo_local"],
+                nome=indicada.get("nome"),
+                cidade=indicada.get("cidade"),
+                observacao=indicada.get("observacao"),
+                informado_em=MongoItemRepository._normalizar_data(indicada["informado_em"]),
+            )
         for campo in ("ponto_coleta_id", "beneficiario_id", "comprador_id"):
             valor = dados.get(campo)
             dados[campo] = str(valor) if valor is not None else None

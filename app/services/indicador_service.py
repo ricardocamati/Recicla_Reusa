@@ -17,9 +17,12 @@ class IndicadorService:
         doados = int(contagem.get("doacao:concluido", 0))
         vendidos = int(contagem.get("revenda:concluido", 0))
         coletados = int(contagem.get("descarte:recebido", 0))
+        indicados = int(contagem.get("descarte:destinacao_informada", 0))
         return IndicadorResponse(
             doados=doados,
             coletados=coletados,
+            indicados=indicados,
             vendidos=vendidos,
+            # Recebimento no ponto continua separado de destinação apenas informada.
             total=doados + coletados + vendidos,
         )

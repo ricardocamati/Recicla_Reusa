@@ -2,7 +2,8 @@ from typing import Any
 
 from pymongo.collection import Collection
 
-STATUS_CONCLUIDOS = ("concluido", "recebido")
+# Destinação informada entra na contagem própria, nunca como recebimento no ponto.
+STATUS_CONTADOS = ("concluido", "recebido", "destinacao_informada")
 
 
 class MongoIndicadorRepository:
@@ -13,7 +14,7 @@ class MongoIndicadorRepository:
 
     def contar_por_modalidade_e_status(self) -> dict[str, int]:
         pipeline = [
-            {"$match": {"status": {"$in": list(STATUS_CONCLUIDOS)}}},
+            {"$match": {"status": {"$in": list(STATUS_CONTADOS)}}},
             {
                 "$group": {
                     "_id": {"modalidade": "$destino", "status": "$status"},

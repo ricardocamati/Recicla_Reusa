@@ -60,6 +60,8 @@ O e-mail é normalizado para minúsculas. O CEP aceita a forma com hífen na ent
 | `POST` | `/api/itens/{id}/publicar` | pessoa proprietária | — | `200` com item publicado |
 | `POST` | `/api/itens/{id}/entrega` | pessoa proprietária | — | `200` com item `aguardando_confirmacao` |
 | `POST` | `/api/itens/{id}/recebimento` | pessoa selecionada | — | `200` com item `concluido` |
+| `POST` | `/api/itens/{id}/destinacao` | pessoa proprietária | `tipo_local`, `nome`, `cidade`, `observacao` | `200` com item em `destinacao_informada` |
+| `DELETE` | `/api/itens/{id}/destinacao` | pessoa proprietária | — | `200` com item de volta a `aguardando_ponto` |
 | `POST` | `/api/itens/{id}/arquivar` | pessoa proprietária | — | `200` com item arquivado |
 | `DELETE` | `/api/itens/{id}` | pessoa proprietária | — | `204` sem corpo |
 
@@ -88,6 +90,7 @@ Transições permitidas, sem saltos entre fluxos:
 | `doacao` | `disponivel` → `reservado` → `aguardando_confirmacao` → `concluido` |
 | `revenda` | `disponivel` → `reservado` → `aguardando_confirmacao` → `concluido` |
 | `descarte` | `aguardando_ponto` → `entrega_prevista` → `recebido` |
+| `descarte` (alternativo) | `aguardando_ponto` → `destinacao_informada` → `aguardando_ponto` |
 
 Doação e venda só avançam pelo `PUT` até `reservado`; declarar entrega e confirmar recebimento têm endpoints próprios. Descarte não muda de status pelo `PUT`: o item publicado fica em `aguardando_ponto` e a entrega é combinada em `/api/encaminhamentos`. Transição inválida retorna `400`, item concluído não volta a outro fluxo e cada mudança acrescenta um evento a `historico`. O `PUT` substitui os campos descritivos; `ponto_coleta_id` e `comprador_id` não são aceitos no corpo — o ponto vem do encaminhamento e o comprador, do interesse selecionado.
 
@@ -216,15 +219,17 @@ Cada tentativa guarda item, autor, ponto, status, motivo e histórico com autor 
 
 `cancelar` e `trocar` são do autor e só valem com `entrega_prevista`; cancelar devolve o item para `aguardando_ponto`, e trocar encerra a tentativa anterior como `cancelado` e cria outra, preservando o histórico. `receber` é do operador responsável pelo ponto: o item vira `recebido` e passa a contar em `coletados`. Repetir a confirmação devolve o mesmo resultado sem duplicar a contagem. `nao_recebido` é do operador, exige motivo e devolve o item para `aguardando_ponto`.
 
+Sem ponto cadastrado, ou por preferência, o autor pode indicar um lugar: `tipo_local` obrigatório (`ecoponto`, `cooperativa`, `comercio` ou `outro`) e nome, cidade e observação opcionais, todos texto livre. Coordenadas, arquivos e validação de endereço não são aceitos (`400`). A indicação encerra o item como `destinacao_informada`, não cria ponto, não entra no diretório, não aparece para operadores e vem rotulada como informada pelo próprio autor, sem verificação. Indicação e entrega prevista não coexistem: informar exige `aguardando_ponto` sem tentativa ativa, e registrar previsão exige que a indicação não esteja presente (`409`). Enquanto o item não estiver arquivado, o autor pode desfazer, voltando a `aguardando_ponto` sem apagar o evento anterior do histórico.
+
 Escolher o ponto não grava vínculo até a confirmação do `POST`: a listagem pública de pontos serve para comparar cidade, categorias e horário, sem declarar proximidade. A escolha é sempre explícita e o autor pode trocar de ponto enquanto a entrega estiver prevista.
 
 ## Indicadores
 
 | Método | Caminho | Autenticação | Sucesso |
 |---|---|---|---|
-| `GET` | `/api/indicadores` | sessão | `200` com `doados`, `coletados`, `vendidos` e `total` |
+| `GET` | `/api/indicadores` | sessão | `200` com `doados`, `coletados`, `indicados`, `vendidos` e `total` |
 
-Somente itens concluídos entram nos totais: `concluido` em doação e revenda, `recebido` em descarte. Itens disponíveis, reservados ou em andamento não são contados. Os números são da plataforma inteira, não de uma conta específica, e a consulta aceita qualquer sessão autenticada; sem sessão retorna `401`.
+Somente itens concluídos entram nos totais: `concluido` em doação e revenda, `recebido` em descarte. `indicados` conta `destinacao_informada` separadamente e nunca entra em `total`, porque informar um lugar não comprova recebimento nem reciclagem. Itens disponíveis, reservados ou em andamento não são contados. Os números são da plataforma inteira, não de uma conta específica, e a consulta aceita qualquer sessão autenticada; sem sessão retorna `401`.
 
 O snapshot da OpenAPI gerada do runtime e suas diferenças em relação a esta descrição estão em [openapi.md](openapi.md).
 

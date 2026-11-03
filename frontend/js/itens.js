@@ -114,6 +114,7 @@ const PROXIMA_ACAO = {
   "doacao:reservado": { entrega: true, rotulo: "Declarar entrega" },
   "descarte:aguardando_ponto": { encaminhar: true, rotulo: "Agendar entrega" },
   "descarte:entrega_prevista": { cancelarEntrega: true, rotulo: "Cancelar entrega" },
+  "descarte:destinacao_informada": { desfazerDestino: true, rotulo: "Desfazer indicação" },
   "revenda:reservado": { entrega: true, rotulo: "Declarar entrega" },
 };
 
@@ -146,10 +147,24 @@ function opcoes(select, valores) {
 }
 
 function painelFluxo(item) {
+  const message = document.getElementById("my-items-message");
   const acao = PROXIMA_ACAO[`${item.destino}:${item.status}`];
   if (!acao) return null;
   const painel = createElement("div", "item-actions");
   let select = null;
+
+  if (item.destinacao_informada) {
+    const indicada = item.destinacao_informada;
+    painel.append(
+      createElement(
+        "p",
+        "item-card-description",
+        `Informado por você, não verificado: ${indicada.tipo_local}${
+          indicada.nome ? ` — ${indicada.nome}` : ""
+        }${indicada.cidade ? ` (${indicada.cidade})` : ""}`,
+      ),
+    );
+  }
 
   if (acao.encaminhar) {
     const compativeis = pontos.filter(
@@ -158,27 +173,31 @@ function painelFluxo(item) {
         ponto.ativo !== false,
     );
     if (!compativeis.length) {
-      const aviso = createElement(
-        "p",
-        "item-card-description",
-        "Nenhum ponto ativo aceita esta categoria. Informe outro destino no descarte.",
+      painel.append(
+        createElement(
+          "p",
+          "item-card-description",
+          "Nenhum ponto ativo aceita esta categoria. Indique outro lugar abaixo.",
+        ),
       );
-      painel.append(aviso);
-      return painel;
     }
-    select = createElement("select", "", "");
-    select.dataset.papel = "ponto";
-    select.setAttribute("aria-label", "Ponto de coleta");
-    opcoes(select, compativeis.map((ponto) => ({ valor: ponto.id, texto: ponto.nome })));
-    painel.append(select);
+    if (compativeis.length) {
+      select = createElement("select", "", "");
+      select.dataset.papel = "ponto";
+      select.setAttribute("aria-label", "Ponto de coleta");
+      opcoes(select, compativeis.map((ponto) => ({ valor: ponto.id, texto: ponto.nome })));
+      painel.append(select);
+    }
   }
   const botao = createElement("button", "button button-secondary", acao.rotulo);
+  if (acao.encaminhar && !select) {
+    botao.hidden = true;
+  }
   botao.type = "button";
   botao.dataset.acao = acao.status
     || (acao.encaminhar ? "agendar" : acao.cancelarEntrega ? "cancelar-entrega" : "entrega");
   botao.dataset.itemId = item.id;
   botao.addEventListener("click", async () => {
-    const message = document.getElementById("my-items-message");
     if (acao.entrega) {
       executarComandoItem(item.id, "entrega", "Entrega declarada. Aguardando confirmação.");
       return;
@@ -195,6 +214,18 @@ function painelFluxo(item) {
         });
         await loadOwnedItems();
         setMessage(message, "Entrega prevista no ponto escolhido.", "success");
+      } catch (error) {
+        handleError(error, message);
+      }
+      return;
+    }
+    if (acao.desfazerDestino) {
+      try {
+        await requestApi(`/api/itens/${encodeURIComponent(item.id)}/destinacao`, {
+          method: "DELETE",
+        });
+        await loadOwnedItems();
+        setMessage(message, "Indicação desfeita; o item voltou a aguardar ponto.", "success");
       } catch (error) {
         handleError(error, message);
       }
@@ -223,6 +254,60 @@ function painelFluxo(item) {
     aplicarAcao(item, acao, select);
   });
   painel.append(botao);
+
+  if (acao.encaminhar) {
+    const form = createElement("form", "form-stack destination-form");
+    const tipo = createElement("select", "", "");
+    tipo.name = "tipo_local";
+    tipo.setAttribute("aria-label", "Tipo de local");
+    opcoes(tipo, [
+      { valor: "ecoponto", texto: "Ecoponto" },
+      { valor: "cooperativa", texto: "Cooperativa" },
+      { valor: "comercio", texto: "Comércio" },
+      { valor: "outro", texto: "Outro lugar" },
+    ]);
+    const nome = createElement("input", "", "");
+    nome.name = "nome";
+    nome.maxLength = 120;
+    nome.placeholder = "Nome do lugar (opcional)";
+    const cidade = createElement("input", "", "");
+    cidade.name = "cidade";
+    cidade.maxLength = 160;
+    cidade.placeholder = "Cidade (opcional)";
+    const observacao = createElement("input", "", "");
+    observacao.name = "observacao";
+    observacao.maxLength = 300;
+    observacao.placeholder = "Observação (opcional)";
+    const enviar = createElement("button", "button button-secondary", "Indicar outro lugar");
+    enviar.type = "submit";
+    form.append(
+      createElement("p", "item-card-description", "Sem ponto cadastrado? Indique onde pretende descartar."),
+      tipo,
+      nome,
+      cidade,
+      observacao,
+      enviar,
+    );
+    form.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      try {
+        await requestApi(`/api/itens/${encodeURIComponent(item.id)}/destinacao`, {
+          method: "POST",
+          body: JSON.stringify({
+            tipo_local: tipo.value,
+            nome: nome.value.trim() || null,
+            cidade: cidade.value.trim() || null,
+            observacao: observacao.value.trim() || null,
+          }),
+        });
+        await loadOwnedItems();
+        setMessage(message, "Destinação informada registrada; não é verificada.", "success");
+      } catch (error) {
+        handleError(error, message);
+      }
+    });
+    painel.append(form);
+  }
   return painel;
 }
 
@@ -402,6 +487,7 @@ async function loadIndicadores() {
     const indicadores = await requestApi("/api/indicadores");
     document.getElementById("indicador-doados").textContent = indicadores.doados;
     document.getElementById("indicador-coletados").textContent = indicadores.coletados;
+    document.getElementById("indicador-indicados").textContent = indicadores.indicados ?? 0;
     document.getElementById("indicador-vendidos").textContent = indicadores.vendidos;
     document.getElementById("indicador-total").textContent = indicadores.total;
     setMessage(message);
