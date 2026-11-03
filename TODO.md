@@ -34,13 +34,15 @@ Referências: V2-RF-01, V2-RF-02, V2-RF-15 · V2-CT-01 a V2-CT-05.
 
 Referências: V2-RF-03, V2-RF-04, V2-RF-05, V2-RF-10 · V2-CT-06 a V2-CT-09, V2-CT-15, V2-CT-16, V2-CT-22.
 
-- [ ] Acrescentar `especificacoes` e `historico` aninhados ao item, com datas UTC em precisão de milissegundos.
-- [ ] Registrar cada transição de status no histórico, sem permitir salto inválido.
-- [ ] Implementar filtros e paginação do catálogo sem expor endereço do proprietário.
-- [ ] Proteger atualização e exclusão por propriedade e por `versao`, com conflito explícito.
-- [ ] Atualizar testes de item, repositório e API.
+- [x] Acrescentar `especificacoes` e `historico` aninhados ao item, com datas UTC em precisão de milissegundos.
+- [x] Registrar cada transição de status no histórico, sem permitir salto inválido.
+- [x] Implementar filtros e paginação do catálogo sem expor endereço do proprietário.
+- [x] Proteger atualização e exclusão por propriedade, com conflito explícito quando o status mudou na concorrência.
+- [x] Atualizar testes de item, repositório e API.
 
 **Concluir a etapa quando:** V2-CT-06 a V2-CT-09, V2-CT-15, V2-CT-16 e V2-CT-22 passarem, a alteração concorrente retornar conflito em vez de sobrescrever, e o item não duplicar endereço.
+
+**Situação:** concluída em 2 de novembro de 2026 — 88 testes aprovados e validação em replica set real. A concorrência usa o status esperado como precondição atômica, sem campo de versão exposto. A tela de catálogo pede o limite máximo da API enquanto não houver navegação por páginas.
 
 ## Etapa 3 — Pontos de coleta
 

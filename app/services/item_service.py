@@ -2,24 +2,55 @@ from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 from typing import Protocol
 
-from app.exceptions import ItemNaoEncontradoError, ItemNaoAutorizadoError, UsuarioNaoEncontradoError
+from app.exceptions import (
+    ItemNaoAutorizadoError,
+    ItemNaoEncontradoError,
+    TransicaoInvalidaError,
+    UsuarioNaoEncontradoError,
+)
 from app.mappers.item_mapper import ItemMapper
 from app.models.item import Item
 from app.models.usuario import Usuario
 from app.schemas.item import FiltrosItem, ItemCreateRequest, ItemResponse, ItemUpdateRequest
 
+TRANSICOES: dict[str, dict[str, set[str]]] = {
+    "doacao": {
+        "disponivel": {"reservado"},
+        "reservado": {"doado"},
+    },
+    "descarte": {
+        "disponivel": {"encaminhado"},
+        "encaminhado": {"coletado"},
+    },
+    "revenda": {
+        "disponivel": {"em_avaliacao"},
+        "em_avaliacao": {"recondicionado"},
+        "recondicionado": {"vendido"},
+    },
+}
+
+STATUS_CONCLUIDOS = {"doado", "coletado", "vendido"}
+
 
 class RepositorioDeItens(Protocol):
     def criar(self, item: Item) -> Item: ...
-    def listar(self, filtros: FiltrosItem) -> list[Item]: ...
+    def listar(
+        self,
+        filtros: FiltrosItem,
+        *,
+        proprietario_ids: set[str] | None = None,
+        offset: int = 0,
+        limite: int = 20,
+    ) -> list[Item]: ...
     def buscar_por_id(self, item_id: str) -> Item | None: ...
-    def atualizar(self, item: Item) -> Item: ...
+    def atualizar(self, item: Item, *, status_esperado: str | None = None) -> Item: ...
     def excluir(self, item_id: str) -> None: ...
 
 
 class RepositorioDeUsuariosParaItens(Protocol):
     def buscar_por_id(self, usuario_id: str) -> Usuario | None: ...
     def buscar_por_ids(self, usuario_ids: Iterable[str]) -> dict[str, Usuario]: ...
+    def buscar_por_cidade(self, cidade: str) -> list[str]: ...
 
 
 class ItemService:
@@ -44,8 +75,24 @@ class ItemService:
         criado = self._repositorio.criar(item)
         return self._resposta(criado, proprietario)
 
-    def listar(self, filtros: FiltrosItem) -> list[ItemResponse]:
-        itens = self._repositorio.listar(filtros)
+    def listar(
+        self,
+        filtros: FiltrosItem,
+        *,
+        offset: int = 0,
+        limite: int = 20,
+    ) -> list[ItemResponse]:
+        proprietario_ids = None
+        if filtros.cidade:
+            proprietario_ids = set(
+                self._repositorio_usuarios.buscar_por_cidade(filtros.cidade)
+            )
+        itens = self._repositorio.listar(
+            filtros,
+            proprietario_ids=proprietario_ids,
+            offset=offset,
+            limite=limite,
+        )
         proprietarios = self._buscar_proprietarios(itens)
         return [
             self._resposta(item, proprietario=proprietarios.get(item.proprietario_id))
@@ -67,8 +114,32 @@ class ItemService:
         proprietario = self._obter_doador(proprietario_id)
         if item.proprietario_id != proprietario_id:
             raise ItemNaoAutorizadoError()
-        ItemMapper.atualizar_modelo(request, item, instante=self._relogio())
-        atualizado = self._repositorio.atualizar(item)
+
+        instante = self._relogio()
+        status_anterior = item.status
+        novo_status = request.status
+        if item.status in STATUS_CONCLUIDOS:
+            if (novo_status is not None and novo_status != item.status) or (
+                request.destino != item.destino
+            ):
+                raise TransicaoInvalidaError(item.status, novo_status or request.destino)
+
+        ItemMapper.atualizar_modelo(request, item, instante=instante)
+
+        transicao = novo_status is not None and novo_status != status_anterior
+        if transicao:
+            self._validar_transicao(item.destino, status_anterior, novo_status)
+            ItemMapper.registrar_transicao(
+                item,
+                novo_status=novo_status,
+                responsavel_id=proprietario_id,
+                instante=instante,
+            )
+
+        atualizado = self._repositorio.atualizar(
+            item,
+            status_esperado=status_anterior if transicao else None,
+        )
         return self._resposta(atualizado, proprietario)
 
     def excluir(self, item_id: str, *, proprietario_id: str) -> None:
@@ -77,6 +148,12 @@ class ItemService:
         if item.proprietario_id != proprietario_id:
             raise ItemNaoAutorizadoError()
         self._repositorio.excluir(item_id)
+
+    @staticmethod
+    def _validar_transicao(destino: str, origem: str, alvo: str) -> None:
+        permitidos = TRANSICOES.get(destino, {}).get(origem, set())
+        if alvo not in permitidos:
+            raise TransicaoInvalidaError(origem, alvo)
 
     def _buscar_item(self, item_id: str) -> Item:
         item = self._repositorio.buscar_por_id(item_id)

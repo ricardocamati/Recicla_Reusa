@@ -22,6 +22,8 @@ function queryFromCatalogForm() {
   if (usuario?.tipo === "ponto_coleta") {
     params.set("destino", "descarte");
   }
+  // A API pagina o catálogo; a tela ainda não tem navegação por páginas.
+  params.set("limite", "100");
   return params.toString();
 }
 

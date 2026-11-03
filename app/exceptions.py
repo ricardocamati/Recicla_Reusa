@@ -19,3 +19,15 @@ class ItemNaoEncontradoError(Exception):
 class ItemNaoAutorizadoError(Exception):
     def __init__(self) -> None:
         super().__init__("Ação não permitida para este item")
+
+
+class TransicaoInvalidaError(Exception):
+    def __init__(self, origem: str, destino: str) -> None:
+        super().__init__(f"Transição inválida: {origem} -> {destino}")
+        self.origem = origem
+        self.destino = destino
+
+
+class ConflitoEstadoError(Exception):
+    def __init__(self) -> None:
+        super().__init__("Item alterado por outra operação")

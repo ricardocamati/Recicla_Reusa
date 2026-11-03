@@ -1,5 +1,16 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
+
+
+@dataclass(slots=True)
+class EventoHistorico:
+    """Evento do ciclo de vida do item, guardado em lista de subdocumentos."""
+
+    etapa: str
+    status: str
+    data_evento: datetime
+    responsavel_id: str
+    observacao: str | None = None
 
 
 @dataclass(slots=True)
@@ -14,6 +25,8 @@ class Item:
     valor: float | None
     status: str
     proprietario_id: str
+    especificacoes: dict[str, str]
+    historico: list[EventoHistorico]
     data_adicao: datetime
     data_modificacao: datetime
     id: str | None = None

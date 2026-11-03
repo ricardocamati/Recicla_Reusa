@@ -1,3 +1,4 @@
+import re
 from collections.abc import Iterable
 from dataclasses import asdict
 from typing import Any
@@ -56,6 +57,11 @@ class MongoUsuarioRepository:
         documentos = self._colecao.find({"_id": {"$in": list(object_ids)}})
         usuarios = (self._para_modelo(documento) for documento in documentos)
         return {usuario.id: usuario for usuario in usuarios if usuario.id is not None}
+
+    def buscar_por_cidade(self, cidade: str) -> list[str]:
+        padrao = {"$regex": f"^{re.escape(cidade.strip())}$", "$options": "i"}
+        documentos = self._colecao.find({"endereco.cidade": padrao}, {"_id": 1})
+        return [str(documento["_id"]) for documento in documentos]
 
     def buscar_por_email(self, email: str) -> Usuario | None:
         documento = self._colecao.find_one({"email": email.lower()})

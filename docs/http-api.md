@@ -52,7 +52,7 @@ O e-mail é normalizado para minúsculas. O CEP aceita a forma com hífen na ent
 
 | Método | Caminho | Autenticação | Entrada | Sucesso |
 |---|---|---|---|---|
-| `GET` | `/api/itens` | sessão | filtros opcionais `categoria`, `condicao`, `destino`, `status` | `200` com catálogo |
+| `GET` | `/api/itens` | sessão | filtros `categoria`, `condicao`, `destino`, `status` e `cidade`, com `offset` e `limite` | `200` com catálogo paginado |
 | `POST` | `/api/itens` | doador | `ItemCreateRequest` | `201`, `Location` e item criado |
 | `GET` | `/api/itens/{id}` | sessão | — | `200` com item |
 | `PUT` | `/api/itens/{id}` | doador proprietário | `ItemUpdateRequest` | `200` com item atualizado |
@@ -63,6 +63,20 @@ O `proprietario_id` é obtido da sessão no cadastro e não é aceito no corpo. 
 Categorias aceitas: `informatica`, `notebook`, `desktop`, `telefonia`, `celular`, `tablet`, `televisao`, `audio`, `eletrodomestico`, `perifericos`, `monitor`, `impressora` e `outro`. Também são aceitas entradas com maiúsculas, espaços, hífen e acentos equivalentes, devolvidas no formato canônico em minúsculas.
 
 Condições aceitas: `funcional`, `funcional_com_defeito`, `reparavel`, `sem_conserto` e `recondicionado`. Destinos aceitos: `doacao`, `descarte` e `revenda`. Todo item começa com status `disponivel`. `revenda` exige `valor` não negativo; doação e descarte não aceitam preço.
+
+`especificacoes` é um subdocumento livre de textos, porque categorias diferentes têm características diferentes. O cadastro grava o primeiro evento em `historico` com etapa `cadastro`, status `disponivel`, data do servidor e o proprietário como responsável.
+
+A listagem aceita `offset` (padrão `0`) e `limite` (padrão `20`, máximo `100`), sempre ordenada por `data_adicao` decrescente. O filtro `cidade` usa a cidade do proprietário e não expõe o endereço.
+
+Transições permitidas, sem saltos entre fluxos:
+
+| Destino | Sequência |
+|---|---|
+| `doacao` | `disponivel` → `reservado` → `doado` |
+| `descarte` | `disponivel` → `encaminhado` → `coletado` |
+| `revenda` | `disponivel` → `em_avaliacao` → `recondicionado` → `vendido` |
+
+A atualização aceita `status` opcional; transição inválida retorna `400`, item já concluído não volta a outro fluxo e cada transição acrescenta um evento a `historico` sem apagar os anteriores.
 
 Exemplo de cadastro:
 
@@ -75,11 +89,15 @@ Exemplo de cadastro:
   "modelo": "Inspiron 15",
   "condicao": "funcional_com_defeito",
   "destino": "doacao",
-  "valor": null
+  "valor": null,
+  "especificacoes": {
+    "memoria_ram": "8 GB",
+    "armazenamento": "256 GB SSD"
+  }
 }
 ```
 
-A resposta inclui `cidade_proprietario` para o catálogo, mas não inclui o endereço completo. `id`, `proprietario_id`, `status`, `data_adicao` e `data_modificacao` são controlados pelo servidor. Dados inválidos retornam `400`, sessão ausente retorna `401`, origem inválida retorna `403`, perfil sem permissão retorna `403` e item inexistente retorna `404`.
+A resposta inclui `cidade_proprietario`, `especificacoes` e `historico`, mas não inclui o endereço completo. `id`, `proprietario_id`, `status`, `data_adicao` e `data_modificacao` são controlados pelo servidor. Dados inválidos retornam `400`, sessão ausente retorna `401`, origem inválida retorna `403`, perfil sem permissão retorna `403` e item inexistente retorna `404`.
 
 ## Corpo de atualização
 

@@ -52,6 +52,9 @@ def criar_router_itens(
         condicao: CondicaoItem | None = Query(default=None),
         destino: DestinoItem | None = Query(default=None),
         status_item: StatusItem | None = Query(default=None, alias="status"),
+        cidade: str | None = Query(default=None, min_length=1, max_length=160),
+        offset: int = Query(default=0, ge=0),
+        limite: int = Query(default=20, ge=1, le=100),
     ) -> list[ItemResponse]:
         sessao_obrigatoria(request)
         filtros = FiltrosItem(
@@ -59,8 +62,9 @@ def criar_router_itens(
             condicao=condicao,
             destino=destino,
             status=status_item,
+            cidade=cidade,
         )
-        return servico.listar(filtros)
+        return servico.listar(filtros, offset=offset, limite=limite)
 
     @router.get("/{item_id}", response_model=ItemResponse)
     def buscar_por_id(item_id: str, request: Request) -> ItemResponse:

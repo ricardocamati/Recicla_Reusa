@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 from collections.abc import Callable
 from typing import Any
@@ -15,27 +16,45 @@ class RepositorioItensEmMemoria:
         self.itens: dict[str, Item] = {}
         self.proximo_id = 1
 
+    def _copiar(self, item: Item) -> Item:
+        return replace(item, historico=list(item.historico))
+
     def criar(self, item: Item) -> Item:
         item.id = f"item-{self.proximo_id}"
         self.proximo_id += 1
-        self.itens[item.id] = item
+        self.itens[item.id] = self._copiar(item)
         return item
 
-    def listar(self, filtros) -> list[Item]:
-        return [
+    def listar(
+        self,
+        filtros,
+        *,
+        proprietario_ids: set[str] | None = None,
+        offset: int = 0,
+        limite: int = 20,
+    ) -> list[Item]:
+        itens = [
             item
             for item in self.itens.values()
             if (filtros.categoria is None or item.categoria == filtros.categoria)
             and (filtros.condicao is None or item.condicao == filtros.condicao)
             and (filtros.destino is None or item.destino == filtros.destino)
             and (filtros.status is None or item.status == filtros.status)
+            and (proprietario_ids is None or item.proprietario_id in proprietario_ids)
         ]
+        return itens[offset : offset + limite]
 
     def buscar_por_id(self, item_id: str) -> Item | None:
-        return self.itens.get(item_id)
+        encontrado = self.itens.get(item_id)
+        return self._copiar(encontrado) if encontrado else None
 
-    def atualizar(self, item: Item) -> Item:
-        self.itens[item.id or ""] = item
+    def atualizar(self, item: Item, *, status_esperado: str | None = None) -> Item:
+        atual = self.itens.get(item.id or "")
+        if status_esperado is not None and (atual is None or atual.status != status_esperado):
+            from app.exceptions import ConflitoEstadoError
+
+            raise ConflitoEstadoError()
+        self.itens[item.id or ""] = self._copiar(item)
         return item
 
     def excluir(self, item_id: str) -> None:
@@ -280,3 +299,166 @@ async def test_validacao_de_enums_e_valor_de_revenda(
     assert valor_negativo.status_code == 400
     assert revenda_zero.status_code == 201
     assert doacao_com_valor.status_code == 400
+
+
+def corpo_atualizacao(item: dict[str, Any], **alteracoes: Any) -> dict[str, Any]:
+    campos = (
+        "titulo",
+        "descricao",
+        "categoria",
+        "marca",
+        "modelo",
+        "condicao",
+        "destino",
+        "valor",
+        "especificacoes",
+    )
+    dados = {campo: item[campo] for campo in campos}
+    dados.update(alteracoes)
+    return dados
+
+
+@pytest.mark.anyio
+async def test_cadastro_registra_primeiro_evento_e_nao_copia_endereco(
+    repositorio_usuarios: RepositorioEmMemoria,
+    repositorio_itens: RepositorioItensEmMemoria,
+    instante: datetime,
+) -> None:
+    async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
+        await cadastrar_usuario(api)
+        await autenticar(api, "maria@example.com")
+        criado = await api.post(
+            "/api/itens",
+            json=payload_item(especificacoes={"memoria_ram": "8 GB", "tela": "14"}),
+        )
+        listado = await api.get("/api/itens")
+
+    assert criado.status_code == 201
+    corpo = criado.json()
+    assert corpo["status"] == "disponivel"
+    assert corpo["especificacoes"] == {"memoria_ram": "8 GB", "tela": "14"}
+    assert len(corpo["historico"]) == 1
+    evento = corpo["historico"][0]
+    assert evento["etapa"] == "cadastro"
+    assert evento["status"] == "disponivel"
+    assert evento["responsavel_id"] == corpo["proprietario_id"]
+    assert evento["data_evento"] == corpo["data_adicao"]
+    for proibido in ("logradouro", "numero", "complemento", "cep", "endereco"):
+        assert proibido not in corpo
+        assert proibido not in listado.json()[0]
+    assert listado.json()[0]["cidade_proprietario"] == "Maringá"
+
+
+@pytest.mark.anyio
+async def test_transicoes_validas_acumulam_historico(
+    repositorio_usuarios: RepositorioEmMemoria,
+    repositorio_itens: RepositorioItensEmMemoria,
+    instante: datetime,
+) -> None:
+    async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
+        await cadastrar_usuario(api)
+        await autenticar(api, "maria@example.com")
+        criado = (await api.post("/api/itens", json=payload_item())).json()
+        reservado = await api.put(
+            f"/api/itens/{criado['id']}",
+            json=corpo_atualizacao(criado, status="reservado"),
+        )
+        doado = await api.put(
+            f"/api/itens/{criado['id']}",
+            json=corpo_atualizacao(criado, status="doado"),
+        )
+
+    assert reservado.status_code == 200
+    assert [evento["status"] for evento in reservado.json()["historico"]] == [
+        "disponivel",
+        "reservado",
+    ]
+    assert doado.status_code == 200
+    historico = doado.json()["historico"]
+    assert [evento["status"] for evento in historico] == ["disponivel", "reservado", "doado"]
+    assert historico[-1]["observacao"] == "reservado -> doado"
+    assert len({evento["data_evento"] for evento in historico}) == 1
+
+
+@pytest.mark.anyio
+async def test_salto_de_status_e_reabertura_sao_rejeitados(
+    repositorio_usuarios: RepositorioEmMemoria,
+    repositorio_itens: RepositorioItensEmMemoria,
+    instante: datetime,
+) -> None:
+    async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
+        await cadastrar_usuario(api)
+        await autenticar(api, "maria@example.com")
+        criado = (await api.post("/api/itens", json=payload_item())).json()
+        salto = await api.put(
+            f"/api/itens/{criado['id']}",
+            json=corpo_atualizacao(criado, status="doado"),
+        )
+        await api.put(
+            f"/api/itens/{criado['id']}",
+            json=corpo_atualizacao(criado, status="reservado"),
+        )
+        concluido = await api.put(
+            f"/api/itens/{criado['id']}",
+            json=corpo_atualizacao(criado, status="doado"),
+        )
+        reabrir = await api.put(
+            f"/api/itens/{criado['id']}",
+            json=corpo_atualizacao(criado, status="reservado"),
+        )
+        trocar_destino = await api.put(
+            f"/api/itens/{criado['id']}",
+            json=corpo_atualizacao(criado, destino="descarte"),
+        )
+
+    assert salto.status_code == 400
+    assert concluido.status_code == 200
+    assert reabrir.status_code == 400
+    assert trocar_destino.status_code == 400
+    assert len(repositorio_itens.itens[criado["id"]].historico) == 3
+
+
+@pytest.mark.anyio
+async def test_catalogo_filtra_por_cidade_e_pagina(
+    repositorio_usuarios: RepositorioEmMemoria,
+    repositorio_itens: RepositorioItensEmMemoria,
+    instante: datetime,
+) -> None:
+    async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
+        await cadastrar_usuario(api, email="maria@example.com")
+        await autenticar(api, "maria@example.com")
+        for indice in range(3):
+            await api.post("/api/itens", json=payload_item(titulo=f"Notebook {indice}"))
+        await api.post("/api/auth/logout")
+
+        await cadastrar_usuario(
+            api,
+            email="joao@example.com",
+            nome="João da Silva",
+            endereco={
+                "logradouro": "Rua B",
+                "numero": "20",
+                "cep": "86000000",
+                "cidade": "Londrina",
+            },
+        )
+        await autenticar(api, "joao@example.com")
+        await api.post("/api/itens", json=payload_item(titulo="Monitor de Londrina", categoria="monitor"))
+
+        maringa = await api.get("/api/itens", params={"cidade": "maringá"})
+        primeira_pagina = await api.get("/api/itens", params={"cidade": "Maringá", "limite": 2})
+        segunda_pagina = await api.get(
+            "/api/itens", params={"cidade": "Maringá", "limite": 2, "offset": 2}
+        )
+        Londres = await api.get("/api/itens", params={"cidade": "Curitiba"})
+
+    assert maringa.status_code == 200
+    assert {item["cidade_proprietario"] for item in maringa.json()} == {"Maringá"}
+    assert len(maringa.json()) == 3
+    assert len(primeira_pagina.json()) == 2
+    assert len(segunda_pagina.json()) == 1
+    ids = {item["id"] for item in primeira_pagina.json()} & {
+        item["id"] for item in segunda_pagina.json()
+    }
+    assert ids == set()
+    assert Londres.json() == []

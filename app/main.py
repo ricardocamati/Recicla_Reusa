@@ -13,9 +13,11 @@ from app.api.itens import criar_router_itens
 from app.api.usuarios import criar_routers
 from app.config import Settings
 from app.exceptions import (
+    ConflitoEstadoError,
     EmailDuplicadoError,
     ItemNaoAutorizadoError,
     ItemNaoEncontradoError,
+    TransicaoInvalidaError,
     UsuarioNaoEncontradoError,
 )
 from app.repositories.mongo_item_repository import MongoItemRepository
@@ -132,6 +134,23 @@ def criar_app(
         exc: ItemNaoAutorizadoError,
     ) -> JSONResponse:
         return JSONResponse(status_code=403, content={"detail": "Ação não permitida"})
+
+    @app.exception_handler(TransicaoInvalidaError)
+    async def transicao_invalida_handler(
+        request: Request,
+        exc: TransicaoInvalidaError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=400,
+            content={"detail": f"Transição de status inválida: {exc.origem} -> {exc.destino}"},
+        )
+
+    @app.exception_handler(ConflitoEstadoError)
+    async def conflito_estado_handler(
+        request: Request,
+        exc: ConflitoEstadoError,
+    ) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"detail": "Item alterado por outra operação"})
 
     @app.exception_handler(RequestValidationError)
     async def validation_handler(

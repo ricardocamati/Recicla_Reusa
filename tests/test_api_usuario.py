@@ -26,6 +26,13 @@ class RepositorioEmMemoria:
     def buscar_por_id(self, usuario_id: str) -> Usuario | None:
         return self.usuarios.get(usuario_id)
 
+    def buscar_por_cidade(self, cidade: str) -> list[str]:
+        return [
+            usuario_id
+            for usuario_id, usuario in self.usuarios.items()
+            if usuario.endereco.cidade.lower() == cidade.lower()
+        ]
+
     def buscar_por_email(self, email: str) -> Usuario | None:
         return next((u for u in self.usuarios.values() if u.email == email), None)
 

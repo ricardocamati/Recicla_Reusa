@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -15,13 +16,23 @@ class RepositorioItensFake:
         self.itens: dict[str, Item] = {}
         self.proximo_id = 1
 
+    def _copiar(self, item: Item) -> Item:
+        return replace(item, historico=list(item.historico))
+
     def criar(self, item: Item) -> Item:
         item.id = f"item-{self.proximo_id}"
         self.proximo_id += 1
-        self.itens[item.id] = item
+        self.itens[item.id] = self._copiar(item)
         return item
 
-    def listar(self, filtros: FiltrosItem) -> list[Item]:
+    def listar(
+        self,
+        filtros: FiltrosItem,
+        *,
+        proprietario_ids: set[str] | None = None,
+        offset: int = 0,
+        limite: int = 20,
+    ) -> list[Item]:
         return [
             item
             for item in self.itens.values()
@@ -29,13 +40,20 @@ class RepositorioItensFake:
             and (filtros.condicao is None or item.condicao == filtros.condicao)
             and (filtros.destino is None or item.destino == filtros.destino)
             and (filtros.status is None or item.status == filtros.status)
-        ]
+            and (proprietario_ids is None or item.proprietario_id in proprietario_ids)
+        ][offset : offset + limite]
 
     def buscar_por_id(self, item_id: str) -> Item | None:
-        return self.itens.get(item_id)
+        encontrado = self.itens.get(item_id)
+        return self._copiar(encontrado) if encontrado else None
 
-    def atualizar(self, item: Item) -> Item:
-        self.itens[item.id or ""] = item
+    def atualizar(self, item: Item, *, status_esperado: str | None = None) -> Item:
+        atual = self.itens.get(item.id or "")
+        if status_esperado is not None and (atual is None or atual.status != status_esperado):
+            from app.exceptions import ConflitoEstadoError
+
+            raise ConflitoEstadoError()
+        self.itens[item.id or ""] = self._copiar(item)
         return item
 
     def excluir(self, item_id: str) -> None:
@@ -46,6 +64,13 @@ class RepositorioUsuariosFake:
     def __init__(self, usuarios: list[Usuario] | None = None) -> None:
         self.usuarios = {usuario.id: usuario for usuario in usuarios or [] if usuario.id}
         self.chamadas_em_lote = 0
+
+    def buscar_por_cidade(self, cidade: str) -> list[str]:
+        return [
+            usuario_id
+            for usuario_id, usuario in self.usuarios.items()
+            if usuario.endereco.cidade.lower() == cidade.lower()
+        ]
 
     def buscar_por_id(self, usuario_id: str) -> Usuario | None:
         return self.usuarios.get(usuario_id)
@@ -190,3 +215,24 @@ def test_proprietario_diferente_nao_altera_ou_exclui_item() -> None:
         servico.atualizar(criado.id, update_request(), proprietario_id="u2")
     with pytest.raises(ItemNaoAutorizadoError):
         servico.excluir(criado.id, proprietario_id="u2")
+
+
+def test_transicao_concorrente_gera_conflito() -> None:
+    from app.exceptions import ConflitoEstadoError
+
+    class RepositorioConflitante(RepositorioItensFake):
+        def atualizar(self, item: Item, *, status_esperado: str | None = None) -> Item:
+            if status_esperado is not None:
+                raise ConflitoEstadoError()
+            return super().atualizar(item)
+
+    itens = RepositorioConflitante()
+    servico = service(itens, RepositorioUsuariosFake([usuario_doador()]), datetime.now)
+    criado = servico.criar(request(), proprietario_id="u1")
+
+    with pytest.raises(ConflitoEstadoError):
+        servico.atualizar(
+            criado.id,
+            ItemUpdateRequest(**{**request().model_dump(), "status": "reservado"}),
+            proprietario_id="u1",
+        )
