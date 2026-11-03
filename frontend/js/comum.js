@@ -52,6 +52,18 @@ export function byId(id) {
   return document.getElementById(id);
 }
 
+const ROTULOS_INTERESSE = {
+  pendente: "Pendente",
+  selecionado: "Selecionado",
+  recusado: "Recusado",
+  cancelado: "Cancelado",
+  encerrado: "Encerrado",
+};
+
+export function labelForInteresse(valor) {
+  return ROTULOS_INTERESSE[valor] || valor || "Não informado";
+}
+
 export function labelFor(grupo, valor) {
   return ROTULOS[grupo]?.[valor] || valor || "Não informado";
 }

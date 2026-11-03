@@ -7,7 +7,13 @@ from bson import ObjectId
 from starlette.concurrency import run_in_threadpool
 
 from app.exceptions import InteresseError
-from app.schemas.interesse import InteresseCreateRequest, InteresseResponse, InteresseUpdateRequest, StatusInteresse
+from app.schemas.interesse import (
+    InteresseAcaoRequest,
+    InteresseCreateRequest,
+    InteresseResponse,
+    InteresseUpdateRequest,
+    StatusInteresse,
+)
 from app.security.sessions import SESSION_COOKIE_NAME, ArmazenamentoDeSessoes, Sessao
 from app.services.interesse_service import InteresseService
 
@@ -79,6 +85,13 @@ def criar_router_interesses(servico: InteresseService, sessoes: ArmazenamentoDeS
     def buscar_por_id(interesse_id: str, request: Request):
         sessao = sessao_obrigatoria(request)
         return chamar(servico.buscar_por_id, interesse_id, sessao.usuario_id)
+
+    @router.post("/{interesse_id}/acoes", response_model=InteresseResponse)
+    def executar_acao(
+        interesse_id: str, dados: InteresseAcaoRequest, request: Request
+    ):
+        sessao = sessao_obrigatoria(request)
+        return chamar(servico.executar_acao, interesse_id, dados, sessao.usuario_id)
 
     @router.patch("/{interesse_id}", response_model=InteresseResponse)
     def atualizar(interesse_id: str, dados: InteresseUpdateRequest, request: Request):

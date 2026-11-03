@@ -2,6 +2,7 @@ import {
   createElement,
   handleError,
   labelFor,
+  labelForInteresse,
   renderEmptyState,
   requestApi,
   requireSession,
@@ -27,7 +28,7 @@ function cartaoInteresse(interesse, { recebido }) {
   const article = createElement("article", "item-card");
   const tags = createElement("div", "item-tags");
   tags.append(
-    createElement("span", "tag", labelFor("status", interesse.status)),
+    createElement("span", "tag", labelForInteresse(interesse.status)),
     createElement("span", "tag tag-neutral", recebido ? "Recebido" : "Enviado"),
   );
 
@@ -45,34 +46,71 @@ function cartaoInteresse(interesse, { recebido }) {
     article.append(meta);
   }
 
+  if (interesse.motivo) {
+    article.append(createElement("p", "item-card-description", `Motivo: ${interesse.motivo}`));
+  }
+  if (interesse.tentativa > 1) {
+    article.append(createElement("p", "field-hint", `Tentativa ${interesse.tentativa}`));
+  }
+
   const actions = createElement("div", "item-actions");
-  const decidir = async (status) => {
+  const executar = async (acao, motivo = null) => {
     const alvo = recebido ? byIdRecebidos() : byIdMeus();
     try {
-      await requestApi(`/api/interesses/${encodeURIComponent(interesse.id)}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status }),
+      await requestApi(`/api/interesses/${encodeURIComponent(interesse.id)}/acoes`, {
+        method: "POST",
+        body: JSON.stringify({ acao, motivo }),
       });
       await carregarTudo();
     } catch (error) {
       handleError(error, alvo);
     }
   };
+  const pedirMotivo = (acao) => {
+    const motivo = window.prompt("Informe o motivo:", "");
+    if (motivo === null) return;
+    if (!motivo.trim()) {
+      handleError(
+        { status: 400, message: "O motivo é obrigatório." },
+        recebido ? byIdRecebidos() : byIdMeus(),
+      );
+      return;
+    }
+    executar(acao, motivo.trim());
+  };
 
   if (recebido && interesse.status === "pendente") {
-    const aceitar = createElement("button", "button button-primary", "Aceitar");
-    aceitar.type = "button";
-    aceitar.addEventListener("click", () => decidir("aceito"));
+    const selecionar = createElement("button", "button button-primary", "Selecionar");
+    selecionar.type = "button";
+    selecionar.addEventListener("click", () => executar("selecionar"));
     const recusar = createElement("button", "button button-ghost", "Recusar");
     recusar.type = "button";
-    recusar.addEventListener("click", () => decidir("recusado"));
-    actions.append(aceitar, recusar);
+    recusar.addEventListener("click", () => pedirMotivo("recusar"));
+    actions.append(selecionar, recusar);
   }
-  if (!recebido && ["pendente", "aceito"].includes(interesse.status)) {
-    const cancelar = createElement("button", "button button-ghost", "Cancelar");
-    cancelar.type = "button";
-    cancelar.addEventListener("click", () => decidir("cancelado"));
-    actions.append(cancelar);
+  if (recebido && interesse.status === "selecionado") {
+    const liberar = createElement("button", "button button-ghost", "Liberar reserva");
+    liberar.type = "button";
+    liberar.addEventListener("click", () => pedirMotivo("liberar"));
+    actions.append(liberar);
+  }
+  if (recebido && interesse.status === "recusado") {
+    const reabrir = createElement("button", "button button-secondary", "Reabrir");
+    reabrir.type = "button";
+    reabrir.addEventListener("click", () => executar("reabrir"));
+    actions.append(reabrir);
+  }
+  if (!recebido && ["pendente", "selecionado"].includes(interesse.status)) {
+    const desistir = createElement("button", "button button-ghost", "Desistir");
+    desistir.type = "button";
+    desistir.addEventListener("click", () => executar("desistir"));
+    actions.append(desistir);
+  }
+  if (!recebido && interesse.status === "cancelado") {
+    const retomar = createElement("button", "button button-secondary", "Retomar");
+    retomar.type = "button";
+    retomar.addEventListener("click", () => executar("retomar"));
+    actions.append(retomar);
   }
   if (actions.childElementCount > 0) article.append(actions);
   return article;

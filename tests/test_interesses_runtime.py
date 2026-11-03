@@ -93,8 +93,8 @@ def test_ct10_ct11_ct12_reserva_cancelamento_e_privacidade(ambiente):
     assert interessado.post("/api/interesses", json={"item_id": item["id"]}).status_code == 409
     assert terceiro.get("/api/interesses/" + interesse["id"]).status_code == 404
     assert terceiro.get("/api/interesses").json() == []
-    assert interessado.patch("/api/interesses/" + interesse["id"], json={"status": "aceito"}).status_code == 403
-    aceito = dono.patch("/api/interesses/" + interesse["id"], json={"status": "aceito"})
+    assert interessado.patch("/api/interesses/" + interesse["id"], json={"status": "selecionado"}).status_code == 403
+    aceito = dono.patch("/api/interesses/" + interesse["id"], json={"status": "selecionado"})
     assert aceito.status_code == 200, aceito.text
     reservado = dono.get("/api/itens/" + item["id"])
     assert reservado.status_code == 200, reservado.text
@@ -116,7 +116,7 @@ def test_ct10_ct11_ct12_reserva_cancelamento_e_privacidade(ambiente):
 
 @pytest.mark.parametrize(
     "destino, status_esperado",
-    [("doacao", "reservado"), ("revenda", "disponivel")],
+    [("doacao", "reservado"), ("revenda", "reservado")],
 )
 def test_selecao_nula_pode_ser_aceita_por_api(ambiente, destino, status_esperado):
     from bson import ObjectId
@@ -130,7 +130,7 @@ def test_selecao_nula_pode_ser_aceita_por_api(ambiente, destino, status_esperado
     assert ambiente.itens.find_one({"_id": item_oid})["interesse_aceito_id"] is None
 
     interesse = criar_interesse(interessado, item)
-    aceito = dono.patch("/api/interesses/" + interesse["id"], json={"status": "aceito"})
+    aceito = dono.patch("/api/interesses/" + interesse["id"], json={"status": "selecionado"})
 
     assert aceito.status_code == 200, aceito.text
     persistido = ambiente.itens.find_one({"_id": item_oid})
@@ -147,12 +147,12 @@ def test_dois_aceites_reais_tem_um_vencedor_e_um_conflito(ambiente):
     barreira = Barrier(2)
     def aceitar(interesse):
         barreira.wait(timeout=15)
-        resposta = dono.patch("/api/interesses/" + interesse["id"], json={"status": "aceito"})
+        resposta = dono.patch("/api/interesses/" + interesse["id"], json={"status": "selecionado"})
         return resposta.status_code
     with ThreadPoolExecutor(max_workers=2) as pool:
         resultados = list(pool.map(aceitar, interesses))
     assert sorted(resultados) == [200, 409], resultados
-    assert ambiente.interesses.count_documents({"status": "aceito"}) == 1
+    assert ambiente.interesses.count_documents({"status": "selecionado"}) == 1
     assert ambiente.interesses.count_documents({"status": "pendente"}) == 1
     persistido = ambiente.itens.find_one()
     assert persistido["status"] == "reservado"
@@ -180,13 +180,14 @@ def test_recusa_e_venda_nao_antecipam_avaliacao(ambiente):
     interesse = criar_interesse(primeiro, item)
     recusado = dono.patch("/api/interesses/" + interesse["id"], json={"status": "recusado"})
     assert recusado.status_code == 200, recusado.text
-    assert primeiro.patch("/api/interesses/" + interesse["id"], json={"status": "aceito"}).status_code in (403, 409)
+    assert primeiro.patch("/api/interesses/" + interesse["id"], json={"status": "selecionado"}).status_code in (403, 409)
     outro = criar_interesse(segundo, item)
-    aceito = dono.patch("/api/interesses/" + outro["id"], json={"status": "aceito"})
+    aceito = dono.patch("/api/interesses/" + outro["id"], json={"status": "selecionado"})
     assert aceito.status_code == 200, aceito.text
-    assert dono.get("/api/itens/" + item["id"]).json()["status"] == "disponivel"
+    assert dono.get("/api/itens/" + item["id"]).json()["status"] == "reservado"
     cancelado = segundo.patch("/api/interesses/" + outro["id"], json={"status": "cancelado"})
     assert cancelado.status_code == 200, cancelado.text
+    assert dono.get("/api/itens/" + item["id"]).json()["status"] == "disponivel"
 
 
 def test_cancelar_aceito_apos_conclusao_nao_altera_interesse(ambiente):
@@ -195,11 +196,11 @@ def test_cancelar_aceito_apos_conclusao_nao_altera_interesse(ambiente):
     interessado, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = criar_interesse(interessado, item)
-    assert dono.patch("/api/interesses/" + interesse["id"], json={"status": "aceito"}).status_code == 200
+    assert dono.patch("/api/interesses/" + interesse["id"], json={"status": "selecionado"}).status_code == 200
     ambiente.itens.update_one({"_id": ObjectId(item["id"])}, {"$set": {"status": "doado"}})
     resposta = interessado.patch("/api/interesses/" + interesse["id"], json={"status": "cancelado"})
     assert resposta.status_code == 409, resposta.text
-    assert ambiente.interesses.find_one()["status"] == "aceito"
+    assert ambiente.interesses.find_one()["status"] == "selecionado"
 
 
 def test_rollback_real_apos_escrever_item_e_interesse(ambiente, monkeypatch):
@@ -222,7 +223,7 @@ def test_rollback_real_apos_escrever_item_e_interesse(ambiente, monkeypatch):
             raise OperationFailure("falha controlada para validar rollback", code=123)
     monkeypatch.setattr(repo, "_colecao", FalhaAposEscrita())
     with pytest.raises(InteresseError) as erro:
-        repo.decidir(interesse["id"], "aceito", dono_id, datetime.now(UTC))
+        repo.decidir(interesse["id"], "selecionado", dono_id, datetime.now(UTC))
     assert erro.value.status_code == 503
     assert ambiente.itens.find_one() == antes_item
     assert ambiente.interesses.find_one() == antes_interesse
@@ -321,3 +322,109 @@ def test_conta_unica_oferece_e_interessa_nas_duas_pontas(ambiente):
     assert negado_interesse.status_code == 403
     assert negado_recebidos.status_code == 403
     assert negado_item.status_code == 403
+
+
+def test_retomada_reabertura_e_uma_relacao_por_par(ambiente):
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
+    autor, autor_id = nova_conta(ambiente, "autor")
+    item = criar_item(dono)
+    interesse = criar_interesse(autor, item)
+
+    # Uma relação por par item/pessoa.
+    assert autor.post("/api/interesses", json={"item_id": item["id"]}).status_code == 409
+
+    cancelado = autor.post(
+        f"/api/interesses/{interesse['id']}/acoes", json={"acao": "desistir"}
+    )
+    assert cancelado.status_code == 200, cancelado.text
+    assert cancelado.json()["status"] == "cancelado"
+    assert cancelado.json()["tentativa"] == 1
+
+    # Autor retoma o próprio cancelado; a tentativa avança e o histórico acumula.
+    retomado = autor.post(
+        f"/api/interesses/{interesse['id']}/acoes", json={"acao": "retomar"}
+    )
+    assert retomado.status_code == 200, retomado.text
+    corpo = retomado.json()
+    assert corpo["status"] == "pendente"
+    assert corpo["tentativa"] == 2
+    assert [evento["status"] for evento in corpo["historico"]] == [
+        "pendente",
+        "cancelado",
+        "pendente",
+    ]
+
+    # Recusa exige motivo e não pode ser retomada pelo autor.
+    sem_motivo = dono.post(
+        f"/api/interesses/{interesse['id']}/acoes", json={"acao": "recusar"}
+    )
+    assert sem_motivo.status_code == 400
+    recusado = dono.post(
+        f"/api/interesses/{interesse['id']}/acoes",
+        json={"acao": "recusar", "motivo": "Item já prometido"},
+    )
+    assert recusado.status_code == 200, recusado.text
+    assert recusado.json()["status"] == "recusado"
+    assert recusado.json()["motivo"] == "Item já prometido"
+    # Recusado não volta por vontade do autor: precisa do comando do proprietário.
+    assert autor.post(
+        f"/api/interesses/{interesse['id']}/acoes", json={"acao": "retomar"}
+    ).status_code == 400
+
+    # Só o proprietário reabre o recusado, incrementando a tentativa.
+    reaberto = dono.post(
+        f"/api/interesses/{interesse['id']}/acoes", json={"acao": "reabrir"}
+    )
+    assert reaberto.status_code == 200, reaberto.text
+    assert reaberto.json()["status"] == "pendente"
+    assert reaberto.json()["tentativa"] == 3
+    assert reaberto.json()["motivo"] is None
+
+
+def test_reserva_desistencia_e_liberacao_revertem_o_item(ambiente):
+    from bson import ObjectId
+
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
+    primeiro, _ = nova_conta(ambiente, "primeiro")
+    segundo, _ = nova_conta(ambiente, "segundo")
+    item = criar_item(dono, "revenda")
+    interesse_primeiro = criar_interesse(primeiro, item)
+    interesse_segundo = criar_interesse(segundo, item)
+
+    selecionado = dono.post(
+        f"/api/interesses/{interesse_primeiro['id']}/acoes", json={"acao": "selecionar"}
+    )
+    assert selecionado.status_code == 200, selecionado.text
+    assert selecionado.json()["status"] == "selecionado"
+    assert selecionado.json()["preco_selecionado"] == item["valor"]
+    item_reservado = dono.get("/api/itens/" + item["id"]).json()
+    assert item_reservado["status"] == "reservado"
+    # Os demais pendentes permanecem e não entra interesse novo durante a reserva.
+    assert ambiente.interesses.find_one({"_id": ObjectId(interesse_segundo["id"])})["status"] == "pendente"
+    assert segundo.post("/api/interesses", json={"item_id": item["id"]}).status_code == 409
+
+    # Desistência do selecionado devolve o item e preserva o outro pendente.
+    desistiu = primeiro.post(
+        f"/api/interesses/{interesse_primeiro['id']}/acoes", json={"acao": "desistir"}
+    )
+    assert desistiu.status_code == 200, desistiu.text
+    assert desistiu.json()["status"] == "cancelado"
+    assert dono.get("/api/itens/" + item["id"]).json()["status"] == "disponivel"
+    assert ambiente.interesses.find_one({"_id": ObjectId(interesse_segundo["id"])})["status"] == "pendente"
+
+    # Nova seleção e liberação pelo proprietário, que exige motivo.
+    assert dono.post(
+        f"/api/interesses/{interesse_segundo['id']}/acoes", json={"acao": "selecionar"}
+    ).status_code == 200
+    sem_motivo = dono.post(
+        f"/api/interesses/{interesse_segundo['id']}/acoes", json={"acao": "liberar"}
+    )
+    assert sem_motivo.status_code == 400
+    liberado = dono.post(
+        f"/api/interesses/{interesse_segundo['id']}/acoes",
+        json={"acao": "liberar", "motivo": "Não compareceu na data combinada"},
+    )
+    assert liberado.status_code == 200, liberado.text
+    assert liberado.json()["status"] == "cancelado"
+    assert liberado.json()["motivo"] == "Não compareceu na data combinada"
+    assert dono.get("/api/itens/" + item["id"]).json()["status"] == "disponivel"

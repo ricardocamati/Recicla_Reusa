@@ -196,7 +196,7 @@ class MongoItemRepository:
         documentos = self._colecao_interesses.find(
             {
                 "item_id": ObjectId(item.id),
-                "status": {"$in": ["pendente", "aceito"]},
+                "status": {"$in": ["pendente", "selecionado"]},
             },
             {"usuario_id": 1},
             session=session,

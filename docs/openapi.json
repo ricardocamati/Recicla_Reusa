@@ -139,6 +139,48 @@
         "title": "EventoHistoricoResponse",
         "type": "object"
       },
+      "EventoInteresseResponse": {
+        "properties": {
+          "ator_id": {
+            "title": "Ator Id",
+            "type": "string"
+          },
+          "data_evento": {
+            "format": "date-time",
+            "title": "Data Evento",
+            "type": "string"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "status": {
+            "enum": [
+              "pendente",
+              "selecionado",
+              "recusado",
+              "cancelado",
+              "encerrado"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "data_evento",
+          "ator_id"
+        ],
+        "title": "EventoInteresseResponse",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -180,6 +222,40 @@
         "title": "IndicadorResponse",
         "type": "object"
       },
+      "InteresseAcaoRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "acao": {
+            "enum": [
+              "selecionar",
+              "recusar",
+              "desistir",
+              "liberar",
+              "retomar",
+              "reabrir"
+            ],
+            "title": "Acao",
+            "type": "string"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          }
+        },
+        "required": [
+          "acao"
+        ],
+        "title": "InteresseAcaoRequest",
+        "type": "object"
+      },
       "InteresseCreateRequest": {
         "additionalProperties": false,
         "properties": {
@@ -208,6 +284,13 @@
             "title": "Data Modificacao",
             "type": "string"
           },
+          "historico": {
+            "items": {
+              "$ref": "#/components/schemas/EventoInteresseResponse"
+            },
+            "title": "Historico",
+            "type": "array"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -216,15 +299,43 @@
             "title": "Item Id",
             "type": "string"
           },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "preco_selecionado": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preco Selecionado"
+          },
           "status": {
             "enum": [
               "pendente",
-              "aceito",
+              "selecionado",
               "recusado",
-              "cancelado"
+              "cancelado",
+              "encerrado"
             ],
             "title": "Status",
             "type": "string"
+          },
+          "tentativa": {
+            "default": 1,
+            "title": "Tentativa",
+            "type": "integer"
           },
           "usuario_id": {
             "title": "Usuario Id",
@@ -244,10 +355,11 @@
       },
       "InteresseUpdateRequest": {
         "additionalProperties": false,
+        "description": "Alias legado do PATCH: aceitar virou selecionar.",
         "properties": {
           "status": {
             "enum": [
-              "aceito",
+              "selecionado",
               "recusado",
               "cancelado"
             ],
@@ -1317,9 +1429,10 @@
                 {
                   "enum": [
                     "pendente",
-                    "aceito",
+                    "selecionado",
                     "recusado",
-                    "cancelado"
+                    "cancelado",
+                    "encerrado"
                   ],
                   "type": "string"
                 },
@@ -1512,6 +1625,58 @@
           }
         },
         "summary": "Atualizar",
+        "tags": [
+          "interesses"
+        ]
+      }
+    },
+    "/api/interesses/{interesse_id}/acoes": {
+      "post": {
+        "operationId": "executar_acao_api_interesses__interesse_id__acoes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "interesse_id",
+            "required": true,
+            "schema": {
+              "title": "Interesse Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InteresseAcaoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InteresseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Executar Acao",
         "tags": [
           "interesses"
         ]

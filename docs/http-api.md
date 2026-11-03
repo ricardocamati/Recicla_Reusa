@@ -145,20 +145,25 @@ O servidor gera `data_adicao` no cadastro e mantém esse valor imutável. `data_
 
 | Método | Caminho | Autenticação | Entrada | Sucesso |
 |---|---|---|---|---|
-| `POST` | `/api/interesses` | doador ou beneficiário | `item_id` | `201` com interesse pendente |
+| `POST` | `/api/interesses` | pessoa | `item_id` | `201` com interesse pendente |
 | `GET` | `/api/interesses` | doador ou beneficiário | `escopo=meus` (padrão) ou `recebidos`, `item_id`, `status`, `offset`, `limite` | `200` com lista restrita à sessão |
 | `GET` | `/api/interesses/{id}` | participante | — | `200` com interesse |
-| `PATCH` | `/api/interesses/{id}` | participante autorizado para a ação | `status` | `200` com interesse atualizado |
+| `POST` | `/api/interesses/{id}/acoes` | participante autorizado | `acao` (`selecionar`, `recusar`, `desistir`, `liberar`, `retomar`, `reabrir`) e `motivo` quando exigido | `200` com interesse atualizado |
+| `PATCH` | `/api/interesses/{id}` | participante autorizado | `status` (`selecionado`, `recusado`, `cancelado`) — alias legado | `200` com interesse atualizado |
 
 O interessado vem da sessão, não do corpo. O cadastro exige item disponível de doação ou revenda, não pertencente ao próprio interessado. Operadores não manifestam interesse. O par `item_id`/`usuario_id` é único por índice; uma relação encerrada não é recriada nesta versão.
 
-O proprietário pode aceitar ou recusar interesse pendente; o interessado pode cancelar o próprio interesse pendente ou aceito, antes de a operação avançar para um estado que impeça a liberação. Terceiros não consultam detalhes nem alteram a relação. `recebidos` é restrito ao proprietário e os filtros são aplicados antes da paginação (`offset=0`, `limite=20`, máximo `100`).
+Estados do interesse: `pendente`, `selecionado`, `recusado`, `cancelado` e `encerrado`. Cada relação guarda `tentativa`, `motivo`, `preco_selecionado` e `historico` acumulativo.
 
-Aceitar uma doação atualiza o interesse, reserva o item e acrescenta o evento no histórico **na mesma transação**. Outro aceite concorrente retorna `409`. Cancelar o interesse aceito libera sua reserva e registra a liberação na mesma unidade. Na revenda, a seleção não antecipa avaliação/reparo: a etapa do item é mantida e apenas um interesse pode ficar selecionado.
+Ações e permissões: `selecionar`, `recusar`, `liberar` e `reabrir` são do proprietário; `desistir` e `retomar` são do interessado. Recusar e liberar exigem `motivo`. `retomar` só vale para `cancelado` com item disponível e incrementa `tentativa`; `reabrir` só vale para `recusado` e também incrementa. `encerrado` não reabre. Terceiros não consultam detalhes nem alteram a relação; `recebidos` é restrito ao proprietário e os filtros são aplicados antes da paginação (`offset=0`, `limite=20`, máximo `100`).
 
-Com o módulo habilitado, o `PUT` comum do item não cria uma reserva de doação: o proprietário precisa aceitar um interesse. A edição preserva a seleção interna e verifica o status lido, inclusive quando apenas os campos descritivos mudam. Referências de interesses existentes bloqueiam a exclusão do item e do interessado e a troca do destino (`409`); essas verificações de exclusão não constituem garantia transacional para todas as intercalações com criação concorrente.
+Selecionar atualiza o interesse para `selecionado`, reserva o item (`reservado`, com `interesse_aceito_id`) e registra os dois históricos **na mesma transação**; outro selecionar concorrente retorna `409`. Os demais interesses permanecem `pendente` e não se cria interesse novo enquanto o item está reservado. Na venda, `preco_selecionado` congela o valor do item no momento da seleção.
 
-Parâmetros de query desconhecidos são rejeitados com `400`. No detalhe, sessão e visibilidade são verificadas antes de validar o corpo, sem revelar a relação a terceiros. Veja as [evidências da etapa](verificacao-interesses.md).
+Desistência do selecionado e liberação pelo proprietário encerram a reserva: o interesse vira `cancelado`, o item volta a `disponivel` e os demais pendentes continuam. Depois de a entrega avançar, a liberação unilateral retorna `409`.
+
+Com o módulo habilitado, o `PUT` comum do item não cria reserva: o proprietário precisa selecionar um interesse. A edição preserva a seleção interna e verifica o status lido, inclusive quando apenas os campos descritivos mudam. Referências de interesses existentes bloqueiam a exclusão do item e do interessado e a troca do destino (`409`); essas verificações de exclusão não constituem garantia transacional para todas as intercalações com criação concorrente.
+
+Parâmetros de query desconhecidos são rejeitados com `400`. No detalhe, sessão e visibilidade são verificadas antes de validar o corpo, sem revelar a relação a terceiros. As evidências estão nos testes de runtime com replica set.
 
 O Compose usa replica set de um nó para executar essas transações; consulte [docker/mongo/README.md](../docker/mongo/README.md). Sem suporte transacional, a operação falha com `503`, sem executar uma alternativa de escrita parcial. Entradas inválidas retornam `400`, sessão ausente `401`, ação não permitida `403`, recurso ausente ou não visível `404` e conflito de estado/unicidade `409`.
 
