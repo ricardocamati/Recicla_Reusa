@@ -26,6 +26,8 @@ def item(item_id: str | None = None) -> Item:
         valor=None,
         status="disponivel",
         proprietario_id=PROPRIETARIO_ID,
+        especificacoes={"memoria_ram": "8 GB"},
+        historico=[],
         data_adicao=instante,
         data_modificacao=instante,
     )
@@ -43,6 +45,8 @@ def test_repositorio_persiste_filtra_atualiza_e_exclui_item() -> None:
     documento = colecao.find_one({"_id": colecao.find_one()["_id"]})
     assert documento["proprietario_id"] == ObjectId(PROPRIETARIO_ID)
     assert "endereco" not in documento
+    assert documento["especificacoes"] == {"memoria_ram": "8 GB"}
+    assert documento["historico"] == []
     assert len(repositorio.listar(FiltrosItem(categoria="informatica"))) == 1
     assert repositorio._colecao.index_information()["item_proprietario"]["key"] == [("proprietario_id", 1)]
 

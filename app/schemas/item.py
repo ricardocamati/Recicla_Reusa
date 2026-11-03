@@ -65,6 +65,8 @@ StatusItem = Annotated[
 class ItemCreateRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
+    especificacoes: dict[str, str] = Field(default_factory=dict)
+
     titulo: str = Field(min_length=3, max_length=120)
     descricao: str = Field(min_length=1, max_length=2000)
     categoria: CategoriaItem
@@ -84,7 +86,7 @@ class ItemCreateRequest(BaseModel):
 
 
 class ItemUpdateRequest(ItemCreateRequest):
-    pass
+    status: StatusItem | None = None
 
 
 class FiltrosItem(BaseModel):
@@ -94,6 +96,15 @@ class FiltrosItem(BaseModel):
     condicao: CondicaoItem | None = None
     destino: DestinoItem | None = None
     status: StatusItem | None = None
+    cidade: str | None = Field(default=None, min_length=1, max_length=160)
+
+
+class EventoHistoricoResponse(BaseModel):
+    etapa: str
+    status: str
+    data_evento: datetime
+    responsavel_id: str
+    observacao: str | None = None
 
 
 class ItemResponse(BaseModel):
@@ -109,5 +120,7 @@ class ItemResponse(BaseModel):
     status: StatusItem
     proprietario_id: str
     cidade_proprietario: str
+    especificacoes: dict[str, str]
+    historico: list[EventoHistoricoResponse]
     data_adicao: datetime
     data_modificacao: datetime
