@@ -7,9 +7,12 @@ from pymongo.collection import Collection
 from pymongo.errors import ConfigurationError, DuplicateKeyError, InvalidOperation, PyMongoError
 
 from app.exceptions import InteresseError
-from app.models.interesse import Interesse
+from app.models.interesse import EventoInteresse, Interesse
 from app.models.notificacao import EventoNotificacao, evento_de_status_item
 from app.repositories.notificacao_documento import montar_documento, registrar
+
+ACOES_DO_INTERESSADO = {"desistir", "retomar"}
+ACOES_DO_PROPRIETARIO = {"selecionar", "recusar", "liberar", "reabrir"}
 
 
 class MongoInteresseRepository:
@@ -73,7 +76,25 @@ class MongoInteresseRepository:
     def criar(self, interesse: Interesse) -> Interesse:
         item_oid = self._required_id(interesse.item_id, "Item não encontrado", 404)
         usuario_oid = self._required_id(interesse.usuario_id, "Usuário não encontrado", 404)
-        doc = {"item_id": item_oid, "usuario_id": usuario_oid, "status": "pendente", "data_adicao": self._data(interesse.data_adicao), "data_modificacao": self._data(interesse.data_modificacao)}
+        instante = self._data(interesse.data_adicao)
+        doc = {
+            "item_id": item_oid,
+            "usuario_id": usuario_oid,
+            "status": "pendente",
+            "tentativa": 1,
+            "motivo": None,
+            "preco_selecionado": None,
+            "historico": [
+                {
+                    "status": "pendente",
+                    "data_evento": instante,
+                    "ator_id": usuario_oid,
+                    "motivo": None,
+                }
+            ],
+            "data_adicao": instante,
+            "data_modificacao": instante,
+        }
 
         def operacao(session):
             usuario = self._colecao_usuarios.find_one({"_id": usuario_oid}, session=session)
@@ -83,14 +104,29 @@ class MongoInteresseRepository:
             interesse.id = str(resultado.inserted_id)
             interesse.data_adicao = doc["data_adicao"]
             interesse.data_modificacao = doc["data_modificacao"]
+            interesse.historico = [EventoInteresse("pendente", instante, interesse.usuario_id)]
             return interesse
 
         try:
             return self._transacao(operacao)
         except DuplicateKeyError as erro:
-            raise InteresseError(409, "Já existe interesse deste usuário para o item") from erro
+            raise InteresseError(
+                409, "Já existe relação deste usuário com o item; retome ou aguarde a decisão"
+            ) from erro
 
-    def decidir(self, interesse_id: str, status: str, usuario_id: str, instante: datetime, *, notificacao: EventoNotificacao | None = None) -> Interesse:
+    def executar(
+        self,
+        interesse_id: str,
+        acao: str,
+        usuario_id: str,
+        instante: datetime,
+        *,
+        motivo: str | None = None,
+        notificacao: EventoNotificacao | None = None,
+    ) -> Interesse:
+        """Executa uma ação do ciclo do interesse em uma transação única."""
+        if acao not in ACOES_DO_INTERESSADO | ACOES_DO_PROPRIETARIO:
+            raise InteresseError(400, "Ação de interesse inválida")
         interesse_oid = self._required_id(interesse_id, "Interesse não encontrado", 404)
         actor_oid = self._required_id(usuario_id, "Usuário não encontrado", 404)
         instante = self._data(instante)
@@ -104,83 +140,191 @@ class MongoInteresseRepository:
                 raise InteresseError(404, "Item não encontrado")
             dono = item.get("proprietario_id") == actor_oid
             interessado = doc.get("usuario_id") == actor_oid
-            if status == "cancelado":
-                if not interessado:
-                    raise InteresseError(403, "Somente o interessado pode cancelar")
-                if doc["status"] not in {"pendente", "aceito"}:
-                    raise InteresseError(400, "Transição de interesse inválida")
-            else:
-                if not dono:
-                    raise InteresseError(403, "Somente o proprietário pode decidir")
-                if doc["status"] != "pendente" or status not in {"aceito", "recusado"}:
-                    raise InteresseError(400, "Transição de interesse inválida")
+            if acao in ACOES_DO_PROPRIETARIO and not dono:
+                raise InteresseError(403, "Somente o proprietário pode executar esta ação")
+            if acao in ACOES_DO_INTERESSADO and not interessado:
+                raise InteresseError(403, "Somente o interessado pode executar esta ação")
 
-            if status == "aceito":
-                if item.get("status") != "disponivel" or item.get("interesse_aceito_id") is not None:
-                    raise InteresseError(409, "Item não está disponível")
-                if item.get("destino") == "doacao":
-                    update = self._colecao_itens.update_one(
-                        {"_id": doc["item_id"], "status": "disponivel", "interesse_aceito_id": None},
-                        {"$set": {"status": "reservado", "interesse_aceito_id": interesse_oid, "data_modificacao": instante}, "$push": {"historico": {"etapa": "reserva_interesse", "status": "reservado", "data_evento": instante, "responsavel_id": actor_oid, "observacao": "Interesse aceito"}}}, session=session)
-                elif item.get("destino") == "revenda":
-                    update = self._colecao_itens.update_one(
-                        {"_id": doc["item_id"], "status": "disponivel", "interesse_aceito_id": None},
-                        {"$set": {"interesse_aceito_id": interesse_oid, "data_modificacao": instante}}, session=session)
-                else:
-                    raise InteresseError(400, "Este item não aceita interesses")
-                if update.matched_count != 1:
-                    raise InteresseError(409, "Item não está disponível")
+            atual = doc.get("status")
+            alvo = atual
+            motivo_limpo = (motivo or "").strip() or None
 
-            if status == "cancelado" and doc["status"] == "aceito":
-                esperado = "reservado" if item.get("destino") == "doacao" else "disponivel"
-                if item.get("interesse_aceito_id") != interesse_oid or item.get("status") != esperado:
-                    raise InteresseError(409, "O item avançou e a seleção não pode ser liberada")
-                if item.get("destino") == "doacao" and item.get("status") == "reservado":
-                    update = self._colecao_itens.update_one(
-                        {"_id": doc["item_id"], "status": "reservado", "interesse_aceito_id": interesse_oid},
-                        {"$set": {"status": "disponivel", "data_modificacao": instante}, "$unset": {"interesse_aceito_id": ""}, "$push": {"historico": {"etapa": "cancelamento_interesse", "status": "disponivel", "data_evento": instante, "responsavel_id": actor_oid, "observacao": "Interesse aceito cancelado"}}}, session=session)
-                    if update.matched_count != 1:
-                        raise InteresseError(409, "A reserva do item foi alterada")
-                elif item.get("destino") == "revenda" and item.get("status") == "disponivel":
-                    update = self._colecao_itens.update_one(
-                        {"_id": doc["item_id"], "status": "disponivel", "interesse_aceito_id": interesse_oid},
-                        {"$unset": {"interesse_aceito_id": ""}, "$set": {"data_modificacao": instante}}, session=session)
-                    if update.matched_count != 1:
-                        raise InteresseError(409, "A seleção do item foi alterada")
+            if acao == "selecionar":
+                if atual != "pendente":
+                    raise InteresseError(400, "Só interesse pendente pode ser selecionado")
+                self._reservar_item(session, doc, item, interesse_oid, actor_oid, instante)
+                alvo = "selecionado"
+            elif acao == "recusar":
+                if atual != "pendente":
+                    raise InteresseError(400, "Só interesse pendente pode ser recusado")
+                if motivo_limpo is None:
+                    raise InteresseError(400, "Recusa exige motivo")
+                alvo = "recusado"
+            elif acao in {"desistir", "liberar"}:
+                if acao == "desistir" and atual not in {"pendente", "selecionado"}:
+                    raise InteresseError(400, "Interesse não pode ser cancelado agora")
+                if acao == "liberar" and atual != "selecionado":
+                    raise InteresseError(400, "Só reserva ativa pode ser liberada")
+                if acao == "liberar" and motivo_limpo is None:
+                    raise InteresseError(400, "Liberação exige motivo")
+                if atual == "selecionado":
+                    self._liberar_item(session, doc, item, interesse_oid, actor_oid, instante)
+                alvo = "cancelado"
+            elif acao == "retomar":
+                if atual != "cancelado":
+                    raise InteresseError(400, "Só interesse cancelado pode ser retomado")
+                self._exigir_item_disponivel(item)
+                alvo = "pendente"
+            elif acao == "reabrir":
+                if atual != "recusado":
+                    raise InteresseError(400, "Só interesse recusado pode ser reaberto")
+                self._exigir_item_disponivel(item)
+                alvo = "pendente"
 
-            changed = self._colecao.update_one({"_id": interesse_oid, "status": doc["status"]}, {"$set": {"status": status, "data_modificacao": instante}}, session=session)
+            campos: dict[str, Any] = {
+                "status": alvo,
+                "data_modificacao": instante,
+                "motivo": motivo_limpo if alvo in {"recusado", "cancelado"} else None,
+            }
+            if alvo == "pendente" and atual in {"cancelado", "recusado"}:
+                campos["tentativa"] = int(doc.get("tentativa") or 1) + 1
+                campos["preco_selecionado"] = None
+            if alvo == "selecionado" and item.get("destino") == "revenda":
+                campos["preco_selecionado"] = item.get("valor")
+            evento = {
+                "status": alvo,
+                "data_evento": instante,
+                "ator_id": actor_oid,
+                "motivo": campos["motivo"],
+            }
+            changed = self._colecao.update_one(
+                {"_id": interesse_oid, "status": atual},
+                {"$set": campos, "$push": {"historico": evento}},
+                session=session,
+            )
             if changed.matched_count != 1:
                 raise InteresseError(409, "Interesse alterado por outra operação")
+
             if notificacao is not None and self._colecao_notificacoes is not None:
-                destinatario = (
-                    doc["usuario_id"] if status != "cancelado" else item["proprietario_id"]
-                )
-                registro = montar_documento(
-                    usuario_id=str(destinatario),
-                    item_id=str(doc["item_id"]),
-                    interesse_id=str(interesse_oid),
-                    evento=notificacao,
-                    instante=instante,
-                )
-                registrar(self._colecao_notificacoes, registro, session=session)
-                self._avisar_mudanca_do_item(
-                    session, doc, item, status, instante, excluir=destinatario
-                )
-            doc.update(status=status, data_modificacao=instante)
+                self._registrar_aviso(session, doc, item, alvo, instante, notificacao)
+            doc.update(campos)
+            doc["historico"] = list(doc.get("historico") or []) + [evento]
             return self._para_modelo(doc)
 
         return self._transacao(operacao)
 
+    def decidir(
+        self,
+        interesse_id: str,
+        status: str,
+        usuario_id: str,
+        instante: datetime,
+        *,
+        notificacao: EventoNotificacao | None = None,
+    ) -> Interesse:
+        """Alias do PATCH antigo: aceitar virou selecionar."""
+        acao = {
+            "aceito": "selecionar",
+            "selecionado": "selecionar",
+            "recusado": "recusar",
+            "cancelado": "desistir",
+        }.get(status)
+        if acao is None:
+            raise InteresseError(400, "Transição de interesse inválida")
+        return self.executar(
+            interesse_id,
+            acao,
+            usuario_id,
+            instante,
+            motivo="Recusado pelo proprietário" if acao == "recusar" else None,
+            notificacao=notificacao,
+        )
+
+    def _reservar_item(self, session, doc, item, interesse_oid, actor_oid, instante) -> None:
+        if item.get("status") != "disponivel" or item.get("interesse_aceito_id") is not None:
+            raise InteresseError(409, "Item não está disponível")
+        if item.get("destino") == "descarte":
+            raise InteresseError(400, "Este item não aceita interesses")
+        update = self._colecao_itens.update_one(
+            {"_id": doc["item_id"], "status": "disponivel", "interesse_aceito_id": None},
+            {
+                "$set": {
+                    "status": "reservado",
+                    "interesse_aceito_id": interesse_oid,
+                    "data_modificacao": instante,
+                },
+                "$push": {
+                    "historico": {
+                        "etapa": "reserva_interesse",
+                        "status": "reservado",
+                        "data_evento": instante,
+                        "responsavel_id": actor_oid,
+                        "observacao": "Interesse selecionado",
+                    }
+                },
+            },
+            session=session,
+        )
+        if update.matched_count != 1:
+            raise InteresseError(409, "Item não está disponível")
+
+    def _liberar_item(self, session, doc, item, interesse_oid, actor_oid, instante) -> None:
+        if item.get("interesse_aceito_id") != interesse_oid or item.get("status") != "reservado":
+            raise InteresseError(409, "O item avançou e a reserva não pode ser liberada")
+        update = self._colecao_itens.update_one(
+            {
+                "_id": doc["item_id"],
+                "status": "reservado",
+                "interesse_aceito_id": interesse_oid,
+            },
+            {
+                "$set": {"status": "disponivel", "data_modificacao": instante},
+                "$unset": {"interesse_aceito_id": ""},
+                "$push": {
+                    "historico": {
+                        "etapa": "liberacao_reserva",
+                        "status": "disponivel",
+                        "data_evento": instante,
+                        "responsavel_id": actor_oid,
+                        "observacao": "Reserva liberada",
+                    }
+                },
+            },
+            session=session,
+        )
+        if update.matched_count != 1:
+            raise InteresseError(409, "A reserva do item foi alterada")
+
+    @staticmethod
+    def _exigir_item_disponivel(item) -> None:
+        if item.get("status") != "disponivel" or item.get("interesse_aceito_id") is not None:
+            raise InteresseError(409, "Item não está disponível para retomada")
+
     def buscar_aceito_por_item(self, item_id: str) -> str | None:
-        """Interessado do aceite vigente, usado pela conclusão da doação."""
+        """Interessado da seleção vigente, usado na conclusão da doação."""
         item_oid = self._id(item_id)
         if item_oid is None:
             return None
         documento = self._colecao.find_one(
-            {"item_id": item_oid, "status": "aceito"},
+            {"item_id": item_oid, "status": "selecionado"},
             sort=[("data_modificacao", -1)],
         )
         return str(documento["usuario_id"]) if documento else None
+
+    def _registrar_aviso(self, session, doc, item, status: str, instante, notificacao) -> None:
+        destinatario = doc["usuario_id"] if status != "cancelado" else item["proprietario_id"]
+        registro = montar_documento(
+            usuario_id=str(destinatario),
+            item_id=str(doc["item_id"]),
+            interesse_id=str(doc["_id"]),
+            evento=notificacao,
+            instante=instante,
+        )
+        registrar(self._colecao_notificacoes, registro, session=session)
+        if status in {"selecionado", "cancelado"}:
+            self._avisar_mudanca_do_item(
+                session, doc, item, status, instante, excluir=destinatario
+            )
 
     def _avisar_mudanca_do_item(
         self,
@@ -193,11 +337,11 @@ class MongoInteresseRepository:
         excluir: ObjectId,
     ) -> None:
         """Aceite e cancelamento podem reservar ou liberar o item; avisa os demais."""
-        if item.get("destino") != "doacao":
+        if item.get("destino") not in {"doacao", "revenda"}:
             return
-        if status == "aceito":
+        if status == "selecionado":
             novo_status = "reservado"
-        elif status == "cancelado" and doc["status"] == "aceito":
+        elif status == "cancelado":
             novo_status = "disponivel"
         else:
             return
@@ -207,7 +351,7 @@ class MongoInteresseRepository:
         outros = self._colecao.find(
             {
                 "item_id": doc["item_id"],
-                "status": {"$in": ["pendente", "aceito"]},
+                "status": {"$in": ["pendente", "selecionado"]},
                 "usuario_id": {"$ne": excluir},
             },
             {"usuario_id": 1},
@@ -249,11 +393,31 @@ class MongoInteresseRepository:
         if item.get("status") != "disponivel":
             raise InteresseError(409, "Item não está disponível")
         if item.get("interesse_aceito_id") is not None:
-            raise InteresseError(409, "O item já possui um interesse aceito")
+            raise InteresseError(409, "O item já possui um interesse selecionado")
 
     @staticmethod
     def _para_modelo(doc: dict[str, Any]) -> Interesse:
-        return Interesse(id=str(doc["_id"]), item_id=str(doc["item_id"]), usuario_id=str(doc["usuario_id"]), status=doc["status"], data_adicao=MongoInteresseRepository._data(doc["data_adicao"]), data_modificacao=MongoInteresseRepository._data(doc["data_modificacao"]))
+        historico = [
+            EventoInteresse(
+                status=evento.get("status", "pendente"),
+                data_evento=MongoInteresseRepository._data(evento["data_evento"]),
+                ator_id=str(evento.get("ator_id") or doc["usuario_id"]),
+                motivo=evento.get("motivo"),
+            )
+            for evento in doc.get("historico") or []
+        ]
+        return Interesse(
+            id=str(doc["_id"]),
+            item_id=str(doc["item_id"]),
+            usuario_id=str(doc["usuario_id"]),
+            status=doc["status"],
+            tentativa=int(doc.get("tentativa") or 1),
+            motivo=doc.get("motivo"),
+            preco_selecionado=doc.get("preco_selecionado"),
+            historico=historico,
+            data_adicao=MongoInteresseRepository._data(doc["data_adicao"]),
+            data_modificacao=MongoInteresseRepository._data(doc["data_modificacao"]),
+        )
 
     @staticmethod
     def _id(valor: str) -> ObjectId | None:

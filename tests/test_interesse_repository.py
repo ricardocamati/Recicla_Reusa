@@ -44,11 +44,11 @@ def test_transacao_aceita_e_cancela_doacao_sem_efeito_parcial():
         agora = datetime(2026, 10, 1, 12, 0, 0, 123456, tzinfo=UTC)
         created = repo.criar(Interesse(str(item), str(interessado), "pendente", agora, agora))
 
-        accepted = repo.decidir(created.id, "aceito", str(dono), agora)
+        accepted = repo.decidir(created.id, "selecionado", str(dono), agora)
         stored_item = db.itens.find_one({"_id": item})
         stored_interest = db.interesses.find_one({"_id": ObjectId(created.id)})
-        assert accepted.status == "aceito"
-        assert stored_interest["status"] == "aceito"
+        assert accepted.status == "selecionado"
+        assert stored_interest["status"] == "selecionado"
         assert stored_item["status"] == "reservado"
         assert stored_item["interesse_aceito_id"] == ObjectId(created.id)
         assert stored_item["data_modificacao"].microsecond % 1000 == 0

@@ -125,7 +125,7 @@ def test_decisao_do_interesse_notifica_o_interessado(ambiente):
     ).json()
 
     assert dono.patch(
-        f"/api/interesses/{aceite['id']}", json={"status": "aceito"}
+        f"/api/interesses/{aceite['id']}", json={"status": "selecionado"}
     ).status_code == 200
     assert dono.patch(
         f"/api/interesses/{recusa['id']}", json={"status": "recusado"}
@@ -150,7 +150,7 @@ def test_aceite_notifica_os_demais_interessados_da_reserva(ambiente):
     do_escolhido = escolhido.post("/api/interesses", json={"item_id": item["id"]}).json()
     outro.post("/api/interesses", json={"item_id": item["id"]})
 
-    dono.patch(f"/api/interesses/{do_escolhido['id']}", json={"status": "aceito"})
+    dono.patch(f"/api/interesses/{do_escolhido['id']}", json={"status": "selecionado"})
 
     avisos_escolhido = escolhido.get("/api/notificacoes").json()
     avisos_outro = outro.get("/api/notificacoes").json()
@@ -180,7 +180,7 @@ def test_mudanca_de_status_e_conclusao_notificam_quem_tem_interesse(ambiente):
     item = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()
     assert dono.patch(
-        f"/api/interesses/{interesse['id']}", json={"status": "aceito"}
+        f"/api/interesses/{interesse['id']}", json={"status": "selecionado"}
     ).status_code == 200
 
     doado = dono.put(f"/api/itens/{item['id']}", json=corpo(item, status="doado"))
@@ -202,7 +202,7 @@ def test_listagem_e_leitura_sao_restritas_ao_destinatario(ambiente):
     terceiro, _ = nova_conta(ambiente, "terceiro")
     item = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()
-    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "aceito"})
+    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "selecionado"})
 
     avisos = interessado.get("/api/notificacoes").json()
     assert len(avisos) == 1
@@ -230,7 +230,7 @@ def test_evento_repetido_nao_duplica_aviso(ambiente):
     interessado, interessado_id = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()
-    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "aceito"})
+    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "selecionado"})
     assert ambiente.avisos.count_documents({}) == 1
 
     evento = EventoNotificacao(
@@ -298,7 +298,7 @@ def test_api_rejeita_parametro_extra_e_corpo_invalido(ambiente):
     interessado, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()
-    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "aceito"})
+    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "selecionado"})
     aviso = interessado.get("/api/notificacoes").json()[0]
 
     extra = interessado.get("/api/notificacoes", params={"desconhecido": "1"})

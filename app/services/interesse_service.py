@@ -15,13 +15,14 @@ class RepositorioDeInteresses(Protocol):
     def criar(self, interesse: Interesse) -> Interesse: ...
     def listar(self, usuario_id: str, *, escopo: str = "meus", item_id: str | None = None, status: str | None = None, offset: int = 0, limite: int = 20) -> list[Interesse]: ...
     def buscar_por_id(self, interesse_id: str) -> Interesse | None: ...
-    def decidir(
+    def executar(
         self,
         interesse_id: str,
-        status: str,
+        acao: str,
         usuario_id: str,
         instante: datetime,
         *,
+        motivo: str | None = None,
         notificacao: EventoNotificacao | None = None,
     ) -> Interesse: ...
 
@@ -68,47 +69,101 @@ class InteresseService:
             raise InteresseError(404, "Interesse não encontrado")
         return InteresseMapper.para_resposta(interesse)
 
+    def executar_acao(
+        self,
+        interesse_id: str,
+        dados,
+        usuario_id: str,
+    ) -> InteresseResponse:
+        usuario = self._usuario_valido(usuario_id)
+        if usuario.get("tipo") != "pessoa":
+            raise InteresseError(403, "Este perfil não pode alterar interesses")
+        acao = dados.acao if hasattr(dados, "acao") else dados["acao"]
+        motivo = getattr(dados, "motivo", None) or (dados.get("motivo") if isinstance(dados, dict) else None)
+        if acao not in {
+            "selecionar",
+            "recusar",
+            "desistir",
+            "liberar",
+            "retomar",
+            "reabrir",
+        }:
+            raise InteresseError(400, "Ação de interesse inválida")
+        interesse = self._repositorio.executar(
+            interesse_id,
+            acao,
+            usuario_id,
+            self._relogio(),
+            motivo=motivo,
+            notificacao=self._evento(interesse_id, acao),
+        )
+        return InteresseMapper.para_resposta(interesse)
+
     def atualizar(self, interesse_id: str, dados, usuario_id: str) -> InteresseResponse:
+        """Compatibilidade do PATCH antigo: aceitar equivale a selecionar."""
         usuario = self._usuario_valido(usuario_id)
         if usuario.get("tipo") != "pessoa":
             raise InteresseError(403, "Este perfil não pode alterar interesses")
         novo_status = dados.status if hasattr(dados, "status") else dados["status"]
-        if novo_status not in {"aceito", "recusado", "cancelado"}:
+        acao = {
+            "aceito": "selecionar",
+            "selecionado": "selecionar",
+            "recusado": "recusar",
+            "cancelado": "desistir",
+        }.get(novo_status)
+        if acao is None:
             raise InteresseError(400, "Transição de interesse inválida")
-        interesse = self._repositorio.decidir(
+        interesse = self._repositorio.executar(
             interesse_id,
-            novo_status,
+            acao,
             usuario_id,
             self._relogio(),
-            notificacao=self._evento(interesse_id, novo_status),
+            motivo="Recusado pelo proprietário" if acao == "recusar" else None,
+            notificacao=self._evento(interesse_id, acao),
         )
         return InteresseMapper.para_resposta(interesse)
 
     @staticmethod
-    def _evento(interesse_id: str, status: str) -> EventoNotificacao:
+    def _evento(interesse_id: str, acao: str) -> EventoNotificacao | None:
         textos = {
-            "aceito": (
+            "selecionar": (
                 "interesse_aceito",
-                "Interesse aceito",
-                "Seu interesse no item foi aceito.",
+                "Interesse selecionado",
+                "Seu interesse no item foi selecionado e o item está reservado.",
             ),
-            "recusado": (
+            "recusar": (
                 "interesse_recusado",
                 "Interesse recusado",
                 "Seu interesse no item foi recusado.",
             ),
-            "cancelado": (
+            "desistir": (
                 "interesse_cancelado",
                 "Interesse cancelado",
                 "O interessado cancelou o interesse no seu item.",
             ),
+            "liberar": (
+                "interesse_cancelado",
+                "Reserva liberada",
+                "O proprietário liberou a reserva do item.",
+            ),
         }
-        tipo, titulo, mensagem = textos[status]
+        texto = textos.get(acao)
+        if texto is None:
+            return None
+        # O identificador do evento permanece estável por desfecho, para que
+        # repetir a mesma ação não duplique o aviso.
+        sufixo = {
+            "selecionar": "aceito",
+            "recusar": "recusado",
+            "desistir": "cancelado",
+            "liberar": "cancelado",
+        }[acao]
+        tipo, titulo, mensagem = texto
         return EventoNotificacao(
             tipo=tipo,
             titulo=titulo,
             mensagem=mensagem,
-            evento_id=f"interesse:{interesse_id}:{status}",
+            evento_id=f"interesse:{interesse_id}:{sufixo}",
         )
 
     def _usuario_valido(self, usuario_id: str) -> dict[str, Any]:

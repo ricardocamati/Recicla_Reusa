@@ -27,6 +27,8 @@ TRANSICOES: dict[str, dict[str, set[str]]] = {
     },
     "revenda": {
         "disponivel": {"em_avaliacao"},
+        # A seleção de interesse reserva a venda; a avaliação segue a partir daí.
+        "reservado": {"em_avaliacao"},
         "em_avaliacao": {"recondicionado"},
         "recondicionado": {"vendido"},
     },
@@ -235,7 +237,7 @@ class ItemService:
         instante = self._relogio()
         status_anterior = item.status
         novo_status = request.status
-        if (self._reservas_por_interesse and item.destino == "doacao"
+        if (self._reservas_por_interesse and item.destino != "descarte"
                 and novo_status == "reservado" and status_anterior != "reservado"):
             # A reserva é efeito do aceite, nunca de um PUT isolado.
             raise ConflitoEstadoError()

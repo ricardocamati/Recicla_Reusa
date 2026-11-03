@@ -220,11 +220,11 @@ class Navegador:
             lambda d: [
                 botao
                 for botao in cartao.find_elements(By.TAG_NAME, "button")
-                if botao.text == "Aceitar"
+                if botao.text == "Selecionar"
             ]
         )[0]
         self.clicar(aceitar)
-        self.aguardar_sem_texto("recebidos-interesses-list", titulo, "Aceitar")
+        self.aguardar_sem_texto("recebidos-interesses-list", titulo, "Selecionar")
 
     def avancar(self, titulo: str, status: str, referencia: tuple[str, str] | None = None) -> None:
         documento = itens.find_one({"titulo": titulo})

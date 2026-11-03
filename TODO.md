@@ -131,11 +131,11 @@ Referências: V21-RF-02, V21-RF-03, V21-RF-14 · V21-CT-02, V21-CT-03, V21-CT-04
 
 Referências: V21-RF-04, V21-RF-05 · V21-CT-05 a V21-CT-08.
 
-- [ ] Permitir retomada de interesse cancelado pelo autor, com histórico, sem contornar recusa.
-- [ ] Garantir uma relação por par item/pessoa e exibir interessados nas próprias ofertas.
-- [ ] Tornar a reserva explícita, única e reversível antes da declaração de entrega.
-- [ ] Tratar desistência e não comparecimento liberando o item.
-- [ ] Cobrir concorrência de reserva e conflitos com testes reais.
+- [x] Permitir retomada de interesse cancelado pelo autor, com histórico, sem contornar recusa.
+- [x] Garantir uma relação por par item/pessoa e exibir interessados nas próprias ofertas.
+- [x] Tornar a reserva explícita, única e reversível antes da declaração de entrega.
+- [x] Tratar desistência e não comparecimento liberando o item.
+- [x] Cobrir concorrência de reserva e conflitos com testes reais.
 
 ## Etapa 12 — Combinação, entrega bilateral e venda
 

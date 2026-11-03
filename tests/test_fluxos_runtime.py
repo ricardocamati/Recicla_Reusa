@@ -174,7 +174,7 @@ def test_indicadores_contam_apenas_itens_concluidos(ambiente):
 
     doacao = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": doacao["id"]}).json()
-    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "aceito"})
+    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "selecionado"})
     assert dono.put(
         f"/api/itens/{doacao['id']}", json=corpo(doacao, status="doado")
     ).status_code == 200
@@ -205,7 +205,7 @@ def test_doacao_completa_registra_beneficiario_do_aceite(ambiente):
     assert interesse.status_code == 201, interesse.text
     assert (
         dono.patch(
-            f"/api/interesses/{interesse.json()['id']}", json={"status": "aceito"}
+            f"/api/interesses/{interesse.json()['id']}", json={"status": "selecionado"}
         ).status_code
         == 200
     )
@@ -294,7 +294,7 @@ def test_referencias_do_fluxo_bloqueiam_exclusao(ambiente):
     interessado, interessado_id, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()
-    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "aceito"})
+    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "selecionado"})
     assert dono.put(
         f"/api/itens/{item['id']}", json=corpo(item, status="doado")
     ).status_code == 200
