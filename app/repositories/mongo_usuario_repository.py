@@ -8,7 +8,7 @@ from pymongo.collection import Collection
 from pymongo.errors import DuplicateKeyError
 
 from app.exceptions import EmailDuplicadoError
-from app.models.usuario import Usuario
+from app.models.usuario import Endereco, Usuario
 
 
 class MongoUsuarioRepository:
@@ -98,4 +98,23 @@ class MongoUsuarioRepository:
     def _para_modelo(documento: dict[str, Any]) -> Usuario:
         dados = dict(documento)
         dados["id"] = str(dados.pop("_id"))
+        endereco = dados.get("endereco")
+        if isinstance(endereco, dict):
+            dados["endereco"] = Endereco(
+                logradouro=endereco.get("logradouro"),
+                numero=endereco.get("numero"),
+                complemento=endereco.get("complemento"),
+                cep=endereco.get("cep"),
+                cidade=endereco.get("cidade"),
+            )
+        else:
+            # Compatibilidade de leitura com documentos gravados no formato antigo,
+            # quando o endereço ainda era persistido no nível raiz.
+            dados["endereco"] = Endereco(
+                logradouro=dados.pop("logradouro", None),
+                numero=dados.pop("numero", None),
+                complemento=dados.pop("complemento", None),
+                cep=dados.pop("cep", None),
+                cidade=dados.pop("cidade", None),
+            )
         return Usuario(**dados)

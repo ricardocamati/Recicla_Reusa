@@ -29,10 +29,12 @@ def request(**alteracoes) -> PontoColetaProvisionRequest:
         "nome": "Ponto de Coleta Central",
         "email": "coleta.central@example.com",
         "senha": "Senha123",
-        "logradouro": "Rua da Reciclagem",
-        "numero": "100",
-        "cep": "87000-000",
-        "cidade": "Maringá",
+        "endereco": {
+            "logradouro": "Rua da Reciclagem",
+            "numero": "100",
+            "cep": "87000-000",
+            "cidade": "Maringá",
+        },
     }
     dados.update(alteracoes)
     return PontoColetaProvisionRequest(**dados)
@@ -53,7 +55,7 @@ def test_provisiona_ponto_coleta_por_servico_sem_expor_senha() -> None:
     persistido = repositorio.usuarios[resposta.id]
     assert persistido.tipo == "ponto_coleta"
     assert persistido.senha_hash != "Senha123"
-    assert persistido.cidade == "Maringá"
+    assert persistido.endereco.cidade == "Maringá"
 
 
 def test_provisionamento_rejeita_email_duplicado() -> None:

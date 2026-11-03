@@ -52,8 +52,8 @@ def test_javascript_consumes_contratos_da_api() -> None:
     ):
         assert rota in javascript
     assert 'credentials: "include"' in javascript
-    assert '"endereco":' not in javascript
-    assert "usuario.endereco" not in javascript
+    assert "endereco: addressFromForm(data)" in javascript
+    assert "usuario.endereco" in javascript
 
 
 def test_javascript_nao_persiste_segredos_nem_renderiza_html_da_api() -> None:

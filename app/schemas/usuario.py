@@ -7,8 +7,8 @@ TipoUsuario = Literal["doador", "beneficiario", "ponto_coleta"]
 TipoCadastro = Literal["doador", "beneficiario"]
 
 
-class CamposEndereco(BaseModel):
-    """Campos de endereço no nível raiz dos contratos HTTP."""
+class EnderecoBase(BaseModel):
+    """Subdocumento de endereço: logradouro, número, CEP, cidade e complemento opcional."""
 
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
@@ -34,10 +34,21 @@ class CamposEndereco(BaseModel):
         return valor or None
 
 
-class DadosUsuarioRequest(CamposEndereco):
+class EnderecoRequest(EnderecoBase):
+    pass
+
+
+class EnderecoResponse(EnderecoBase):
+    pass
+
+
+class DadosUsuarioRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
     nome: str = Field(min_length=3, max_length=120)
     email: str = Field(min_length=5, max_length=160)
     senha: str = Field(min_length=8, max_length=128)
+    endereco: EnderecoRequest
 
     @field_validator("nome", "email")
     @classmethod
@@ -74,9 +85,12 @@ class PontoColetaProvisionRequest(DadosUsuarioRequest):
     pass
 
 
-class UsuarioUpdateRequest(CamposEndereco):
+class UsuarioUpdateRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
     nome: str = Field(min_length=3, max_length=120)
     email: str = Field(min_length=5, max_length=160)
+    endereco: EnderecoRequest
 
     @field_validator("nome")
     @classmethod
@@ -110,11 +124,12 @@ class LoginRequest(BaseModel):
         return valor.strip().lower()
 
 
-class UsuarioResponse(CamposEndereco):
+class UsuarioResponse(BaseModel):
     id: str
     nome: str
     email: str
     tipo: TipoUsuario
+    endereco: EnderecoResponse
     data_adicao: datetime
     data_modificacao: datetime
 

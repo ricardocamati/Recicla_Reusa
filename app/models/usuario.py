@@ -3,17 +3,24 @@ from datetime import datetime
 
 
 @dataclass(slots=True)
-class Usuario:
-    """Representa um usuário com campos de endereço no nível raiz."""
+class Endereco:
+    """Endereço do usuário, persistido como subdocumento."""
 
-    nome: str
-    email: str
-    tipo: str
     logradouro: str
     numero: str
     cep: str
     cidade: str
-    complemento: str | None
+    complemento: str | None = None
+
+
+@dataclass(slots=True)
+class Usuario:
+    """Representa um usuário com endereço aninhado."""
+
+    nome: str
+    email: str
+    tipo: str
+    endereco: Endereco
     senha_hash: str
     data_adicao: datetime
     data_modificacao: datetime

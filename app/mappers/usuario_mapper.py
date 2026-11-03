@@ -1,6 +1,9 @@
-from app.models.usuario import Usuario
+from dataclasses import asdict
+
+from app.models.usuario import Endereco, Usuario
 from app.schemas.usuario import (
-    CamposEndereco,
+    EnderecoRequest,
+    EnderecoResponse,
     PontoColetaProvisionRequest,
     UsuarioCreateRequest,
     UsuarioResponse,
@@ -10,13 +13,12 @@ from app.schemas.usuario import (
 from app.security.passwords import hash_password
 
 
-_NOMES_CAMPOS_ENDERECO = ("logradouro", "numero", "complemento", "cep", "cidade")
+def _endereco_de_modelo(endereco: Endereco) -> EnderecoResponse:
+    return EnderecoResponse(**asdict(endereco))
 
 
-def campos_endereco(objeto: Usuario | CamposEndereco) -> dict[str, str | None]:
-    """Extrai os campos de endereço sem criar uma estrutura aninhada."""
-
-    return {nome: getattr(objeto, nome) for nome in _NOMES_CAMPOS_ENDERECO}
+def _endereco_de_request(endereco: EnderecoRequest) -> Endereco:
+    return Endereco(**endereco.model_dump())
 
 
 class UsuarioMapper:
@@ -38,7 +40,7 @@ class UsuarioMapper:
             nome=request.nome,
             email=request.email,
             tipo=tipo,
-            **campos_endereco(request),
+            endereco=_endereco_de_request(request.endereco),
             senha_hash=hash_password(request.senha),
             data_adicao=instante,
             data_modificacao=instante,
@@ -53,7 +55,7 @@ class UsuarioMapper:
             nome=usuario.nome,
             email=usuario.email,
             tipo=usuario.tipo,
-            **campos_endereco(usuario),
+            endereco=_endereco_de_modelo(usuario.endereco),
             data_adicao=usuario.data_adicao,
             data_modificacao=usuario.data_modificacao,
         )
@@ -66,13 +68,12 @@ class UsuarioMapper:
             id=usuario.id,
             nome=usuario.nome,
             tipo=usuario.tipo,
-            cidade=usuario.cidade,
+            cidade=usuario.endereco.cidade,
         )
 
     @staticmethod
     def atualizar_modelo(request: UsuarioUpdateRequest, usuario: Usuario, *, instante) -> None:
         usuario.nome = request.nome
         usuario.email = request.email
-        for nome_campo, valor in campos_endereco(request).items():
-            setattr(usuario, nome_campo, valor)
+        usuario.endereco = _endereco_de_request(request.endereco)
         usuario.data_modificacao = instante

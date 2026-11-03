@@ -60,13 +60,17 @@ def exigir(status: int, esperado: int | set[int], etapa: str) -> None:
         raise RuntimeError(f"{etapa}: esperado {esperado_texto}, recebido {status}")
 
 
-def exigir_usuario_plano(usuario: dict[str, Any]) -> None:
+def exigir_usuario_aninhado(usuario: dict[str, Any]) -> None:
+    endereco = usuario.get("endereco")
     campos = ("logradouro", "numero", "complemento", "cep", "cidade")
-    ausentes = [campo for campo in campos if campo not in usuario]
-    if "endereco" in usuario or ausentes:
+    if not isinstance(endereco, dict):
+        raise RuntimeError("contrato_usuario: resposta deve usar o subdocumento endereco")
+    ausentes = [campo for campo in campos if campo not in endereco]
+    planos = [campo for campo in campos if campo in usuario]
+    if ausentes or planos:
         raise RuntimeError(
-            "contrato_usuario: resposta deve usar campos planos; "
-            f"ausentes={','.join(ausentes) or 'nenhum'}"
+            "contrato_usuario: endereco incompleto ou vazado na raiz; "
+            f"ausentes={','.join(ausentes) or 'nenhum'}, planos={','.join(planos) or 'nenhum'}"
         )
 
 
@@ -76,10 +80,12 @@ def payload_usuario(email: str) -> dict[str, Any]:
         "email": email,
         "senha": "Smoke2026",
         "tipo": "doador",
-        "logradouro": "Rua de Evidência",
-        "numero": "100",
-        "cep": "87000-000",
-        "cidade": "Maringá",
+        "endereco": {
+            "logradouro": "Rua de Evidência",
+            "numero": "100",
+            "cep": "87000-000",
+            "cidade": "Maringá",
+        },
     }
 
 
@@ -115,7 +121,7 @@ def executar_crud(args: argparse.Namespace) -> int:
             dados=payload_usuario(email),
         )
         exigir(status, 201, "cadastro")
-        exigir_usuario_plano(usuario)
+        exigir_usuario_aninhado(usuario)
         usuario_id = usuario["id"]
         print("cadastro=201")
         print("contrato_usuario_plano=pass")

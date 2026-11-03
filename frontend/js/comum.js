@@ -162,7 +162,7 @@ export function userPayloadFromForm(form) {
     email: String(data.get("email") || "").trim(),
     senha: String(data.get("senha") || ""),
     tipo: String(data.get("tipo") || "doador"),
-    ...addressFromForm(data),
+    endereco: addressFromForm(data),
   };
 }
 
@@ -171,7 +171,7 @@ export function profilePayloadFromForm(form) {
   return {
     nome: String(data.get("nome") || "").trim(),
     email: String(data.get("email") || "").trim(),
-    ...addressFromForm(data),
+    endereco: addressFromForm(data),
   };
 }
 
@@ -202,7 +202,7 @@ export function fillAddress(form, camposEndereco) {
 export function fillProfileForm(form, usuario) {
   form.elements.nome.value = usuario.nome || "";
   form.elements.email.value = usuario.email || "";
-  fillAddress(form, usuario);
+  fillAddress(form, usuario.endereco);
 }
 
 export function roleDescription(tipo) {
