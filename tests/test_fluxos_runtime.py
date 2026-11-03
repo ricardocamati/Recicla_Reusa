@@ -207,13 +207,25 @@ def test_indicadores_contam_apenas_apos_confirmacao(ambiente):
         aceitar(dono, proposta)
 
     antes = dono.get("/api/indicadores").json()
-    assert antes == {"doados": 0, "coletados": 0, "vendidos": 0, "total": 0}
+    assert antes == {
+        "doados": 0,
+        "coletados": 0,
+        "indicados": 0,
+        "vendidos": 0,
+        "total": 0,
+    }
 
     assert dono.post(f"/api/itens/{doacao['id']}/entrega").status_code == 200
     assert dono.get("/api/indicadores").json()["doados"] == 0
     assert pessoa_a.post(f"/api/itens/{doacao['id']}/recebimento").status_code == 200
     depois = dono.get("/api/indicadores").json()
-    assert depois == {"doados": 1, "coletados": 0, "vendidos": 0, "total": 1}
+    assert depois == {
+        "doados": 1,
+        "coletados": 0,
+        "indicados": 0,
+        "vendidos": 0,
+        "total": 1,
+    }
 
     assert pessoa_a.post(f"/api/itens/{doacao['id']}/recebimento").status_code == 200
     assert dono.get("/api/indicadores").json()["doados"] == 1

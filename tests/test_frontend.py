@@ -246,6 +246,19 @@ def test_itens_oferece_acoes_do_fluxo_ao_proprietario() -> None:
     assert "/api/pontos-coleta" in itens
 
 
+def test_itens_oferece_destinacao_informada() -> None:
+    itens = ler("js/itens.js")
+    for marca in (
+        '"descarte:destinacao_informada"',
+        "destination-form",
+        "Indicar outro lugar",
+        "Desfazer indicação",
+        "/destinacao",
+        "não verificado",
+    ):
+        assert marca in itens, marca
+
+
 def test_pontos_oferece_operacao_da_fila() -> None:
     pontos = ler("js/pontos.js")
     for marca in (

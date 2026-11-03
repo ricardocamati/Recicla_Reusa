@@ -1,5 +1,6 @@
 from app.models.item import EventoHistorico, Item
 from app.schemas.item import (
+    DestinacaoInformadaResponse,
     EventoHistoricoResponse,
     ItemCreateRequest,
     ItemResponse,
@@ -62,6 +63,17 @@ class ItemMapper:
             ponto_coleta_id=item.ponto_coleta_id,
             beneficiario_id=item.beneficiario_id,
             comprador_id=item.comprador_id,
+            destinacao_informada=(
+                DestinacaoInformadaResponse(
+                    tipo_local=item.destinacao_informada.tipo_local,
+                    nome=item.destinacao_informada.nome,
+                    cidade=item.destinacao_informada.cidade,
+                    observacao=item.destinacao_informada.observacao,
+                    informado_em=item.destinacao_informada.informado_em,
+                )
+                if item.destinacao_informada is not None
+                else None
+            ),
             historico=[
                 EventoHistoricoResponse(
                     etapa=evento.etapa,

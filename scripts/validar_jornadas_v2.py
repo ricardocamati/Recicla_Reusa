@@ -273,10 +273,15 @@ class Navegador:
         campo.clear()
         campo.send_keys(local)
         self.clicar(formulario.find_element(By.CSS_SELECTOR, "button[type='submit']"))
-        self.espera.until(
-            lambda d: "aguardando aceite"
-            in (self._cartao(lista, titulo).text if self._cartao(lista, titulo) else "")
-        )
+
+        def aguardando_aceite(driver) -> bool:
+            try:
+                cartao = self._cartao(lista, titulo)
+                return cartao is not None and "aguardando aceite" in cartao.text
+            except StaleElementReferenceException:
+                return False
+
+        self.espera.until(aguardando_aceite)
 
     def aceitar_combinacao(self, lista: str, titulo: str) -> None:
         self.abrir("interesses.html", f"#{lista}")
@@ -292,11 +297,34 @@ class Navegador:
             )
         )
         self.clicar(botao)
+
+        def combinacao_aceita(driver) -> bool:
+            try:
+                cartao = self._cartao(lista, titulo)
+                return (
+                    cartao is not None
+                    and "aguardando" not in cartao.text
+                    and "aceita" in cartao.text
+                )
+            except StaleElementReferenceException:
+                return False
+
+        self.espera.until(combinacao_aceita)
+
+    def indicar_destinacao(
+        self, titulo: str, tipo: str = "Ecoponto", nome: str = "Ecoponto Jornada"
+    ) -> None:
+        self.abrir("itens.html?grupo=ativos", "#my-items-list")
+        cartao = self.cartao("my-items-list", titulo)
+        formulario = cartao.find_element(By.CSS_SELECTOR, "form.destination-form")
+        Select(formulario.find_element(By.NAME, "tipo_local")).select_by_visible_text(tipo)
+        formulario.find_element(By.NAME, "nome").send_keys(nome)
+        self.clicar(formulario.find_element(By.CSS_SELECTOR, "button[type='submit']"))
         self.espera.until(
-            lambda d: (self._cartao(lista, titulo) is not None)
-            and "aguardando" not in self._cartao(lista, titulo).text
-            and "aceita" in self._cartao(lista, titulo).text
+            lambda d: "não é verificada" in d.find_element(By.ID, "my-items-message").text
         )
+        self.abrir("itens.html?grupo=encerrados", "#my-items-list")
+        assert "Informado por você" in self.cartao("my-items-list", titulo).text
 
     def agendar_entrega(self, titulo: str, ponto_nome: str) -> None:
         self.abrir("itens.html?grupo=ativos", "#my-items-list")
@@ -439,6 +467,7 @@ def main() -> None:
     beneficiario_email = f"{MARCA}-beneficiario@example.test"
     titulo_doacao = f"{MARCA} Notebook doacao"
     titulo_descarte = f"{MARCA} Monitor descarte"
+    titulo_indicado = f"{MARCA} Impressora indicada"
     titulo_revenda = f"{MARCA} Tablet revenda"
     nome_ponto = f"{MARCA} Ponto Central"
 
@@ -492,6 +521,8 @@ def main() -> None:
         navegador.entrar(doador_email)
         navegador.abrir("itens.html?grupo=encerrados", "#my-items-list")
         assert "Recebido" in navegador.cartao("my-items-list", titulo_descarte).text
+        navegador.criar_item(titulo_indicado, "Descarte", "Impressora")
+        navegador.indicar_destinacao(titulo_indicado)
         navegador.sair()
         print("jornada_descarte=ok")
 
@@ -533,6 +564,9 @@ def main() -> None:
     assert descarte["status"] == "recebido" and descarte["ponto_coleta_id"] is not None
     entrega = encaminhamentos.find_one({"item_id": descarte["_id"]})
     assert entrega is not None and entrega["status"] == "recebido"
+    indicado = itens.find_one({"titulo": titulo_indicado})
+    assert indicado["status"] == "destinacao_informada"
+    assert indicado["destinacao_informada"]["tipo_local"] == "ecoponto"
     revenda = itens.find_one({"titulo": titulo_revenda})
     assert revenda["status"] == "concluido" and revenda["valor"] == 120.0
     assert avisos.count_documents({"item_id": documento["_id"]}) >= 1

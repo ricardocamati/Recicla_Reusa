@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade — v2.1
 
-**Situação da implementação: Etapas 9 a 13 concluídas.** V21-RF-01 (conta de pessoa), V21-RF-02 (catálogo de ofertas) e V21-RF-03 (cadastro por intenção) estão implementados e cobertos por testes; V21-RF-14 tem arquivamento básico, com avisos de interesses pendentes previstos para a Etapa 11. As demais linhas seguem planejadas.
+**Situação da implementação: Etapas 9 a 14 concluídas.** V21-RF-01 (conta de pessoa), V21-RF-02 (catálogo de ofertas) e V21-RF-03 (cadastro por intenção) estão implementados e cobertos por testes; V21-RF-14 tem arquivamento básico, com avisos de interesses pendentes previstos para a Etapa 11. As demais linhas seguem planejadas.
 
 ## Requisitos funcionais
 
@@ -20,7 +20,7 @@
 | V21-RF-12 — Avisos acionáveis | V21-RN-18, V21-RN-20 | V21-CT-22, V21-CT-27 | `app/repositories/notificacao_eventos.py`, `frontend/js/notificacoes.js::loadNotificacoes` |
 | V21-RF-13 — Indicadores precisos | V21-RN-03, V21-RN-09, V21-RN-15, V21-RN-19, V21-RN-20 | V21-CT-23, V21-CT-30 | `frontend/js/home.js::carregarIndicadores`, `app/api/indicadores.py` |
 | V21-RF-14 — Arquivamento e histórico | V21-RN-04, V21-RN-17 | V21-CT-24 | `frontend/js/itens.js::deleteItem`, `app/repositories/mongo_item_repository.py`; novo arquivamento |
-| V21-RF-16 — Indicar lugar de descarte | V21-RN-11, V21-RN-23 | V21-CT-31, V21-CT-32, V21-CT-33, V21-CT-34 | `frontend/js/itens.js`, `app/api/itens.py`, `app/schemas/item.py`, `app/services/item_service.py` |
+| V21-RF-16 — Indicar lugar de descarte | V21-RN-11, V21-RN-23 | V21-CT-31, V21-CT-32, V21-CT-33, V21-CT-34 — **implementados** | `POST/DELETE /api/itens/{id}/destinacao` com tipo estruturado e textos livres; item termina em `destinacao_informada`, campo visível só ao autor, sem ponto criado e com contagem separada em `indicados` |
 | V21-RF-15 — Navegação e recuperação | V21-RN-01, V21-RN-03, V21-RN-04, V21-RN-11, V21-RN-16, V21-RN-20, V21-RN-21, V21-RN-22 | V21-CT-03, V21-CT-14, V21-CT-21, V21-CT-25, V21-CT-26, V21-CT-28, V21-CT-29 | `frontend/js/comum.js`, `frontend/js/api.js`, componentes das páginas |
 
 ## Requisitos não funcionais

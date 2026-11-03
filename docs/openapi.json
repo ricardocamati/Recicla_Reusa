@@ -131,6 +131,121 @@
         "title": "CombinacaoResponse",
         "type": "object"
       },
+      "DestinacaoInformadaRequest": {
+        "additionalProperties": false,
+        "description": "Lugar indicado pelo autor; textos livres, sem coordenadas nem arquivo.",
+        "properties": {
+          "cidade": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cidade"
+          },
+          "nome": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nome"
+          },
+          "observacao": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacao"
+          },
+          "tipo_local": {
+            "enum": [
+              "ecoponto",
+              "cooperativa",
+              "comercio",
+              "outro"
+            ],
+            "title": "Tipo Local",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tipo_local"
+        ],
+        "title": "DestinacaoInformadaRequest",
+        "type": "object"
+      },
+      "DestinacaoInformadaResponse": {
+        "properties": {
+          "cidade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cidade"
+          },
+          "informado_em": {
+            "format": "date-time",
+            "title": "Informado Em",
+            "type": "string"
+          },
+          "nome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nome"
+          },
+          "observacao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacao"
+          },
+          "tipo_local": {
+            "enum": [
+              "ecoponto",
+              "cooperativa",
+              "comercio",
+              "outro"
+            ],
+            "title": "Tipo Local",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tipo_local",
+          "informado_em"
+        ],
+        "title": "DestinacaoInformadaResponse",
+        "type": "object"
+      },
       "EncaminhamentoAcaoRequest": {
         "additionalProperties": false,
         "properties": {
@@ -511,6 +626,11 @@
             "title": "Doados",
             "type": "integer"
           },
+          "indicados": {
+            "default": 0,
+            "title": "Indicados",
+            "type": "integer"
+          },
           "total": {
             "title": "Total",
             "type": "integer"
@@ -876,6 +996,16 @@
             "title": "Descricao",
             "type": "string"
           },
+          "destinacao_informada": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DestinacaoInformadaResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "destino": {
             "enum": [
               "doacao",
@@ -936,6 +1066,7 @@
               "aguardando_ponto",
               "entrega_prevista",
               "recebido",
+              "destinacao_informada",
               "arquivado"
             ],
             "title": "Status",
@@ -1096,6 +1227,7 @@
                   "aguardando_ponto",
                   "entrega_prevista",
                   "recebido",
+                  "destinacao_informada",
                   "arquivado"
                 ],
                 "type": "string"
@@ -2875,6 +3007,98 @@
           }
         },
         "summary": "Arquivar",
+        "tags": [
+          "itens"
+        ]
+      }
+    },
+    "/api/itens/{item_id}/destinacao": {
+      "delete": {
+        "operationId": "desfazer_destinacao_api_itens__item_id__destinacao_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Desfazer Destinacao",
+        "tags": [
+          "itens"
+        ]
+      },
+      "post": {
+        "operationId": "informar_destinacao_api_itens__item_id__destinacao_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DestinacaoInformadaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Informar Destinacao",
         "tags": [
           "itens"
         ]

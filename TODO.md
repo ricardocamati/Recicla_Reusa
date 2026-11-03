@@ -161,11 +161,11 @@ Referências: V21-RF-09, V21-RF-10, V21-RF-11 · V21-CT-13 a V21-CT-21.
 
 Referências: V21-RF-16, V21-RNF-07 · V21-CT-31 a V21-CT-34.
 
-- [ ] Permitir indicar lugar não cadastrado com tipo de local estruturado e dados opcionais.
-- [ ] Encerrar o item como destinação informada, sem confirmação de terceiro e sem criar ponto de coleta.
-- [ ] Restringir a indicação ao autor, sem exposição a operadores ou terceiros.
-- [ ] Permitir desfazer enquanto o item não estiver arquivado, sem perder histórico.
-- [ ] Separar, nos indicadores, recebimento no ponto de destinação apenas informada.
+- [x] Permitir indicar lugar não cadastrado com tipo de local estruturado e dados opcionais.
+- [x] Encerrar o item como destinação informada, sem confirmação de terceiro e sem criar ponto de coleta.
+- [x] Restringir a indicação ao autor, sem exposição a operadores ou terceiros.
+- [x] Permitir desfazer enquanto o item não estiver arquivado, sem perder histórico.
+- [x] Separar, nos indicadores, recebimento no ponto de destinação apenas informada.
 
 ## Etapa 15 — Avisos, navegação e fechamento da v2.1
 

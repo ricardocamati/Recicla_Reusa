@@ -57,6 +57,7 @@ StatusItem = Annotated[
         "aguardando_ponto",
         "entrega_prevista",
         "recebido",
+        "destinacao_informada",
         "arquivado",
     ],
     BeforeValidator(_normalizar_enum),
@@ -116,6 +117,31 @@ class EventoHistoricoResponse(BaseModel):
     observacao: str | None = None
 
 
+TipoLocalInformado = Annotated[
+    Literal["ecoponto", "cooperativa", "comercio", "outro"],
+    BeforeValidator(_normalizar_enum),
+]
+
+
+class DestinacaoInformadaRequest(BaseModel):
+    """Lugar indicado pelo autor; textos livres, sem coordenadas nem arquivo."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    tipo_local: TipoLocalInformado
+    nome: str | None = Field(default=None, max_length=120)
+    cidade: str | None = Field(default=None, max_length=160)
+    observacao: str | None = Field(default=None, max_length=300)
+
+
+class DestinacaoInformadaResponse(BaseModel):
+    tipo_local: TipoLocalInformado
+    nome: str | None = None
+    cidade: str | None = None
+    observacao: str | None = None
+    informado_em: datetime
+
+
 class ItemResponse(BaseModel):
     id: str
     titulo: str
@@ -132,6 +158,7 @@ class ItemResponse(BaseModel):
     ponto_coleta_id: str | None = None
     beneficiario_id: str | None = None
     comprador_id: str | None = None
+    destinacao_informada: DestinacaoInformadaResponse | None = None
     especificacoes: dict[str, str]
     historico: list[EventoHistoricoResponse]
     data_adicao: datetime

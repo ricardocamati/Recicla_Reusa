@@ -40,6 +40,7 @@ export const ROTULOS = {
     aguardando_ponto: "Aguardando ponto",
     entrega_prevista: "Entrega prevista",
     recebido: "Recebido",
+    destinacao_informada: "Destinação informada",
     rascunho: "Rascunho",
     aguardando_confirmacao: "Aguardando confirmação",
     concluido: "Concluído",

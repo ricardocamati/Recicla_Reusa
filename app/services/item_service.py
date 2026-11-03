@@ -11,10 +11,16 @@ from app.exceptions import (
     UsuarioNaoEncontradoError,
 )
 from app.mappers.item_mapper import ItemMapper
-from app.models.item import Item
+from app.models.item import DestinacaoInformada, Item
 from app.models.notificacao import EventoNotificacao, evento_de_status_item
 from app.models.usuario import Usuario
-from app.schemas.item import FiltrosItem, ItemCreateRequest, ItemResponse, ItemUpdateRequest
+from app.schemas.item import (
+    DestinacaoInformadaRequest,
+    FiltrosItem,
+    ItemCreateRequest,
+    ItemResponse,
+    ItemUpdateRequest,
+)
 
 TRANSICOES: dict[str, dict[str, set[str]]] = {
     # Doação e venda compartilham a entrega bilateral: declarar e confirmar.
@@ -210,7 +216,12 @@ class ItemService:
         grupos = {
             "ativos": ("rascunho", "disponivel", "aguardando_ponto"),
             "em_andamento": ("reservado", "aguardando_confirmacao", "entrega_prevista"),
-            "encerrados": ("concluido", "recebido", "arquivado"),
+            "encerrados": (
+                "concluido",
+                "recebido",
+                "destinacao_informada",
+                "arquivado",
+            ),
         }
         if grupo not in grupos:
             raise FluxoItemError(400, "Grupo inválido")
@@ -241,9 +252,9 @@ class ItemService:
         )
         return self._resposta(atualizado)
 
-    def buscar_por_id(self, item_id: str) -> ItemResponse:
+    def buscar_por_id(self, item_id: str, usuario_id: str | None = None) -> ItemResponse:
         item = self._buscar_item(item_id)
-        return self._resposta(item)
+        return self._resposta(item, usuario_id=usuario_id)
 
     def atualizar(
         self,
@@ -414,14 +425,82 @@ class ItemService:
             raise ItemNaoAutorizadoError()
         return usuario
 
-    def _resposta(self, item: Item, proprietario: Usuario | None = None) -> ItemResponse:
+    def informar_destinacao(
+        self,
+        item_id: str,
+        dados: DestinacaoInformadaRequest,
+        *,
+        proprietario_id: str,
+    ) -> ItemResponse:
+        item = self._buscar_item(item_id)
+        if item.proprietario_id != proprietario_id:
+            raise ItemNaoAutorizadoError()
+        if item.destino != "descarte":
+            raise FluxoItemError(400, "Destinação informada só se aplica a descarte")
+        if item.status == "destinacao_informada":
+            raise FluxoItemError(409, "Item já possui destinação informada")
+        if item.status != "aguardando_ponto":
+            raise FluxoItemError(
+                409, "Item precisa estar aguardando ponto para informar destinação"
+            )
+        instante = self._relogio()
+        item.destinacao_informada = DestinacaoInformada(
+            tipo_local=dados.tipo_local,
+            nome=dados.nome,
+            cidade=dados.cidade,
+            observacao=dados.observacao,
+            informado_em=instante,
+        )
+        ItemMapper.registrar_transicao(
+            item,
+            novo_status="destinacao_informada",
+            responsavel_id=proprietario_id,
+            instante=instante,
+            observacao=f"Destinação informada pelo autor ({dados.tipo_local})",
+        )
+        salvo = self._repositorio.atualizar(item, status_esperado="aguardando_ponto")
+        return self._resposta(salvo, usuario_id=proprietario_id)
+
+    def desfazer_destinacao(self, item_id: str, *, proprietario_id: str) -> ItemResponse:
+        item = self._buscar_item(item_id)
+        if item.proprietario_id != proprietario_id:
+            raise ItemNaoAutorizadoError()
+        if item.status == "arquivado":
+            raise FluxoItemError(409, "Item arquivado não aceita desfazer destinação")
+        if item.status != "destinacao_informada":
+            raise FluxoItemError(409, "Item não possui destinação informada ativa")
+        instante = self._relogio()
+        item.destinacao_informada = None
+        ItemMapper.registrar_transicao(
+            item,
+            novo_status="aguardando_ponto",
+            responsavel_id=proprietario_id,
+            instante=instante,
+            observacao="Destinação informada desfeita pelo autor",
+        )
+        salvo = self._repositorio.atualizar(
+            item, status_esperado="destinacao_informada"
+        )
+        return self._resposta(salvo, usuario_id=proprietario_id)
+
+    def _resposta(
+        self,
+        item: Item,
+        proprietario: Usuario | None = None,
+        *,
+        usuario_id: str | None = None,
+    ) -> ItemResponse:
         proprietario = proprietario or self._repositorio_usuarios.buscar_por_id(item.proprietario_id)
         if proprietario is None:
             raise UsuarioNaoEncontradoError(item.proprietario_id)
-        return ItemMapper.para_resposta(
+        resposta = ItemMapper.para_resposta(
             item,
             cidade_proprietario=proprietario.endereco.cidade,
         )
+        if usuario_id is not None and usuario_id != item.proprietario_id:
+            # Indicação de lugar é privada do autor; operadores e terceiros não a veem.
+            resposta = resposta.model_copy(update={"destinacao_informada": None})
+        return resposta
 
     def _buscar_proprietarios(self, itens: list[Item]) -> dict[str, Usuario]:
         ids = {item.proprietario_id for item in itens}
