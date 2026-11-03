@@ -153,6 +153,19 @@ Parâmetros de query desconhecidos são rejeitados com `400`. No detalhe, sessã
 
 O Compose usa replica set de um nó para executar essas transações; consulte [docker/mongo/README.md](../docker/mongo/README.md). Sem suporte transacional, a operação falha com `503`, sem executar uma alternativa de escrita parcial. Entradas inválidas retornam `400`, sessão ausente `401`, ação não permitida `403`, recurso ausente ou não visível `404` e conflito de estado/unicidade `409`.
 
+## Notificações
+
+| Método | Caminho | Autenticação | Entrada | Sucesso |
+|---|---|---|---|---|
+| `GET` | `/api/notificacoes` | sessão | `lida`, `offset`, `limite` | `200` com a caixa do próprio usuário |
+| `PATCH` | `/api/notificacoes/{id}` | destinatário | `{"lida": true}` | `200` com a notificação lida |
+
+Os avisos são criados pelo servidor, nunca pelo cliente. Tipos: `interesse_aceito`, `interesse_recusado`, `interesse_cancelado`, `status_item_alterado` e `item_concluido`.
+
+A emissão ocorre na **mesma transação** da mudança que a origina: a decisão de um interesse avisa o interessado (aceito/recusado) ou o proprietário (cancelado), e cada transição de status avisa quem possui interesse pendente ou aceito no item. O aceite de uma doação também avisa os demais interessados de que o item foi reservado, sem repetir o aviso para quem foi escolhido; o cancelamento do aceite avisa que o item voltou a ficar disponível. Quem não tem vínculo com o item não recebe aviso, e o proprietário não é notificado das próprias mudanças.
+
+O índice único por `evento_id`, destinatário e item garante uma única notificação por evento; repetir a gravação não duplica. A listagem é ordenada por `data_adicao` decrescente, aceita `offset`/`limite` (padrão 20, máximo 100) e o filtro `lida`. Marcar leitura preserva `data_adicao`, registra `data_leitura` e atualiza `data_modificacao`. Notificação de outro usuário ou identificador inválido retorna `404`; sessão ausente `401`; parâmetro desconhecido `400`.
+
 ## Pontos de coleta
 
 | Método | Caminho | Autenticação | Entrada | Sucesso |

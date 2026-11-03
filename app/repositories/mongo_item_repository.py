@@ -5,9 +5,12 @@ from typing import Any
 from bson import ObjectId
 from bson.errors import InvalidId
 from pymongo.collection import Collection
+from pymongo.errors import ConfigurationError, InvalidOperation, PyMongoError
 
-from app.exceptions import ConflitoEstadoError, ReferenciaAtivaError
+from app.exceptions import ConflitoEstadoError, FluxoItemError, ReferenciaAtivaError
 from app.models.item import EventoHistorico, Item
+from app.models.notificacao import EventoNotificacao
+from app.repositories.notificacao_documento import montar_documento, registrar
 from app.schemas.item import FiltrosItem
 
 
@@ -18,9 +21,11 @@ class MongoItemRepository:
         *,
         criar_indices: bool = True,
         colecao_interesses: Collection[dict[str, Any]] | None = None,
+        colecao_notificacoes: Collection[dict[str, Any]] | None = None,
     ) -> None:
         self._colecao = colecao
         self._colecao_interesses = colecao_interesses
+        self._colecao_notificacoes = colecao_notificacoes
         if criar_indices:
             self.criar_indices()
 
@@ -74,24 +79,93 @@ class MongoItemRepository:
         documento = self._colecao.find_one({"_id": object_id})
         return self._para_modelo(documento) if documento else None
 
-    def atualizar(self, item: Item, *, status_esperado: str | None = None) -> Item:
+    def atualizar(
+        self,
+        item: Item,
+        *,
+        status_esperado: str | None = None,
+        notificacao: EventoNotificacao | None = None,
+    ) -> Item:
         if item.id is None:
             raise ValueError("Item sem identificador não pode ser atualizado")
         self._normalizar_datas(item)
-        filtro: dict[str, Any] = {"_id": ObjectId(item.id)}
-        if self._colecao_interesses is not None:
-            atual = self._colecao.find_one(filtro, {"destino": 1})
-            if (atual is not None and atual.get("destino") != item.destino
-                    and self._colecao_interesses.count_documents({"item_id": ObjectId(item.id)})):
-                raise ConflitoEstadoError()
+        object_id = ObjectId(item.id)
+        filtro: dict[str, Any] = {"_id": object_id}
         if status_esperado is not None:
             filtro["status"] = status_esperado
         # Campos internos de seleção pertencem ao ciclo de interesses.
         # Uma edição comum não pode apagá-los por substituição do documento.
-        resultado = self._colecao.update_one(filtro, {"$set": self._para_documento(item)})
+        documento = self._para_documento(item)
+
+        if notificacao is not None and self._colecao_notificacoes is not None:
+            self._atualizar_com_avisos(item, object_id, filtro, documento, notificacao)
+            return item
+
+        if self._colecao_interesses is not None:
+            atual = self._colecao.find_one(filtro, {"destino": 1})
+            if (atual is not None and atual.get("destino") != item.destino
+                    and self._colecao_interesses.count_documents({"item_id": object_id})):
+                raise ConflitoEstadoError()
+        resultado = self._colecao.update_one(filtro, {"$set": documento})
         if status_esperado is not None and resultado.matched_count == 0:
             raise ConflitoEstadoError()
         return item
+
+    def _atualizar_com_avisos(
+        self,
+        item: Item,
+        object_id: ObjectId,
+        filtro: dict[str, Any],
+        documento: dict[str, Any],
+        notificacao: EventoNotificacao,
+    ) -> None:
+        """Grava a transição e os avisos na mesma transação."""
+
+        def operacao(session):
+            if self._colecao_interesses is not None:
+                atual = self._colecao.find_one(
+                    {"_id": object_id}, {"destino": 1}, session=session
+                )
+                if (atual is not None and atual.get("destino") != item.destino
+                        and self._colecao_interesses.count_documents(
+                            {"item_id": object_id}, session=session
+                        )):
+                    raise ConflitoEstadoError()
+            resultado = self._colecao.update_one(
+                filtro, {"$set": documento}, session=session
+            )
+            if filtro.get("status") is not None and resultado.matched_count == 0:
+                raise ConflitoEstadoError()
+            self._avisar_interessados(session, item, notificacao)
+
+        with self._colecao.database.client.start_session() as sessao:
+            try:
+                sessao.with_transaction(operacao)
+            except (PyMongoError, ConfigurationError, InvalidOperation, NotImplementedError) as erro:
+                raise FluxoItemError(
+                    503, "Operação temporariamente indisponível"
+                ) from erro
+
+    def _avisar_interessados(self, session, item: Item, evento: EventoNotificacao) -> None:
+        if self._colecao_interesses is None or self._colecao_notificacoes is None:
+            return
+        documentos = self._colecao_interesses.find(
+            {
+                "item_id": ObjectId(item.id),
+                "status": {"$in": ["pendente", "aceito"]},
+            },
+            {"usuario_id": 1},
+            session=session,
+        )
+        for documento in documentos:
+            registro = montar_documento(
+                usuario_id=str(documento["usuario_id"]),
+                item_id=item.id or "",
+                interesse_id=str(documento["_id"]),
+                evento=evento,
+                instante=item.data_modificacao,
+            )
+            registrar(self._colecao_notificacoes, registro, session=session)
 
     def excluir(self, item_id: str) -> None:
         object_id = self._converter_id(item_id)

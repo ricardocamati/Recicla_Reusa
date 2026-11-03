@@ -74,11 +74,13 @@ Validações: [fluxos completos em API e MongoDB real](docs/verificacao-fluxos.m
 
 Referências: V2-RF-17 · V2-CT-26 a V2-CT-30.
 
-- [ ] Criar a coleção `notificacoes` e o índice único por evento, destinatário e item.
-- [ ] Emitir avisos na mesma transação da mudança que os origina.
-- [ ] Expor caixa de entrada com listagem e marcação de leitura, restrita ao destinatário.
-- [ ] Não notificar quem não tem vínculo com o item nem duplicar aviso do mesmo evento.
-- [ ] Testar emissão, privacidade, idempotência e rollback.
+- [x] Criar a coleção `notificacoes` e o índice único por evento, destinatário e item.
+- [x] Emitir avisos na mesma transação da mudança que os origina.
+- [x] Expor caixa de entrada com listagem e marcação de leitura, restrita ao destinatário.
+- [x] Não notificar quem não tem vínculo com o item nem duplicar aviso do mesmo evento.
+- [x] Testar emissão, privacidade, idempotência e rollback.
+
+Validações: [avisos em API e MongoDB real](docs/verificacao-notificacoes.md).
 
 ## Etapa 7 — Indicadores e frontend das novas telas
 
