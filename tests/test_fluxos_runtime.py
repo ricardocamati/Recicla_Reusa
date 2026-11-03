@@ -163,6 +163,40 @@ def corpo(item, **alteracoes):
     return dados
 
 
+def test_indicadores_contam_apenas_itens_concluidos(ambiente):
+    visitante = TestClient(ambiente.app)
+    ambiente.clientes.append(visitante)
+    sem_sessao = visitante.get("/api/indicadores")
+
+    dono, _, _ = nova_conta(ambiente, "dono", "doador")
+    interessado, _, _ = nova_conta(ambiente, "interessado")
+    _, comprador_id, _ = nova_conta(ambiente, "comprador")
+
+    doacao = criar_item(dono)
+    interesse = interessado.post("/api/interesses", json={"item_id": doacao["id"]}).json()
+    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "aceito"})
+    assert dono.put(
+        f"/api/itens/{doacao['id']}", json=corpo(doacao, status="doado")
+    ).status_code == 200
+
+    revenda = criar_item(dono, destino="revenda", valor=90.0, titulo="Outro notebook")
+    for etapa in ("em_avaliacao", "recondicionado"):
+        assert dono.put(
+            f"/api/itens/{revenda['id']}", json=corpo(revenda, status=etapa)
+        ).status_code == 200
+    assert dono.put(
+        f"/api/itens/{revenda['id']}",
+        json=corpo(revenda, status="vendido", comprador_id=comprador_id),
+    ).status_code == 200
+    criar_item(dono, destino="descarte", valor=None, titulo="Item ainda disponível")
+
+    resposta = dono.get("/api/indicadores")
+
+    assert sem_sessao.status_code == 401, sem_sessao.text
+    assert resposta.status_code == 200, resposta.text
+    assert resposta.json() == {"doados": 1, "coletados": 0, "vendidos": 1, "total": 2}
+
+
 def test_doacao_completa_registra_beneficiario_do_aceite(ambiente):
     dono, dono_id, _ = nova_conta(ambiente, "dono", "doador")
     interessado, interessado_id, _ = nova_conta(ambiente, "interessado")

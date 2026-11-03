@@ -113,6 +113,20 @@ async function deleteItem(itemId) {
   }
 }
 
+async function loadIndicadores() {
+  const message = document.getElementById("indicadores-message");
+  try {
+    const indicadores = await requestApi("/api/indicadores");
+    document.getElementById("indicador-doados").textContent = indicadores.doados;
+    document.getElementById("indicador-coletados").textContent = indicadores.coletados;
+    document.getElementById("indicador-vendidos").textContent = indicadores.vendidos;
+    document.getElementById("indicador-total").textContent = indicadores.total;
+    setMessage(message);
+  } catch (error) {
+    handleError(error, message);
+  }
+}
+
 async function initItems() {
   usuario = await requireSession();
   if (!usuario) return;
@@ -126,7 +140,7 @@ async function initItems() {
   document.getElementById("item-destination").addEventListener("change", updateValueField);
   document.getElementById("cancel-item-edit").addEventListener("click", resetItemForm);
   updateValueField();
-  await loadOwnedItems();
+  await Promise.all([loadOwnedItems(), loadIndicadores()]);
 }
 
 document.addEventListener("DOMContentLoaded", initItems);

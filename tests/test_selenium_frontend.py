@@ -22,6 +22,9 @@ PAGINAS = {
     "perfil.html": "#profile-form",
     "catalogo.html": "#catalog-form",
     "itens.html": "#item-form",
+    "interesses.html": "#meus-interesses-list",
+    "notificacoes.html": "#notificacoes-list",
+    "pontos.html": "#pontos-list",
 }
 
 
@@ -79,6 +82,12 @@ class ServidorApi(BaseHTTPRequestHandler):
             return
         if caminho == "/api/itens":
             self._responder(200, [])
+            return
+        if caminho in {"/api/interesses", "/api/notificacoes", "/api/pontos-coleta"}:
+            self._responder(200, [])
+            return
+        if caminho == "/api/indicadores":
+            self._responder(200, {"doados": 0, "coletados": 0, "vendidos": 0, "total": 0})
             return
         self._responder(404, {"detail": "Não encontrado"})
 

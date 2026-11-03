@@ -86,11 +86,13 @@ Validações: [avisos em API e MongoDB real](docs/verificacao-notificacoes.md).
 
 Referências: V2-RF-14, V2-RF-16 · V2-CT-23, V2-CT-24 · [docs/http-api.md](docs/http-api.md).
 
-- [ ] Implementar consulta autenticada de indicadores de itens concluídos por destino.
-- [ ] Criar as telas de interesses, pontos e notificações em HTML e JavaScript modular, sem build.
-- [ ] Manter `credentials: "include"` e renderização segura de texto.
-- [ ] Regenerar a OpenAPI do runtime e confrontá-la com a especificação versionada, registrando diferenças.
-- [ ] Cobrir as telas com Selenium e atualizar os contratos documentados.
+- [x] Implementar consulta autenticada de indicadores de itens concluídos por destino.
+- [x] Criar as telas de interesses, pontos e notificações em HTML e JavaScript modular, sem build.
+- [x] Manter `credentials: "include"` e renderização segura de texto.
+- [x] Regenerar a OpenAPI do runtime e confrontá-la com a especificação versionada, registrando diferenças.
+- [x] Cobrir as telas com Selenium e atualizar os contratos documentados.
+
+Validações: [indicadores, telas e OpenAPI](docs/verificacao-etapa7.md).
 
 ## Etapa 8 — Fechamento da v2.0
 

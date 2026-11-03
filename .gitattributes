@@ -8,3 +8,4 @@
 *.sh text eol=lf
 *.js text eol=lf
 *.bat text eol=crlf
+*.json text eol=lf

@@ -27,7 +27,10 @@ def test_html_oferece_fluxos_da_v1() -> None:
         "login.html": ("login-form",),
         "perfil.html": ("profile-form", "logout-button"),
         "catalogo.html": ("catalog-form", "catalog-list"),
-        "itens.html": ("item-form", "my-items-list", "logout-button"),
+        "itens.html": ("item-form", "my-items-list", "logout-button", "indicador-doados"),
+        "interesses.html": ("meus-interesses-list", "recebidos-interesses-list", "logout-button"),
+        "notificacoes.html": ("notificacoes-list", "filtro-lida", "logout-button"),
+        "pontos.html": ("pontos-list", "ponto-form", "logout-button"),
     }
 
     for pagina, identificadores in paginas.items():
@@ -49,6 +52,10 @@ def test_javascript_consumes_contratos_da_api() -> None:
         "/api/auth/logout",
         "/api/usuarios/me",
         "/api/itens",
+        "/api/interesses",
+        "/api/notificacoes",
+        "/api/pontos-coleta",
+        "/api/indicadores",
     ):
         assert rota in javascript
     assert 'credentials: "include"' in javascript
@@ -83,6 +90,9 @@ def test_frontend_organiza_telas_separadas() -> None:
         "perfil.html": "perfil.js",
         "catalogo.html": "catalogo.js",
         "itens.html": "itens.js",
+        "interesses.html": "interesses.js",
+        "notificacoes.html": "notificacoes.js",
+        "pontos.html": "pontos.js",
     }
 
     for pagina, modulo in paginas.items():
@@ -99,7 +109,10 @@ def test_frontend_separa_javascript_por_responsabilidade() -> None:
         "login.js": ("/api/auth/login", "window.location"),
         "perfil.js": ("/api/usuarios/", "profilePayloadFromForm"),
         "catalogo.js": ("/api/itens", "queryFromCatalogForm"),
-        "itens.js": ("/api/itens", "itemPayloadFromForm"),
+        "itens.js": ("/api/itens", "itemPayloadFromForm", "/api/indicadores"),
+        "interesses.js": ("/api/interesses", "escopo=recebidos"),
+        "notificacoes.js": ("/api/notificacoes", "Marcar como lida"),
+        "pontos.js": ("/api/pontos-coleta", "categorias_aceitas"),
     }
 
     for modulo, marcadores in modulos.items():

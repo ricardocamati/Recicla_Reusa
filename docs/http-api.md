@@ -182,6 +182,16 @@ O ponto guarda nome, endereço aninhado, categorias aceitas e horário de atendi
 
 Alteração e exclusão só são aceitas para o responsável; outro operador recebe `404`, sem revelar a existência do ponto. Excluir um usuário que ainda responde por um ponto retorna `409`, preservando a referência.
 
+## Indicadores
+
+| Método | Caminho | Autenticação | Sucesso |
+|---|---|---|---|
+| `GET` | `/api/indicadores` | sessão | `200` com `doados`, `coletados`, `vendidos` e `total` |
+
+Somente itens concluídos entram nos totais: `doado`, `coletado` e `vendido`. Itens disponíveis, reservados ou em andamento não são contados. Os números são da plataforma inteira, não de uma conta específica, e a consulta aceita qualquer sessão autenticada; sem sessão retorna `401`.
+
+O snapshot da OpenAPI gerada do runtime e suas diferenças em relação a esta descrição estão em [openapi.md](openapi.md).
+
 ## Exposição de dados
 
 A lista e o acesso público a outro usuário retornam somente `id`, `nome`, `tipo` e `cidade`. E-mail e endereço completo aparecem apenas no perfil do próprio usuário autenticado. Senha e hash nunca aparecem em respostas.
