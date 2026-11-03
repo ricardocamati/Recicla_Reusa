@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from app.config import Settings
 from app.exceptions import EmailDuplicadoError
 from app.repositories.mongo_usuario_repository import MongoUsuarioRepository
-from app.schemas.usuario import PontoColetaProvisionRequest
+from app.schemas.usuario import EnderecoRequest, PontoColetaProvisionRequest
 from app.services.usuario_service import UsuarioService
 
 
@@ -36,11 +36,13 @@ def main(argumentos: Sequence[str] | None = None) -> int:
             nome=args.nome,
             email=args.email,
             senha=senha,
-            logradouro=args.logradouro,
-            numero=args.numero,
-            complemento=args.complemento,
-            cep=args.cep,
-            cidade=args.cidade,
+            endereco=EnderecoRequest(
+                logradouro=args.logradouro,
+                numero=args.numero,
+                complemento=args.complemento,
+                cep=args.cep,
+                cidade=args.cidade,
+            ),
         )
     except ValidationError as erro:
         parser.error(f"dados inválidos: {erro.errors()[0]['msg']}")
