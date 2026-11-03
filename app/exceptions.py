@@ -51,6 +51,12 @@ class ReferenciaAtivaError(Exception):
         super().__init__("Registro possui referências ativas")
 
 
+class NotificacaoNaoEncontradaError(Exception):
+    def __init__(self, notificacao_id: str) -> None:
+        super().__init__(f"Notificação não encontrada: {notificacao_id}")
+        self.notificacao_id = notificacao_id
+
+
 class FluxoItemError(Exception):
     """Regra de fluxo recusada, com o código HTTP correspondente."""
 

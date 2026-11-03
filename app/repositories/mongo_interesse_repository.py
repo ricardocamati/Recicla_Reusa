@@ -8,13 +8,16 @@ from pymongo.errors import ConfigurationError, DuplicateKeyError, InvalidOperati
 
 from app.exceptions import InteresseError
 from app.models.interesse import Interesse
+from app.models.notificacao import EventoNotificacao, evento_de_status_item
+from app.repositories.notificacao_documento import montar_documento, registrar
 
 
 class MongoInteresseRepository:
-    def __init__(self, colecao: Collection[dict[str, Any]], colecao_itens: Collection[dict[str, Any]], colecao_usuarios: Collection[dict[str, Any]], *, criar_indices: bool = True) -> None:
+    def __init__(self, colecao: Collection[dict[str, Any]], colecao_itens: Collection[dict[str, Any]], colecao_usuarios: Collection[dict[str, Any]], *, criar_indices: bool = True, colecao_notificacoes: Collection[dict[str, Any]] | None = None) -> None:
         self._colecao = colecao
         self._colecao_itens = colecao_itens
         self._colecao_usuarios = colecao_usuarios
+        self._colecao_notificacoes = colecao_notificacoes
         if criar_indices:
             self.criar_indices()
 
@@ -87,7 +90,7 @@ class MongoInteresseRepository:
         except DuplicateKeyError as erro:
             raise InteresseError(409, "Já existe interesse deste usuário para o item") from erro
 
-    def decidir(self, interesse_id: str, status: str, usuario_id: str, instante: datetime) -> Interesse:
+    def decidir(self, interesse_id: str, status: str, usuario_id: str, instante: datetime, *, notificacao: EventoNotificacao | None = None) -> Interesse:
         interesse_oid = self._required_id(interesse_id, "Interesse não encontrado", 404)
         actor_oid = self._required_id(usuario_id, "Usuário não encontrado", 404)
         instante = self._data(instante)
@@ -148,6 +151,21 @@ class MongoInteresseRepository:
             changed = self._colecao.update_one({"_id": interesse_oid, "status": doc["status"]}, {"$set": {"status": status, "data_modificacao": instante}}, session=session)
             if changed.matched_count != 1:
                 raise InteresseError(409, "Interesse alterado por outra operação")
+            if notificacao is not None and self._colecao_notificacoes is not None:
+                destinatario = (
+                    doc["usuario_id"] if status != "cancelado" else item["proprietario_id"]
+                )
+                registro = montar_documento(
+                    usuario_id=str(destinatario),
+                    item_id=str(doc["item_id"]),
+                    interesse_id=str(interesse_oid),
+                    evento=notificacao,
+                    instante=instante,
+                )
+                registrar(self._colecao_notificacoes, registro, session=session)
+                self._avisar_mudanca_do_item(
+                    session, doc, item, status, instante, excluir=destinatario
+                )
             doc.update(status=status, data_modificacao=instante)
             return self._para_modelo(doc)
 
@@ -163,6 +181,47 @@ class MongoInteresseRepository:
             sort=[("data_modificacao", -1)],
         )
         return str(documento["usuario_id"]) if documento else None
+
+    def _avisar_mudanca_do_item(
+        self,
+        session,
+        doc: dict[str, Any],
+        item: dict[str, Any],
+        status: str,
+        instante: datetime,
+        *,
+        excluir: ObjectId,
+    ) -> None:
+        """Aceite e cancelamento podem reservar ou liberar o item; avisa os demais."""
+        if item.get("destino") != "doacao":
+            return
+        if status == "aceito":
+            novo_status = "reservado"
+        elif status == "cancelado" and doc["status"] == "aceito":
+            novo_status = "disponivel"
+        else:
+            return
+        evento = evento_de_status_item(
+            str(doc["item_id"]), item.get("titulo"), novo_status, instante
+        )
+        outros = self._colecao.find(
+            {
+                "item_id": doc["item_id"],
+                "status": {"$in": ["pendente", "aceito"]},
+                "usuario_id": {"$ne": excluir},
+            },
+            {"usuario_id": 1},
+            session=session,
+        )
+        for outro in outros:
+            registro = montar_documento(
+                usuario_id=str(outro["usuario_id"]),
+                item_id=str(doc["item_id"]),
+                interesse_id=str(outro["_id"]),
+                evento=evento,
+                instante=instante,
+            )
+            registrar(self._colecao_notificacoes, registro, session=session)
 
     def _transacao(self, operacao: Callable):
         try:

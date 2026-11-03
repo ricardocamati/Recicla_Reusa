@@ -131,7 +131,7 @@ pontos_coleta 1 ---- N itens de descarte
 - histórico fica dentro do item porque pertence ao seu ciclo de vida;
 - especificações são flexíveis para atender categorias diferentes;
 - notificações ficam separadas para permitir consulta por destinatário e controle de leitura;
-- `evento_id` evita duplicar a mesma notificação para o mesmo destinatário;
+- `evento_id` evita duplicar a mesma notificação para o mesmo destinatário, reforçado por índice único com destinatário e item;
 - todas as coleções possuem datas de adição e modificação;
 - `ponto_coleta_id`, `valor`, `beneficiario_id` e `comprador_id` são condicionais ao destino e ao avanço do fluxo;
 - o beneficiário é derivado do interesse aceito e o comprador é informado na conclusão da revenda.

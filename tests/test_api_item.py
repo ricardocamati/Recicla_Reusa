@@ -48,7 +48,13 @@ class RepositorioItensEmMemoria:
         encontrado = self.itens.get(item_id)
         return self._copiar(encontrado) if encontrado else None
 
-    def atualizar(self, item: Item, *, status_esperado: str | None = None) -> Item:
+    def atualizar(
+        self,
+        item: Item,
+        *,
+        status_esperado: str | None = None,
+        notificacao=None,
+    ) -> Item:
         atual = self.itens.get(item.id or "")
         if status_esperado is not None and (atual is None or atual.status != status_esperado):
             from app.exceptions import ConflitoEstadoError

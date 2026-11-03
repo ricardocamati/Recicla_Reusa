@@ -47,7 +47,13 @@ class RepositorioItensFake:
         encontrado = self.itens.get(item_id)
         return self._copiar(encontrado) if encontrado else None
 
-    def atualizar(self, item: Item, *, status_esperado: str | None = None) -> Item:
+    def atualizar(
+        self,
+        item: Item,
+        *,
+        status_esperado: str | None = None,
+        notificacao=None,
+    ) -> Item:
         atual = self.itens.get(item.id or "")
         if status_esperado is not None and (atual is None or atual.status != status_esperado):
             from app.exceptions import ConflitoEstadoError
@@ -221,7 +227,13 @@ def test_transicao_concorrente_gera_conflito() -> None:
     from app.exceptions import ConflitoEstadoError
 
     class RepositorioConflitante(RepositorioItensFake):
-        def atualizar(self, item: Item, *, status_esperado: str | None = None) -> Item:
+        def atualizar(
+            self,
+            item: Item,
+            *,
+            status_esperado: str | None = None,
+            notificacao=None,
+        ) -> Item:
             if status_esperado is not None:
                 raise ConflitoEstadoError()
             return super().atualizar(item)

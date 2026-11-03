@@ -5,6 +5,7 @@ from typing import Any, Protocol
 from app.exceptions import InteresseError
 from app.mappers.interesse_mapper import InteresseMapper
 from app.models.interesse import Interesse
+from app.models.notificacao import EventoNotificacao
 from app.schemas.interesse import InteresseResponse
 
 
@@ -14,7 +15,15 @@ class RepositorioDeInteresses(Protocol):
     def criar(self, interesse: Interesse) -> Interesse: ...
     def listar(self, usuario_id: str, *, escopo: str = "meus", item_id: str | None = None, status: str | None = None, offset: int = 0, limite: int = 20) -> list[Interesse]: ...
     def buscar_por_id(self, interesse_id: str) -> Interesse | None: ...
-    def decidir(self, interesse_id: str, status: str, usuario_id: str, instante: datetime) -> Interesse: ...
+    def decidir(
+        self,
+        interesse_id: str,
+        status: str,
+        usuario_id: str,
+        instante: datetime,
+        *,
+        notificacao: EventoNotificacao | None = None,
+    ) -> Interesse: ...
 
 
 class InteresseService:
@@ -64,8 +73,43 @@ class InteresseService:
         if usuario.get("tipo") not in {"doador", "beneficiario"}:
             raise InteresseError(403, "Este perfil não pode alterar interesses")
         novo_status = dados.status if hasattr(dados, "status") else dados["status"]
-        interesse = self._repositorio.decidir(interesse_id, novo_status, usuario_id, self._relogio())
+        if novo_status not in {"aceito", "recusado", "cancelado"}:
+            raise InteresseError(400, "Transição de interesse inválida")
+        interesse = self._repositorio.decidir(
+            interesse_id,
+            novo_status,
+            usuario_id,
+            self._relogio(),
+            notificacao=self._evento(interesse_id, novo_status),
+        )
         return InteresseMapper.para_resposta(interesse)
+
+    @staticmethod
+    def _evento(interesse_id: str, status: str) -> EventoNotificacao:
+        textos = {
+            "aceito": (
+                "interesse_aceito",
+                "Interesse aceito",
+                "Seu interesse no item foi aceito.",
+            ),
+            "recusado": (
+                "interesse_recusado",
+                "Interesse recusado",
+                "Seu interesse no item foi recusado.",
+            ),
+            "cancelado": (
+                "interesse_cancelado",
+                "Interesse cancelado",
+                "O interessado cancelou o interesse no seu item.",
+            ),
+        }
+        tipo, titulo, mensagem = textos[status]
+        return EventoNotificacao(
+            tipo=tipo,
+            titulo=titulo,
+            mensagem=mensagem,
+            evento_id=f"interesse:{interesse_id}:{status}",
+        )
 
     def _usuario_valido(self, usuario_id: str) -> dict[str, Any]:
         usuario = self._repositorio.buscar_usuario(usuario_id)

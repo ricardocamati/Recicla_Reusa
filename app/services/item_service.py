@@ -12,6 +12,7 @@ from app.exceptions import (
 )
 from app.mappers.item_mapper import ItemMapper
 from app.models.item import Item
+from app.models.notificacao import EventoNotificacao, evento_de_status_item
 from app.models.usuario import Usuario
 from app.schemas.item import FiltrosItem, ItemCreateRequest, ItemResponse, ItemUpdateRequest
 
@@ -45,7 +46,13 @@ class RepositorioDeItens(Protocol):
         limite: int = 20,
     ) -> list[Item]: ...
     def buscar_por_id(self, item_id: str) -> Item | None: ...
-    def atualizar(self, item: Item, *, status_esperado: str | None = None) -> Item: ...
+    def atualizar(
+        self,
+        item: Item,
+        *,
+        status_esperado: str | None = None,
+        notificacao: EventoNotificacao | None = None,
+    ) -> Item: ...
     def excluir(self, item_id: str) -> None: ...
 
 
@@ -182,11 +189,29 @@ class ItemService:
                 observacao=request.observacao,
             )
 
+        evento = (
+            self._evento_notificacao(item, novo_status, instante) if transicao else None
+        )
         atualizado = self._repositorio.atualizar(
             item,
             status_esperado=status_anterior,
+            notificacao=evento,
         )
         return self._resposta(atualizado, proprietario)
+
+    @staticmethod
+    def _evento_notificacao(
+        item: Item,
+        novo_status: str,
+        instante: datetime,
+    ) -> EventoNotificacao:
+        return evento_de_status_item(
+            item.id or "",
+            item.titulo,
+            novo_status,
+            instante,
+            concluido=novo_status in STATUS_CONCLUIDOS,
+        )
 
     def excluir(self, item_id: str, *, proprietario_id: str) -> None:
         item = self._buscar_item(item_id)
