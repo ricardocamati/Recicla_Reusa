@@ -776,6 +776,13 @@ legend {
   font-size: 0.75rem;
 }
 
+.item-actions select {
+  min-height: 36px;
+  max-width: 100%;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+}
+
 .empty-state {
   grid-column: 1 / -1;
   padding: 36px 20px;

@@ -40,20 +40,13 @@ Cada destino terá seu próprio fluxo de status e um histórico rastreável. O s
 
 ### Estado atual do repositório
 
-A primeira entrega está concluída. A evolução v2.0 já implementa usuários com endereço aninhado, itens com especificações e histórico, pontos de coleta, a API de interesses, a conclusão dos fluxos de doação, descarte e revenda, as notificações transacionais, os indicadores e as novas telas. Permanecem a auditoria temporal em UTC, e-mail normalizado com índice único, sessões em cookie HttpOnly e autorização por identidade/propriedade.
+As duas entregas estão concluídas no código: a v1.0 está publicada e a v2.0 foi implementada por etapas, com PRs revisados, suíte de 170 testes e jornadas reais em Docker registradas em [verificação da Etapa 8](docs/verificacao-etapa8.md). A v2.0 cobre usuários com endereço aninhado, itens com especificações e histórico, pontos de coleta, interesses e reserva, os fluxos de doação, descarte e revenda, notificações transacionais, indicadores e as telas correspondentes, com datas em UTC, sessão em cookie HttpOnly e autorização por identidade e propriedade.
 
 Itens referenciam o usuário por `proprietario_id` e não duplicam o endereço. O aceite de interesse em uma doação reserva o item e registra seu histórico na mesma transação MongoDB. A conclusão registra o beneficiário do interesse aceito, o ponto de coleta do descarte e o comprador da revenda. As notificações são emitidas na mesma transação da decisão de interesse e da mudança de status do item. A área autenticada reúne indicadores de itens concluídos e telas de interesses, pontos de coleta e notificações. Consulte as verificações de [interesses](docs/verificacao-interesses.md), [fluxos](docs/verificacao-fluxos.md), [notificações](docs/verificacao-notificacoes.md) e [indicadores e telas](docs/verificacao-etapa7.md), além do contrato [OpenAPI](docs/openapi.md).
 
-### Evolução planejada
+### Modelo em uso
 
-A solução deverá evoluir para múltiplas coleções:
-
-- `usuarios`: proprietários, interessados e responsáveis por pontos de coleta;
-- `itens`: eletrônicos cadastrados e seu destino atual;
-- `interesses`: solicitações relacionadas a doação ou revenda;
-- `pontos_coleta`: locais de recebimento para descarte formal.
-
-A coleção `itens` deverá conter uma lista de subdocumentos com o histórico do ciclo de vida:
+A v2.0 usa cinco coleções: `usuarios`, `itens`, `interesses`, `pontos_coleta` e `notificacoes`. Cada item guarda o histórico acumulativo do ciclo de vida:
 
 ```json
 {
@@ -68,6 +61,8 @@ A coleção `itens` deverá conter uma lista de subdocumentos com o histórico d
 }
 ```
 
+A v2.1 é apenas documental nesta entrega: a proposta está em [artefatos/v2.1/](artefatos/v2.1/) e no planejamento do [TODO](TODO.md), sem código correspondente.
+
 ## 6. Stack planejada
 
 - Python 3.11+;
@@ -75,7 +70,7 @@ A coleção `itens` deverá conter uma lista de subdocumentos com o histórico d
 - MongoDB e PyMongo;
 - Pydantic;
 - Pytest, pytest-cov, mongomock e Selenium;
-- HTML, CSS e JavaScript no frontend simples da v1.0;
+- HTML, CSS e JavaScript no frontend simples da v2.0, sem build;
 - Docker Compose para o ambiente local.
 
 ## 7. Arquitetura
@@ -94,11 +89,13 @@ Os artefatos estão separados por entrega em [artefatos/v1.0/](artefatos/v1.0/) 
 ## 8. Estrutura do repositório
 
 ```text
-app/            backend Python
-frontend/       cliente web simples da v1.0; Dockerfile com `http.server`
- tests/         testes automatizados
-docs/           arquitetura, decisões e contratos
-compose.yaml    MongoDB, backend FastAPI e frontend Python
+app/            backend Python em camadas (api, services, repositories, models)
+frontend/       telas HTML e JavaScript modular, sem build
+tests/          suíte pytest, incluindo Selenium e integração com MongoDB
+docs/           arquitetura, decisões, contratos e verificações por etapa
+scripts/        geração da OpenAPI, smoke Docker e jornadas pela interface
+artefatos/      requisitos, regras, casos de teste e matriz por versão
+compose.yaml    MongoDB em replica set, backend FastAPI e frontend
 Dockerfile      imagem do backend
 pyproject.toml  dependências e configuração de testes
 ```
@@ -169,10 +166,26 @@ Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e 
 .venv/Scripts/python.exe -m pytest
 ```
 
-A suíte validada da entrega aprovou **77 testes** e gerou o relatório de cobertura incluindo `app/main.py`. Os testes unitários do repositório usam `mongomock`; a aplicação utiliza PyMongo e MongoDB em execução normal. O teste Selenium usa Chrome headless e servidores locais isolados para verificar as seis telas do frontend. Para reproduzir a integração Docker/MongoDB, use os scripts documentados em [evidências](artefatos/v1.0/evidencias/).
+A suíte da v2.0 aprovou **170 testes**, sendo 24 contra MongoDB real em replica set, além do Selenium que percorre as nove telas do frontend. Os testes de runtime só rodam quando `INTERESSES_TEST_MONGO_URI` aponta para um replica set; sem a variável, são ignorados em vez de falharem. O snapshot `docs/openapi.json` é comparado com o documento gerado pelo runtime.
+
+Para reproduzir o fechamento em stack isolada:
+
+```bash
+# 1. suba a stack com portas e volume próprios (não use os da demonstração)
+MONGO_DATA_VOLUME=recicla_v2_fechamento_mongo_data MONGO_PORT=27119 \
+BACKEND_PORT=8029 FRONTEND_PORT=8109 \
+docker compose --env-file .env.example --project-name recicla_fechamento up -d --build --wait
+
+# 2. rode as três jornadas pela interface; o script audita datas e limpa o que criou
+JORNADAS_MONGO_URI="<uri do replica set com directConnection=true>" \
+JORNADAS_FRONTEND_URL=http://127.0.0.1:8109 JORNADAS_API_URL=http://127.0.0.1:8029 \
+python scripts/validar_jornadas_v2.py
+```
+
+O resultado da execução está em [docs/verificacao-etapa8.md](docs/verificacao-etapa8.md).
 
 ## 12. Limites atuais
 
-O frontend simples da v1.0 está implementado com cadastro, login, perfil, catálogo, filtros e gestão de itens próprios. Interesses, pontos de coleta detalhados, notificações e fluxos completos permanecem na especificação da v2.0, fora do `TODO.md` de implementação atual.
+Os indicadores somam a plataforma inteira, sem recorte por conta ou cidade, e essa escolha está documentada no contrato. A edição de ponto de coleta existe apenas na API: a tela cadastra e exclui, mas não sobrescreve complemento nem categorias de um ponto existente. A v2.1 permanece documental, sem código correspondente. A autenticação usa sessão em memória, adequada ao escopo acadêmico e não a uma implantação com múltiplas instâncias.
 
 > Projeto iniciado a partir do **template fornecido pelo professor Munif Gebara Júnior** e adaptado para Python conforme a proposta da AEP.

@@ -1,4 +1,5 @@
 import {
+  createElement,
   createItemCard,
   handleError,
   labelFor,
@@ -27,6 +28,44 @@ function queryFromCatalogForm() {
   return params.toString();
 }
 
+function podeManifestarInteresse(item) {
+  return (
+    usuario.tipo !== "ponto_coleta" &&
+    item.proprietario_id !== usuario.id &&
+    item.destino !== "descarte" &&
+    item.status === "disponivel"
+  );
+}
+
+function cartaoComInteresse(item) {
+  const card = createItemCard(item);
+  if (!podeManifestarInteresse(item)) return card;
+  const actions = createElement("div", "item-actions");
+  const botao = createElement("button", "button button-primary", "Tenho interesse");
+  botao.type = "button";
+  botao.dataset.acao = "interesse";
+  botao.dataset.itemId = item.id;
+  botao.addEventListener("click", async () => {
+    const message = document.getElementById("catalog-message");
+    botao.disabled = true;
+    try {
+      await requestApi("/api/interesses", {
+        method: "POST",
+        body: JSON.stringify({ item_id: item.id }),
+      });
+      // loadCatalog reescreve a mensagem; o aviso do interesse vem depois.
+      await loadCatalog();
+      setMessage(message, "Interesse registrado. Acompanhe em Interesses.", "success");
+    } catch (error) {
+      botao.disabled = false;
+      handleError(error, message);
+    }
+  });
+  actions.append(botao);
+  card.append(actions);
+  return card;
+}
+
 function renderCatalog() {
   const list = document.getElementById("catalog-list");
   list.replaceChildren();
@@ -34,7 +73,7 @@ function renderCatalog() {
     renderEmptyState(list, "Nenhum item encontrado", "Tente remover algum filtro ou volte mais tarde.");
     return;
   }
-  itens.forEach((item) => list.append(createItemCard(item)));
+  itens.forEach((item) => list.append(cartaoComInteresse(item)));
 }
 
 async function loadCatalog() {

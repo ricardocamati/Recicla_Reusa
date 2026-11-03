@@ -98,11 +98,11 @@ Validações: [indicadores, telas e OpenAPI](docs/verificacao-etapa7.md).
 
 Referências: V2-RNF-05 a V2-RNF-10, V2-CT-25 · [matriz](artefatos/v2.0/matriz_rastreabilidade.md).
 
-- [ ] Rodar a suíte completa e os verificadores de integração em stack e volume isolados.
-- [ ] Executar as três jornadas (doação, descarte e revenda) pela interface em Docker.
-- [ ] Validar auditoria temporal e versão em todas as coleções.
-- [ ] Confirmar que a limpeza de fixtures é seletiva e comprovada.
-- [ ] Atualizar evidências, matriz, README e registro da entrega; conferir links e identificadores.
+- [x] Rodar a suíte completa e os verificadores de integração em stack e volume isolados.
+- [x] Executar as três jornadas (doação, descarte e revenda) pela interface em Docker.
+- [x] Validar auditoria temporal e versão em todas as coleções.
+- [x] Confirmar que a limpeza de fixtures é seletiva e comprovada.
+- [x] Atualizar evidências, matriz, README e registro da entrega; conferir links e identificadores.
 
 # Parte II — v2.1
 
