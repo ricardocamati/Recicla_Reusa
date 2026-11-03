@@ -8,7 +8,7 @@ from bson.errors import InvalidId
 from pymongo.collection import Collection
 from pymongo.errors import DuplicateKeyError
 
-from app.exceptions import EmailDuplicadoError
+from app.exceptions import EmailDuplicadoError, ReferenciaAtivaError
 from app.models.usuario import Endereco, Usuario
 
 
@@ -18,8 +18,10 @@ class MongoUsuarioRepository:
         colecao: Collection[dict[str, Any]],
         *,
         criar_indice: bool = True,
+        colecao_pontos_coleta: Collection[dict[str, Any]] | None = None,
     ) -> None:
         self._colecao = colecao
+        self._colecao_pontos_coleta = colecao_pontos_coleta
         if criar_indice:
             self.criar_indice_email()
 
@@ -84,8 +86,15 @@ class MongoUsuarioRepository:
 
     def excluir(self, usuario_id: str) -> None:
         object_id = self._converter_id(usuario_id)
-        if object_id is not None:
-            self._colecao.delete_one({"_id": object_id})
+        if object_id is None:
+            return
+        if self._colecao_pontos_coleta is not None:
+            vinculados = self._colecao_pontos_coleta.count_documents(
+                {"responsavel_id": object_id}
+            )
+            if vinculados:
+                raise ReferenciaAtivaError()
+        self._colecao.delete_one({"_id": object_id})
 
     @staticmethod
     def _converter_id(usuario_id: str) -> ObjectId | None:

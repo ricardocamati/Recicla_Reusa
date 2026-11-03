@@ -117,6 +117,22 @@ A resposta inclui `cidade_proprietario`, `especificacoes` e `historico`, mas nã
 
 O servidor gera `data_adicao` no cadastro e mantém esse valor imutável. `data_modificacao` é atualizada pelo servidor a cada alteração; ambas são UTC.
 
+## Pontos de coleta
+
+| Método | Caminho | Autenticação | Entrada | Sucesso |
+|---|---|---|---|---|
+| `GET` | `/api/pontos-coleta` | sessão | filtros `cidade`, `categoria`, `escopo=meus`, `offset`, `limite` | `200` com lista paginada |
+| `POST` | `/api/pontos-coleta` | conta `ponto_coleta` | `PontoColetaCreateRequest` | `201`, `Location` e ponto criado |
+| `GET` | `/api/pontos-coleta/{id}` | sessão | — | `200` com ponto |
+| `PUT` | `/api/pontos-coleta/{id}` | responsável | `PontoColetaUpdateRequest` | `200` com ponto atualizado |
+| `DELETE` | `/api/pontos-coleta/{id}` | responsável | — | `204` sem corpo |
+
+O ponto guarda nome, endereço aninhado, categorias aceitas e horário de atendimento. O `responsavel_id` vem da sessão, precisa ser uma conta `ponto_coleta` e não é aceito no corpo.
+
+`categorias_aceitas` exige ao menos uma categoria conhecida e recusa repetição. A listagem é ordenada por nome, aceita `offset`/`limite` (padrão 20, máximo 100) e o filtro `categoria` seleciona pontos que aceitam aquela categoria.
+
+Alteração e exclusão só são aceitas para o responsável; outro operador recebe `404`, sem revelar a existência do ponto. Excluir um usuário que ainda responde por um ponto retorna `409`, preservando a referência.
+
 ## Exposição de dados
 
 A lista e o acesso público a outro usuário retornam somente `id`, `nome`, `tipo` e `cidade`. E-mail e endereço completo aparecem apenas no perfil do próprio usuário autenticado. Senha e hash nunca aparecem em respostas.
