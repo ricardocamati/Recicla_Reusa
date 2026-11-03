@@ -121,6 +121,12 @@ class MongoItemRepository:
                 evento["responsavel_id"] = ObjectId(evento["responsavel_id"])
             except (InvalidId, TypeError) as erro:
                 raise ValueError("responsavel_id deve ser um ObjectId válido") from erro
+        for campo in ("ponto_coleta_id", "beneficiario_id", "comprador_id"):
+            if documento.get(campo) is not None:
+                try:
+                    documento[campo] = ObjectId(documento[campo])
+                except (InvalidId, TypeError) as erro:
+                    raise ValueError(f"{campo} deve ser um ObjectId válido") from erro
         return documento
 
     @classmethod
@@ -149,6 +155,9 @@ class MongoItemRepository:
         dados["data_adicao"] = MongoItemRepository._normalizar_data(dados["data_adicao"])
         dados["data_modificacao"] = MongoItemRepository._normalizar_data(dados["data_modificacao"])
         dados.setdefault("especificacoes", {})
+        for campo in ("ponto_coleta_id", "beneficiario_id", "comprador_id"):
+            valor = dados.get(campo)
+            dados[campo] = str(valor) if valor is not None else None
         dados["historico"] = [
             EventoHistorico(
                 etapa=evento["etapa"],

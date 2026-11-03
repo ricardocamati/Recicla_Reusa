@@ -48,6 +48,8 @@ pontos_coleta 1 ---- N itens de descarte
   "status": "disponivel",
   "proprietario_id": "ObjectId de usuarios",
   "ponto_coleta_id": null,
+  "beneficiario_id": null,
+  "comprador_id": null,
   "valor": null,
   "especificacoes": {
     "processador": "Intel Core i5",
@@ -131,4 +133,5 @@ pontos_coleta 1 ---- N itens de descarte
 - notificações ficam separadas para permitir consulta por destinatário e controle de leitura;
 - `evento_id` evita duplicar a mesma notificação para o mesmo destinatário;
 - todas as coleções possuem datas de adição e modificação;
-- `ponto_coleta_id` e `valor` são condicionais ao destino.
+- `ponto_coleta_id`, `valor`, `beneficiario_id` e `comprador_id` são condicionais ao destino e ao avanço do fluxo;
+- o beneficiário é derivado do interesse aceito e o comprador é informado na conclusão da revenda.

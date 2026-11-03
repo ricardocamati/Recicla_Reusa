@@ -7,6 +7,7 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from pymongo.collection import Collection
 
+from app.exceptions import ReferenciaAtivaError
 from app.models.ponto_coleta import PontoColeta
 from app.models.usuario import Endereco
 
@@ -17,8 +18,10 @@ class MongoPontoColetaRepository:
         colecao: Collection[dict[str, Any]],
         *,
         criar_indices: bool = True,
+        colecao_itens: Collection[dict[str, Any]] | None = None,
     ) -> None:
         self._colecao = colecao
+        self._colecao_itens = colecao_itens
         if criar_indices:
             self.criar_indices()
 
@@ -87,6 +90,9 @@ class MongoPontoColetaRepository:
         object_responsavel = self._converter_id(responsavel_id)
         if object_id is None or object_responsavel is None:
             return False
+        if (self._colecao_itens is not None
+                and self._colecao_itens.count_documents({"ponto_coleta_id": object_id})):
+            raise ReferenciaAtivaError()
         resultado = self._colecao.delete_one(
             {"_id": object_id, "responsavel_id": object_responsavel}
         )
