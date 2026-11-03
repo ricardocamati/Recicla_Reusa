@@ -370,7 +370,7 @@ async def test_cadastro_registra_primeiro_evento_e_nao_copia_endereco(
 
 
 @pytest.mark.anyio
-async def test_transicoes_validas_acumulam_historico(
+async def test_conclusao_generica_por_put_e_rejeitada(
     repositorio_usuarios: RepositorioEmMemoria,
     repositorio_itens: RepositorioItensEmMemoria,
     instante: datetime,
@@ -381,76 +381,40 @@ async def test_transicoes_validas_acumulam_historico(
         criado = (
             await api.post("/api/itens", json=payload_item(destino="revenda", valor=100.0))
         ).json()
-        avaliacao = await api.put(
+        pulo = await api.put(
             f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="em_avaliacao"),
+            json=corpo_atualizacao(criado, status="concluido"),
         )
-        recondicionado = await api.put(
+        antecipado = await api.put(
             f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="recondicionado"),
+            json=corpo_atualizacao(criado, status="aguardando_confirmacao"),
         )
-
-    assert avaliacao.status_code == 200
-    assert [evento["status"] for evento in avaliacao.json()["historico"]] == [
-        "disponivel",
-        "em_avaliacao",
-    ]
-    assert recondicionado.status_code == 200
-    historico = recondicionado.json()["historico"]
-    assert [evento["status"] for evento in historico] == [
-        "disponivel",
-        "em_avaliacao",
-        "recondicionado",
-    ]
-    assert historico[-1]["observacao"] == "em_avaliacao -> recondicionado"
-    assert len({evento["data_evento"] for evento in historico}) == 1
+    assert pulo.status_code == 400
+    assert antecipado.status_code == 400
+    assert repositorio_itens.itens[criado["id"]].status == "disponivel"
+    assert len(repositorio_itens.itens[criado["id"]].historico) == 1
 
 
 @pytest.mark.anyio
-async def test_salto_de_status_e_reabertura_sao_rejeitados(
+async def test_arquivamento_preserva_item_e_historico(
     repositorio_usuarios: RepositorioEmMemoria,
     repositorio_itens: RepositorioItensEmMemoria,
     instante: datetime,
 ) -> None:
     async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
-        comprador = (
-            await cadastrar_usuario(api, email="comprador@example.com", nome="Comprador")
-        ).json()
         await cadastrar_usuario(api)
         await autenticar(api, "maria@example.com")
-        criado = (
-            await api.post("/api/itens", json=payload_item(destino="revenda", valor=100.0))
-        ).json()
-        salto = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="vendido"),
-        )
-        await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="em_avaliacao"),
-        )
-        await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="recondicionado"),
-        )
-        concluido = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="vendido", comprador_id=comprador["id"]),
-        )
-        reabrir = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, status="recondicionado"),
-        )
-        trocar_destino = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo_atualizacao(criado, destino="doacao", valor=None),
-        )
+        criado = (await api.post("/api/itens", json=payload_item())).json()
+        arquivado = await api.post(f"/api/itens/{criado['id']}/arquivar")
+        excluido = await api.delete(f"/api/itens/{criado['id']}")
 
-    assert salto.status_code == 400
-    assert concluido.status_code == 200
-    assert reabrir.status_code == 400
-    assert trocar_destino.status_code == 400
-    assert len(repositorio_itens.itens[criado["id"]].historico) == 4
+    assert arquivado.status_code == 200, arquivado.text
+    assert arquivado.json()["status"] == "arquivado"
+    assert [evento["status"] for evento in arquivado.json()["historico"]] == [
+        "disponivel",
+        "arquivado",
+    ]
+    assert excluido.status_code == 409
 
 
 @pytest.mark.anyio

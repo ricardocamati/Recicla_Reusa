@@ -182,18 +182,28 @@ def test_mudanca_de_status_e_conclusao_notificam_quem_tem_interesse(ambiente):
     assert dono.patch(
         f"/api/interesses/{interesse['id']}", json={"status": "selecionado"}
     ).status_code == 200
+    proposta = dono.put(
+        f"/api/interesses/{interesse['id']}/combinacao",
+        json={"local_texto": "Portaria", "observacao": None},
+    ).json()
+    assert interessado.post(
+        f"/api/interesses/{interesse['id']}/combinacao/aceite",
+        json={"revisao": proposta["combinacao"]["revisao"]},
+    ).status_code == 200
 
-    doado = dono.put(f"/api/itens/{item['id']}", json=corpo(item, status="doado"))
+    assert dono.post(f"/api/itens/{item['id']}/entrega").status_code == 200
+    assert dono.get("/api/indicadores").json()["doados"] == 0
+    assert interessado.post(f"/api/itens/{item['id']}/recebimento").status_code == 200
 
-    assert doado.status_code == 200, doado.text
     avisos = interessado.get("/api/notificacoes").json()
     assert sorted(aviso["tipo"] for aviso in avisos) == [
+        "entrega_declarada",
         "interesse_aceito",
         "item_concluido",
     ]
     assert {aviso["item_id"] for aviso in avisos} == {item["id"]}
-    assert [aviso["tipo"] for aviso in avisos] == ["item_concluido", "interesse_aceito"]
-    assert "doado" in avisos[0]["mensagem"]
+    assert avisos[0]["tipo"] == "item_concluido"
+    assert "concluído" in avisos[0]["mensagem"]
 
 
 def test_listagem_e_leitura_sao_restritas_ao_destinatario(ambiente):
@@ -261,36 +271,55 @@ def test_usuario_sem_interesse_nao_recebe_aviso(ambiente):
     interessado, _ = nova_conta(ambiente, "interessado")
     sem_interesse, _ = nova_conta(ambiente, "sem-interesse")
     item = criar_item(dono, destino="revenda", valor=100.0)
-    interessado.post("/api/interesses", json={"item_id": item["id"]})
-    assert dono.put(
-        f"/api/itens/{item['id']}", json=corpo(item, status="em_avaliacao")
-    ).status_code == 200
+    interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()
+    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "selecionado"})
+    proposta = dono.put(
+        f"/api/interesses/{interesse['id']}/combinacao",
+        json={"local_texto": "Estação", "observacao": None},
+    ).json()
+    interessado.post(
+        f"/api/interesses/{interesse['id']}/combinacao/aceite",
+        json={"revisao": proposta["combinacao"]["revisao"]},
+    )
+    assert dono.post(f"/api/itens/{item['id']}/entrega").status_code == 200
 
     avisos = interessado.get("/api/notificacoes").json()
-    assert [aviso["tipo"] for aviso in avisos] == ["status_item_alterado"]
+    assert [aviso["tipo"] for aviso in avisos] == [
+        "entrega_declarada",
+        "interesse_aceito",
+    ]
     assert sem_interesse.get("/api/notificacoes").json() == []
     assert dono.get("/api/notificacoes").json() == []
 
 
-def test_falha_ao_registrar_aviso_desfaz_a_transicao(ambiente, monkeypatch):
+def test_falha_ao_registrar_aviso_desfaz_a_declaracao(ambiente, monkeypatch):
     import app.repositories.mongo_item_repository as modulo
 
     dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, _ = nova_conta(ambiente, "interessado")
-    item = criar_item(dono, destino="revenda", valor=50.0)
-    interessado.post("/api/interesses", json={"item_id": item["id"]})
+    item = criar_item(dono)
+    interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()
+    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "selecionado"})
+    proposta = dono.put(
+        f"/api/interesses/{interesse['id']}/combinacao",
+        json={"local_texto": "Portaria", "observacao": None},
+    ).json()
+    interessado.post(
+        f"/api/interesses/{interesse['id']}/combinacao/aceite",
+        json={"revisao": proposta["combinacao"]["revisao"]},
+    )
 
     def falhar(*args, **kwargs):
         raise RuntimeError("falha controlada")
 
     monkeypatch.setattr(modulo, "registrar", falhar)
     with pytest.raises(RuntimeError):
-        dono.put(f"/api/itens/{item['id']}", json=corpo(item, status="em_avaliacao"))
+        dono.post(f"/api/itens/{item['id']}/entrega")
 
     documento = ambiente.itens.find_one({"_id": ObjectId(item["id"])})
-    assert documento["status"] == "disponivel"
-    assert documento["historico"][-1]["status"] == "disponivel"
-    assert ambiente.avisos.count_documents({}) == 0
+    assert documento["status"] == "reservado"
+    assert documento["historico"][-1]["status"] == "reservado"
+    assert ambiente.avisos.count_documents({}) == 1  # apenas o aviso da seleção
 
 
 def test_api_rejeita_parametro_extra_e_corpo_invalido(ambiente):

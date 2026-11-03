@@ -226,14 +226,28 @@ def test_itens_oferece_acoes_do_fluxo_ao_proprietario() -> None:
     itens = ler("js/itens.js")
     for chave in (
         '"doacao:reservado"',
+        '"revenda:reservado"',
         '"descarte:disponivel"',
         '"descarte:encaminhado"',
-        '"revenda:disponivel"',
-        '"revenda:em_avaliacao"',
-        '"revenda:recondicionado"',
     ):
         assert chave in itens, chave
+    # Doação e venda terminam em entrega bilateral, não em conclusão por PUT.
+    assert "Declarar entrega" in itens
+    assert "executarComandoItem" in itens
+    assert "em_avaliacao" not in itens
+    assert 'status: "vendido"' not in itens
     assert "ponto_coleta_id" in itens
-    assert "comprador_id" in itens
     assert "/api/pontos-coleta" in itens
-    assert "/api/usuarios" in itens
+
+
+def test_interesses_oferece_combinacao_e_recebimento() -> None:
+    interesses = ler("js/interesses.js")
+    for marca in (
+        "combination-form",
+        "Aceitar combinação",
+        "Confirmar recebimento",
+        "/combinacao",
+        "/combinacao/aceite",
+        "/recebimento",
+    ):
+        assert marca in interesses, marca

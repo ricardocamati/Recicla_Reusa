@@ -38,6 +38,31 @@ class InteresseAcaoRequest(BaseModel):
         return self
 
 
+class CombinacaoRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    local_texto: str = Field(min_length=3, max_length=200)
+    previsao: datetime | None = None
+    observacao: str | None = Field(default=None, max_length=300)
+
+
+class CombinacaoAceiteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    revisao: int = Field(ge=1)
+
+
+class CombinacaoResponse(BaseModel):
+    local_texto: str
+    previsao: datetime | None = None
+    observacao: str | None = None
+    revisao: int
+    proposto_por: str
+    proposto_em: datetime
+    aceito_por: str | None = None
+    aceito_em: datetime | None = None
+
+
 class EventoInteresseResponse(BaseModel):
     status: StatusInteresse
     data_evento: datetime
@@ -53,6 +78,8 @@ class InteresseResponse(BaseModel):
     tentativa: int = 1
     motivo: str | None = None
     preco_selecionado: float | None = None
+    resultado: str | None = None
+    combinacao: CombinacaoResponse | None = None
     historico: list[EventoInteresseResponse] = Field(default_factory=list)
     data_adicao: datetime
     data_modificacao: datetime

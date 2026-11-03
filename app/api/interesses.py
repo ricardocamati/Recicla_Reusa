@@ -8,6 +8,8 @@ from starlette.concurrency import run_in_threadpool
 
 from app.exceptions import InteresseError
 from app.schemas.interesse import (
+    CombinacaoAceiteRequest,
+    CombinacaoRequest,
     InteresseAcaoRequest,
     InteresseCreateRequest,
     InteresseResponse,
@@ -85,6 +87,20 @@ def criar_router_interesses(servico: InteresseService, sessoes: ArmazenamentoDeS
     def buscar_por_id(interesse_id: str, request: Request):
         sessao = sessao_obrigatoria(request)
         return chamar(servico.buscar_por_id, interesse_id, sessao.usuario_id)
+
+    @router.put("/{interesse_id}/combinacao", response_model=InteresseResponse)
+    def propor_combinacao(
+        interesse_id: str, dados: CombinacaoRequest, request: Request
+    ):
+        sessao = sessao_obrigatoria(request)
+        return chamar(servico.propor_combinacao, interesse_id, dados, sessao.usuario_id)
+
+    @router.post("/{interesse_id}/combinacao/aceite", response_model=InteresseResponse)
+    def aceitar_combinacao(
+        interesse_id: str, dados: CombinacaoAceiteRequest, request: Request
+    ):
+        sessao = sessao_obrigatoria(request)
+        return chamar(servico.aceitar_combinacao, interesse_id, dados, sessao.usuario_id)
 
     @router.post("/{interesse_id}/acoes", response_model=InteresseResponse)
     def executar_acao(

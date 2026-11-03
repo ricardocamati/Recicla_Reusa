@@ -141,11 +141,11 @@ Referências: V21-RF-04, V21-RF-05 · V21-CT-05 a V21-CT-08.
 
 Referências: V21-RF-06, V21-RF-07, V21-RF-08 · V21-CT-09 a V21-CT-12.
 
-- [ ] Oferecer combinação estruturada (local, previsão opcional e observação) com novo aceite a cada alteração.
-- [ ] Implementar declaração de entrega e confirmação de recebimento como duas etapas distintas.
-- [ ] Permitir venda direta de usado, congelando o preço no aceite e exigindo liberação para alterá-lo.
-- [ ] Atualizar indicadores apenas na confirmação, contando uma vez por item.
-- [ ] Testar pendência sem confirmação, terceiro não autorizado e reenvio da mesma operação.
+- [x] Oferecer combinação estruturada (local, previsão opcional e observação) com novo aceite a cada alteração.
+- [x] Implementar declaração de entrega e confirmação de recebimento como duas etapas distintas.
+- [x] Permitir venda direta de usado, congelando o preço no aceite e exigindo liberação para alterá-lo.
+- [x] Atualizar indicadores apenas na confirmação, contando uma vez por item.
+- [x] Testar pendência sem confirmação, terceiro não autorizado e reenvio da mesma operação.
 
 ## Etapa 13 — Descarte guiado e operação do ponto
 

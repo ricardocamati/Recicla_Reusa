@@ -37,13 +37,11 @@ export const ROTULOS = {
   status: {
     disponivel: "Disponível",
     reservado: "Reservado",
-    doado: "Doado",
     encaminhado: "Encaminhado",
     coletado: "Coletado",
     rascunho: "Rascunho",
-    em_avaliacao: "Em avaliação",
-    recondicionado: "Recondicionado",
-    vendido: "Vendido",
+    aguardando_confirmacao: "Aguardando confirmação",
+    concluido: "Concluído",
     arquivado: "Arquivado",
   },
 };

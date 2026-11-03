@@ -58,10 +58,14 @@ O e-mail é normalizado para minúsculas. O CEP aceita a forma com hífen na ent
 | `GET` | `/api/itens/{id}` | sessão | — | `200` com item |
 | `PUT` | `/api/itens/{id}` | pessoa proprietária | `ItemUpdateRequest` | `200` com item atualizado |
 | `POST` | `/api/itens/{id}/publicar` | pessoa proprietária | — | `200` com item publicado |
+| `POST` | `/api/itens/{id}/entrega` | pessoa proprietária | — | `200` com item `aguardando_confirmacao` |
+| `POST` | `/api/itens/{id}/recebimento` | pessoa selecionada | — | `200` com item `concluido` |
 | `POST` | `/api/itens/{id}/arquivar` | pessoa proprietária | — | `200` com item arquivado |
 | `DELETE` | `/api/itens/{id}` | pessoa proprietária | — | `204` sem corpo |
 
 O `proprietario_id` é obtido da sessão no cadastro e não é aceito no corpo. O catálogo pode ser consultado por contas de pessoa e por pontos de coleta; somente contas de pessoa cadastram ofertas. Alteração e exclusão exigem correspondência entre a sessão e o proprietário do item.
+
+Doação e venda têm entrega bilateral: o proprietário declara a entrega (`reservado → aguardando_confirmacao`) depois de a combinação estar aceita, e somente a pessoa selecionada confirma o recebimento (`aguardando_confirmacao → concluido`). Declarar não conclui; terceiro não confirma; repetir a confirmação devolve o mesmo resultado sem segundo efeito. O `PUT` comum não conclui item nem aceita `concluido`/`aguardando_confirmacao`.
 
 O catálogo devolve apenas itens `disponivel` de doação ou revenda. Descarte, rascunho, arquivado e concluído nunca aparecem; `incluir_reservados=true` acrescenta itens `reservado`, sem oferecer ação de interesse. `destino=descarte` é recusado com `400`, e faixa de preço só vale para revenda. `texto` busca literalmente em título e descrição, sem interpretar expressão regular.
 
@@ -148,6 +152,8 @@ O servidor gera `data_adicao` no cadastro e mantém esse valor imutável. `data_
 | `POST` | `/api/interesses` | pessoa | `item_id` | `201` com interesse pendente |
 | `GET` | `/api/interesses` | doador ou beneficiário | `escopo=meus` (padrão) ou `recebidos`, `item_id`, `status`, `offset`, `limite` | `200` com lista restrita à sessão |
 | `GET` | `/api/interesses/{id}` | participante | — | `200` com interesse |
+| `PUT` | `/api/interesses/{id}/combinacao` | selecionado ou proprietário | `local_texto`, `previsao` e `observacao` | `200` com nova revisão da combinação |
+| `POST` | `/api/interesses/{id}/combinacao/aceite` | contraparte de quem propôs | `revisao` | `200` com combinação aceita |
 | `POST` | `/api/interesses/{id}/acoes` | participante autorizado | `acao` (`selecionar`, `recusar`, `desistir`, `liberar`, `retomar`, `reabrir`) e `motivo` quando exigido | `200` com interesse atualizado |
 | `PATCH` | `/api/interesses/{id}` | participante autorizado | `status` (`selecionado`, `recusado`, `cancelado`) — alias legado | `200` com interesse atualizado |
 
@@ -160,6 +166,10 @@ Ações e permissões: `selecionar`, `recusar`, `liberar` e `reabrir` são do pr
 Selecionar atualiza o interesse para `selecionado`, reserva o item (`reservado`, com `interesse_aceito_id`) e registra os dois históricos **na mesma transação**; outro selecionar concorrente retorna `409`. Os demais interesses permanecem `pendente` e não se cria interesse novo enquanto o item está reservado. Na venda, `preco_selecionado` congela o valor do item no momento da seleção.
 
 Desistência do selecionado e liberação pelo proprietário encerram a reserva: o interesse vira `cancelado`, o item volta a `disponivel` e os demais pendentes continuam. Depois de a entrega avançar, a liberação unilateral retorna `409`.
+
+A combinação guarda local textual, previsão opcional, observação, número da revisão e quem propôs/aceitou. Cada alteração cria revisão nova e invalida o aceite anterior; quem propôs não aceita a própria revisão, e a recusa por revisão desatualizada retorna `409`. A combinação não comprova entrega nem reserva horário externo.
+
+Ao confirmar o recebimento, o item vira `concluido`, o interesse selecionado vira `encerrado` com `resultado=concluido` e os demais interesses pendentes viram `encerrado` com `resultado=item_concluido`. Os indicadores contam cada item uma única vez, somente depois dessa confirmação.
 
 Com o módulo habilitado, o `PUT` comum do item não cria reserva: o proprietário precisa selecionar um interesse. A edição preserva a seleção interna e verifica o status lido, inclusive quando apenas os campos descritivos mudam. Referências de interesses existentes bloqueiam a exclusão do item e do interessado e a troca do destino (`409`); essas verificações de exclusão não constituem garantia transacional para todas as intercalações com criação concorrente.
 
@@ -174,7 +184,7 @@ O Compose usa replica set de um nó para executar essas transações; consulte [
 | `GET` | `/api/notificacoes` | sessão | `lida`, `offset`, `limite` | `200` com a caixa do próprio usuário |
 | `PATCH` | `/api/notificacoes/{id}` | destinatário | `{"lida": true}` | `200` com a notificação lida |
 
-Os avisos são criados pelo servidor, nunca pelo cliente. Tipos: `interesse_aceito`, `interesse_recusado`, `interesse_cancelado`, `status_item_alterado` e `item_concluido`.
+Os avisos são criados pelo servidor, nunca pelo cliente. Tipos: `interesse_aceito`, `interesse_recusado`, `interesse_cancelado`, `status_item_alterado`, `entrega_declarada` e `item_concluido`.
 
 A emissão ocorre na **mesma transação** da mudança que a origina: a decisão de um interesse avisa o interessado (aceito/recusado) ou o proprietário (cancelado), e cada transição de status avisa quem possui interesse pendente ou aceito no item. O aceite de uma doação também avisa os demais interessados de que o item foi reservado, sem repetir o aviso para quem foi escolhido; o cancelamento do aceite avisa que o item voltou a ficar disponível. Quem não tem vínculo com o item não recebe aviso, e o proprietário não é notificado das próprias mudanças.
 

@@ -7,7 +7,7 @@ from pymongo.collection import Collection
 from pymongo.errors import ConfigurationError, DuplicateKeyError, InvalidOperation, PyMongoError
 
 from app.exceptions import InteresseError
-from app.models.interesse import EventoInteresse, Interesse
+from app.models.interesse import Combinacao, EventoInteresse, Interesse
 from app.models.notificacao import EventoNotificacao, evento_de_status_item
 from app.repositories.notificacao_documento import montar_documento, registrar
 
@@ -213,6 +213,87 @@ class MongoInteresseRepository:
 
         return self._transacao(operacao)
 
+    def propor_combinacao(
+        self,
+        interesse_id: str,
+        usuario_id: str,
+        dados,
+        instante: datetime,
+    ) -> Interesse:
+        return self._alterar_combinacao(interesse_id, usuario_id, instante, dados, aceitar=False)
+
+    def aceitar_combinacao(
+        self,
+        interesse_id: str,
+        usuario_id: str,
+        revisao: int,
+        instante: datetime,
+    ) -> Interesse:
+        return self._alterar_combinacao(
+            interesse_id, usuario_id, instante, None, aceitar=True, revisao=revisao
+        )
+
+    def _alterar_combinacao(
+        self, interesse_id: str, usuario_id: str, instante: datetime, dados, *, aceitar: bool, revisao: int | None = None
+    ) -> Interesse:
+        interesse_oid = self._required_id(interesse_id, "Interesse não encontrado", 404)
+        actor_oid = self._required_id(usuario_id, "Usuário não encontrado", 404)
+        instante = self._data(instante)
+
+        def operacao(session):
+            doc = self._colecao.find_one({"_id": interesse_oid}, session=session)
+            if doc is None:
+                raise InteresseError(404, "Interesse não encontrado")
+            item = self._colecao_itens.find_one({"_id": doc["item_id"]}, session=session)
+            if item is None:
+                raise InteresseError(404, "Item não encontrado")
+            dono = item.get("proprietario_id") == actor_oid
+            interessado = doc.get("usuario_id") == actor_oid
+            if not (dono or interessado):
+                raise InteresseError(403, "Somente os participantes podem combinar a entrega")
+            if doc.get("status") != "selecionado":
+                raise InteresseError(400, "Combinação exige interesse selecionado")
+            if item.get("status") != "reservado":
+                raise InteresseError(409, "Item não está reservado para combinação")
+
+            atual = doc.get("combinacao")
+            if aceitar:
+                if atual is None:
+                    raise InteresseError(400, "Não há combinação para aceitar")
+                if atual.get("proposto_por") == actor_oid:
+                    raise InteresseError(403, "Quem propôs não aceita a própria revisão")
+                if int(atual.get("revisao") or 0) != revisao:
+                    raise InteresseError(409, "Combinação alterada; revise a proposta atual")
+                atual = dict(atual)
+                atual["aceito_por"] = actor_oid
+                atual["aceito_em"] = instante
+                combinacao = atual
+            else:
+                numero = int((atual or {}).get("revisao") or 0) + 1
+                combinacao = {
+                    "local_texto": dados.local_texto,
+                    "previsao": self._data(dados.previsao) if dados.previsao else None,
+                    "observacao": dados.observacao,
+                    "revisao": numero,
+                    "proposto_por": actor_oid,
+                    "proposto_em": instante,
+                    "aceito_por": None,
+                    "aceito_em": None,
+                }
+
+            changed = self._colecao.update_one(
+                {"_id": interesse_oid, "status": "selecionado"},
+                {"$set": {"combinacao": combinacao, "data_modificacao": instante}},
+                session=session,
+            )
+            if changed.matched_count != 1:
+                raise InteresseError(409, "Interesse alterado por outra operação")
+            doc["combinacao"] = combinacao
+            doc["data_modificacao"] = instante
+            return self._para_modelo(doc)
+
+        return self._transacao(operacao)
+
     def decidir(
         self,
         interesse_id: str,
@@ -406,6 +487,31 @@ class MongoInteresseRepository:
             )
             for evento in doc.get("historico") or []
         ]
+        combinacao = None
+        dados_combinacao = doc.get("combinacao")
+        if dados_combinacao:
+            combinacao = Combinacao(
+                local_texto=dados_combinacao["local_texto"],
+                revisao=int(dados_combinacao.get("revisao") or 1),
+                proposto_por=str(dados_combinacao["proposto_por"]),
+                proposto_em=MongoInteresseRepository._data(dados_combinacao["proposto_em"]),
+                previsao=(
+                    MongoInteresseRepository._data(dados_combinacao["previsao"])
+                    if dados_combinacao.get("previsao")
+                    else None
+                ),
+                observacao=dados_combinacao.get("observacao"),
+                aceito_por=(
+                    str(dados_combinacao["aceito_por"])
+                    if dados_combinacao.get("aceito_por")
+                    else None
+                ),
+                aceito_em=(
+                    MongoInteresseRepository._data(dados_combinacao["aceito_em"])
+                    if dados_combinacao.get("aceito_em")
+                    else None
+                ),
+            )
         return Interesse(
             id=str(doc["_id"]),
             item_id=str(doc["item_id"]),
@@ -414,6 +520,8 @@ class MongoInteresseRepository:
             tentativa=int(doc.get("tentativa") or 1),
             motivo=doc.get("motivo"),
             preco_selecionado=doc.get("preco_selecionado"),
+            resultado=doc.get("resultado"),
+            combinacao=combinacao,
             historico=historico,
             data_adicao=MongoInteresseRepository._data(doc["data_adicao"]),
             data_modificacao=MongoInteresseRepository._data(doc["data_modificacao"]),

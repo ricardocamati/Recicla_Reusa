@@ -1,5 +1,24 @@
-from app.models.interesse import Interesse
-from app.schemas.interesse import EventoInteresseResponse, InteresseResponse
+from app.models.interesse import Combinacao, Interesse
+from app.schemas.interesse import (
+    CombinacaoResponse,
+    EventoInteresseResponse,
+    InteresseResponse,
+)
+
+
+def _combinacao(combinacao: Combinacao | None) -> CombinacaoResponse | None:
+    if combinacao is None:
+        return None
+    return CombinacaoResponse(
+        local_texto=combinacao.local_texto,
+        previsao=combinacao.previsao,
+        observacao=combinacao.observacao,
+        revisao=combinacao.revisao,
+        proposto_por=combinacao.proposto_por,
+        proposto_em=combinacao.proposto_em,
+        aceito_por=combinacao.aceito_por,
+        aceito_em=combinacao.aceito_em,
+    )
 
 
 class InteresseMapper:
@@ -15,6 +34,8 @@ class InteresseMapper:
             tentativa=interesse.tentativa,
             motivo=interesse.motivo,
             preco_selecionado=interesse.preco_selecionado,
+            resultado=interesse.resultado,
+            combinacao=_combinacao(interesse.combinacao),
             historico=[
                 EventoInteresseResponse(
                     status=evento.status,
