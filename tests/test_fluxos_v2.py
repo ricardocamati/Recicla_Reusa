@@ -135,57 +135,19 @@ async def test_descarte_exige_ponto_compativel_e_preserva_referencia(
     repositorio_usuarios: RepositorioEmMemoria,
     repositorio_itens: RepositorioItensEmMemoria,
 ) -> None:
-    pontos = RepositorioPontosFake(
-        [
-            ponto(["notebook"]),
-            ponto(["celular"], ponto_id="ponto-2"),
-        ]
-    )
-    async with cliente(app_para(repositorio_usuarios, repositorio_itens, pontos=pontos)) as api:
+    async with cliente(app_para(repositorio_usuarios, repositorio_itens)) as api:
         await autenticar_doador(api)
         criado = (
-            await api.post(
-                "/api/itens",
-                json=payload_item(destino="descarte", valor=None, categoria="notebook"),
-            )
+            await api.post("/api/itens", json=payload_item(destino="descarte", valor=None))
         ).json()
-        sem_ponto = await api.put(
-            f"/api/itens/{criado['id']}", json=corpo(criado, status="encaminhado")
-        )
-        inexistente = await api.put(
+        tentativa = await api.put(
             f"/api/itens/{criado['id']}",
-            json=corpo(criado, status="encaminhado", ponto_coleta_id="ponto-9"),
-        )
-        incompativel = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo(criado, status="encaminhado", ponto_coleta_id="ponto-2"),
-        )
-        encaminhado = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo(criado, status="encaminhado", ponto_coleta_id="ponto-1"),
-        )
-        troca = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo(criado, status="encaminhado", ponto_coleta_id="ponto-2"),
-        )
-        coletado = await api.put(
-            f"/api/itens/{criado['id']}", json=corpo(criado, status="coletado")
+            json=corpo(criado, status="disponivel", ponto_coleta_id="ponto-1"),
         )
 
-    assert sem_ponto.status_code == 400, sem_ponto.text
-    assert inexistente.status_code == 404, inexistente.text
-    assert incompativel.status_code == 400, incompativel.text
-    assert encaminhado.status_code == 200, encaminhado.text
-    assert encaminhado.json()["ponto_coleta_id"] == "ponto-1"
-    assert troca.status_code == 409, troca.text
-    assert coletado.status_code == 200, coletado.text
-    assert coletado.json()["status"] == "coletado"
-    assert coletado.json()["ponto_coleta_id"] == "ponto-1"
-    assert [evento["status"] for evento in coletado.json()["historico"]] == [
-        "disponivel",
-        "encaminhado",
-        "coletado",
-    ]
+    assert criado["status"] == "aguardando_ponto"
+    assert tentativa.status_code in (400, 422), tentativa.text
+    assert "encaminhamentos" in str(tentativa.json()["detail"])
 
 
 @pytest.mark.anyio
@@ -211,7 +173,7 @@ async def test_campos_de_fluxo_incompativeis_com_o_destino(
     assert ponto_em_doacao.status_code == 400, ponto_em_doacao.text
     assert "ponto_coleta_id" in ponto_em_doacao.json()["detail"]
     assert comprador_em_descarte.status_code == 400, comprador_em_descarte.text
-    assert "comprador_id" in comprador_em_descarte.json()["detail"]
+    assert "comprador" in comprador_em_descarte.json()["detail"]
 
 
 @pytest.mark.anyio
@@ -295,27 +257,21 @@ async def test_encaminhamento_valida_a_categoria_enviada_no_mesmo_put(
     repositorio_usuarios: RepositorioEmMemoria,
     repositorio_itens: RepositorioItensEmMemoria,
 ) -> None:
-    pontos = RepositorioPontosFake([ponto(["celular"], ponto_id="ponto-celular")])
-    async with cliente(app_para(repositorio_usuarios, repositorio_itens, pontos=pontos)) as api:
+    async with cliente(app_para(repositorio_usuarios, repositorio_itens)) as api:
         await autenticar_doador(api)
         criado = (
             await api.post("/api/itens", json=payload_item(destino="descarte", valor=None))
         ).json()
-        categoria_antiga = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo(criado, status="encaminhado", ponto_coleta_id="ponto-celular"),
-        )
         recategorizado = await api.put(
+            f"/api/itens/{criado['id']}", json=corpo(criado, categoria="celular")
+        )
+        com_ponto = await api.put(
             f"/api/itens/{criado['id']}",
-            json=corpo(
-                criado,
-                categoria="celular",
-                status="encaminhado",
-                ponto_coleta_id="ponto-celular",
-            ),
+            json=corpo(criado, categoria="celular", ponto_coleta_id="ponto-celular"),
         )
 
-    assert categoria_antiga.status_code == 400, categoria_antiga.text
     assert recategorizado.status_code == 200, recategorizado.text
     assert recategorizado.json()["categoria"] == "celular"
-    assert recategorizado.json()["ponto_coleta_id"] == "ponto-celular"
+    assert recategorizado.json()["status"] == "aguardando_ponto"
+    assert com_ponto.status_code == 400, com_ponto.text
+    assert "encaminhamentos" in com_ponto.json()["detail"]

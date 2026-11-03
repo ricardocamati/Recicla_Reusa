@@ -2,7 +2,7 @@ from typing import Any
 
 from pymongo.collection import Collection
 
-STATUS_CONCLUIDOS = ("concluido", "coletado")
+STATUS_CONCLUIDOS = ("concluido", "recebido")
 
 
 class MongoIndicadorRepository:

@@ -36,6 +36,9 @@ itens = banco[os.environ.get("MONGO_COLLECTION_ITENS", "itens")]
 pontos = banco[os.environ.get("MONGO_COLLECTION_PONTOS_COLETA", "pontos_coleta")]
 interesses = banco[os.environ.get("MONGO_COLLECTION_INTERESSES", "interesses")]
 avisos = banco[os.environ.get("MONGO_COLLECTION_NOTIFICACOES", "notificacoes")]
+encaminhamentos = banco[
+    os.environ.get("MONGO_COLLECTION_ENCAMINHAMENTOS", "encaminhamentos")
+]
 
 
 def preparar_operador() -> str:
@@ -229,9 +232,9 @@ class Navegador:
     def avancar(self, titulo: str, status: str, referencia: tuple[str, str] | None = None) -> None:
         documento = itens.find_one({"titulo": titulo})
         situacao = documento.get("status") if documento else None
-        if situacao in {"doado", "coletado", "vendido", "arquivado"}:
+        if situacao in {"concluido", "recebido", "arquivado"}:
             grupo = "encerrados"
-        elif situacao in {"reservado", "encaminhado", "em_avaliacao", "recondicionado"}:
+        elif situacao in {"reservado", "aguardando_confirmacao", "entrega_prevista"}:
             grupo = "em_andamento"
         else:
             grupo = "ativos"
@@ -295,6 +298,26 @@ class Navegador:
             and "aceita" in self._cartao(lista, titulo).text
         )
 
+    def agendar_entrega(self, titulo: str, ponto_nome: str) -> None:
+        self.abrir("itens.html?grupo=ativos", "#my-items-list")
+        cartao = self.cartao("my-items-list", titulo)
+        seletor = Select(
+            cartao.find_element(By.CSS_SELECTOR, "select[data-papel='ponto']")
+        )
+        seletor.select_by_visible_text(ponto_nome)
+        self.clicar(cartao.find_element(By.CSS_SELECTOR, "button[data-acao='agendar']"))
+        self.espera.until(
+            lambda d: "Entrega prevista" in d.find_element(By.ID, "my-items-message").text
+        )
+
+    def confirmar_recebimento_no_ponto(self, titulo: str) -> None:
+        self.abrir("pontos.html", "#fila-list")
+        cartao = self.cartao("fila-list", titulo)
+        self.clicar(cartao.find_element(By.CSS_SELECTOR, "button[data-acao='receber']"))
+        self.espera.until(
+            lambda d: "Recebimento confirmado" in d.find_element(By.ID, "fila-message").text
+        )
+
     def declarar_entrega(self, titulo: str) -> None:
         self.abrir("itens.html?grupo=em_andamento", "#my-items-list")
         cartao = self.cartao("my-items-list", titulo)
@@ -344,6 +367,7 @@ def auditar_datas() -> dict[str, int]:
         ("pontos_coleta", banco_utc[pontos.name]),
         ("interesses", banco_utc[interesses.name]),
         ("notificacoes", banco_utc[avisos.name]),
+        ("encaminhamentos", banco_utc[encaminhamentos.name]),
     ):
         documentos = list(colecao.find({}))
         assert documentos, f"{nome} sem documentos para auditar"
@@ -377,6 +401,9 @@ def limpar(prefixo: str = MARCA) -> None:
         interesses.delete_many(
             {"$or": [{"item_id": {"$in": ids_itens}}, {"usuario_id": {"$in": ids_usuarios}}]}
         )
+    removidos_entregas = encaminhamentos.delete_many(
+        {"item_id": {"$in": ids_itens}}
+    ).deleted_count
     removidos_itens = itens.delete_many({"_id": {"$in": ids_itens}}).deleted_count
     removidos_pontos = pontos.delete_many({"_id": {"$in": ids_pontos}}).deleted_count
     removidos_usuarios = usuarios.delete_many({"_id": {"$in": ids_usuarios}}).deleted_count
@@ -391,7 +418,11 @@ def limpar(prefixo: str = MARCA) -> None:
         "notificacoes": avisos.count_documents({"item_id": {"$in": ids_itens + [ObjectId()]}}),
     }
     assert restantes == {chave: 0 for chave in restantes}, restantes
-    print(f"limpeza=ok; removidos usuarios={removidos_usuarios} itens={removidos_itens} pontos={removidos_pontos}")
+    print(
+        "limpeza=ok; removidos "
+        f"usuarios={removidos_usuarios} itens={removidos_itens} "
+        f"pontos={removidos_pontos} entregas={removidos_entregas}"
+    )
 
 
 def main() -> None:
@@ -451,8 +482,16 @@ def main() -> None:
 
         navegador.entrar(doador_email)
         navegador.criar_item(titulo_descarte, "Descarte", "Notebook")
-        navegador.avancar(titulo_descarte, "encaminhado", ("ponto", nome_ponto))
-        navegador.avancar(titulo_descarte, "coletado")
+        navegador.agendar_entrega(titulo_descarte, nome_ponto)
+        navegador.sair()
+
+        navegador.entrar(operador_email)
+        navegador.confirmar_recebimento_no_ponto(titulo_descarte)
+        navegador.sair()
+
+        navegador.entrar(doador_email)
+        navegador.abrir("itens.html?grupo=encerrados", "#my-items-list")
+        assert "Recebido" in navegador.cartao("my-items-list", titulo_descarte).text
         navegador.sair()
         print("jornada_descarte=ok")
 
@@ -491,7 +530,9 @@ def main() -> None:
     assert selecionado["status"] == "encerrado" and selecionado["resultado"] == "concluido"
     assert selecionado["combinacao"]["aceito_por"] is not None
     descarte = itens.find_one({"titulo": titulo_descarte})
-    assert descarte["status"] == "coletado" and descarte["ponto_coleta_id"] is not None
+    assert descarte["status"] == "recebido" and descarte["ponto_coleta_id"] is not None
+    entrega = encaminhamentos.find_one({"item_id": descarte["_id"]})
+    assert entrega is not None and entrega["status"] == "recebido"
     revenda = itens.find_one({"titulo": titulo_revenda})
     assert revenda["status"] == "concluido" and revenda["valor"] == 120.0
     assert avisos.count_documents({"item_id": documento["_id"]}) >= 1

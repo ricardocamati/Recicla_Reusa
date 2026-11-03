@@ -7,6 +7,7 @@ from app.schemas.ponto_coleta import (
     PontoColetaCreateRequest,
     PontoColetaResponse,
     PontoColetaUpdateRequest,
+    PontoSituacaoRequest,
 )
 from app.security.sessions import SESSION_COOKIE_NAME, ArmazenamentoDeSessoes, Sessao
 from app.services.ponto_coleta_service import PontoColetaService
@@ -15,6 +16,7 @@ from app.services.ponto_coleta_service import PontoColetaService
 def criar_router_pontos_coleta(
     servico: PontoColetaService,
     sessoes: ArmazenamentoDeSessoes,
+    servico_encaminhamentos=None,
 ) -> APIRouter:
     router = APIRouter(prefix="/api/pontos-coleta", tags=["pontos-coleta"])
 
@@ -82,6 +84,21 @@ def criar_router_pontos_coleta(
         sessao = sessao_obrigatoria(request)
         exigir_operador(sessao)
         return servico.atualizar(ponto_id, dados, responsavel_id=sessao.usuario_id)
+
+    @router.post("/{ponto_id}/situacao", response_model=PontoColetaResponse)
+    def definir_situacao(
+        ponto_id: str,
+        dados: PontoSituacaoRequest,
+        request: Request,
+    ) -> PontoColetaResponse:
+        sessao = sessao_obrigatoria(request)
+        exigir_operador(sessao)
+        resposta = servico.definir_ativo(
+            ponto_id, dados.ativo, responsavel_id=sessao.usuario_id
+        )
+        if not dados.ativo and servico_encaminhamentos is not None:
+            servico_encaminhamentos.avisar_ponto_inativado(ponto_id)
+        return resposta
 
     @router.delete("/{ponto_id}", status_code=status.HTTP_204_NO_CONTENT)
     def excluir(ponto_id: str, request: Request) -> Response:

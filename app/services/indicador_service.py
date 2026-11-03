@@ -16,7 +16,7 @@ class IndicadorService:
         contagem = self._repositorio.contar_por_modalidade_e_status()
         doados = int(contagem.get("doacao:concluido", 0))
         vendidos = int(contagem.get("revenda:concluido", 0))
-        coletados = int(contagem.get("descarte:coletado", 0))
+        coletados = int(contagem.get("descarte:recebido", 0))
         return IndicadorResponse(
             doados=doados,
             coletados=coletados,

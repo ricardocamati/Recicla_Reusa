@@ -131,6 +131,142 @@
         "title": "CombinacaoResponse",
         "type": "object"
       },
+      "EncaminhamentoAcaoRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "acao": {
+            "enum": [
+              "cancelar",
+              "trocar",
+              "nao_recebido",
+              "receber"
+            ],
+            "title": "Acao",
+            "type": "string"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "novo_ponto_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Novo Ponto Id"
+          }
+        },
+        "required": [
+          "acao"
+        ],
+        "title": "EncaminhamentoAcaoRequest",
+        "type": "object"
+      },
+      "EncaminhamentoCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "item_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "ponto_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Ponto Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "ponto_id"
+        ],
+        "title": "EncaminhamentoCreateRequest",
+        "type": "object"
+      },
+      "EncaminhamentoResponse": {
+        "properties": {
+          "autor_id": {
+            "title": "Autor Id",
+            "type": "string"
+          },
+          "data_adicao": {
+            "format": "date-time",
+            "title": "Data Adicao",
+            "type": "string"
+          },
+          "data_modificacao": {
+            "format": "date-time",
+            "title": "Data Modificacao",
+            "type": "string"
+          },
+          "historico": {
+            "items": {
+              "$ref": "#/components/schemas/EventoEncaminhamentoResponse"
+            },
+            "title": "Historico",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "item_id": {
+            "title": "Item Id",
+            "type": "string"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "ponto_id": {
+            "title": "Ponto Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "entrega_prevista",
+              "cancelado",
+              "nao_recebido",
+              "recebido"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "item_id",
+          "autor_id",
+          "ponto_id",
+          "status",
+          "data_adicao",
+          "data_modificacao"
+        ],
+        "title": "EncaminhamentoResponse",
+        "type": "object"
+      },
       "EnderecoRequest": {
         "additionalProperties": false,
         "properties": {
@@ -227,6 +363,47 @@
           "cidade"
         ],
         "title": "EnderecoResponse",
+        "type": "object"
+      },
+      "EventoEncaminhamentoResponse": {
+        "properties": {
+          "ator_id": {
+            "title": "Ator Id",
+            "type": "string"
+          },
+          "data_evento": {
+            "format": "date-time",
+            "title": "Data Evento",
+            "type": "string"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          },
+          "status": {
+            "enum": [
+              "entrega_prevista",
+              "cancelado",
+              "nao_recebido",
+              "recebido"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "data_evento",
+          "ator_id"
+        ],
+        "title": "EventoEncaminhamentoResponse",
         "type": "object"
       },
       "EventoHistoricoResponse": {
@@ -756,8 +933,9 @@
               "reservado",
               "aguardando_confirmacao",
               "concluido",
-              "encaminhado",
-              "coletado",
+              "aguardando_ponto",
+              "entrega_prevista",
+              "recebido",
               "arquivado"
             ],
             "title": "Status",
@@ -915,8 +1093,9 @@
                   "reservado",
                   "aguardando_confirmacao",
                   "concluido",
-                  "encaminhado",
-                  "coletado",
+                  "aguardando_ponto",
+                  "entrega_prevista",
+                  "recebido",
                   "arquivado"
                 ],
                 "type": "string"
@@ -1043,7 +1222,11 @@
               "interesse_cancelado",
               "status_item_alterado",
               "item_concluido",
-              "entrega_declarada"
+              "entrega_declarada",
+              "entrega_prevista",
+              "item_recebido",
+              "item_nao_recebido",
+              "ponto_inativado"
             ],
             "title": "Tipo",
             "type": "string"
@@ -1141,6 +1324,11 @@
       },
       "PontoColetaResponse": {
         "properties": {
+          "ativo": {
+            "default": true,
+            "title": "Ativo",
+            "type": "boolean"
+          },
           "categorias_aceitas": {
             "items": {
               "type": "string"
@@ -1241,6 +1429,20 @@
           "horario_atendimento"
         ],
         "title": "PontoColetaUpdateRequest",
+        "type": "object"
+      },
+      "PontoSituacaoRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "ativo": {
+            "title": "Ativo",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ativo"
+        ],
+        "title": "PontoSituacaoRequest",
         "type": "object"
       },
       "UsuarioCreateRequest": {
@@ -1511,6 +1713,258 @@
         "summary": "Logout",
         "tags": [
           "autenticacao"
+        ]
+      }
+    },
+    "/api/encaminhamentos": {
+      "get": {
+        "operationId": "listar_api_encaminhamentos_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "escopo",
+            "required": false,
+            "schema": {
+              "default": "autor",
+              "pattern": "^(autor|operador)$",
+              "title": "Escopo",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ponto_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ponto Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "item_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Item Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limite",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EncaminhamentoResponse"
+                  },
+                  "title": "Response Listar Api Encaminhamentos Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listar",
+        "tags": [
+          "encaminhamentos"
+        ]
+      },
+      "post": {
+        "operationId": "criar_api_encaminhamentos_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EncaminhamentoCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EncaminhamentoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Criar",
+        "tags": [
+          "encaminhamentos"
+        ]
+      }
+    },
+    "/api/encaminhamentos/{encaminhamento_id}": {
+      "get": {
+        "operationId": "buscar_api_encaminhamentos__encaminhamento_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "encaminhamento_id",
+            "required": true,
+            "schema": {
+              "title": "Encaminhamento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EncaminhamentoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Buscar",
+        "tags": [
+          "encaminhamentos"
+        ]
+      }
+    },
+    "/api/encaminhamentos/{encaminhamento_id}/acoes": {
+      "post": {
+        "operationId": "executar_acao_api_encaminhamentos__encaminhamento_id__acoes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "encaminhamento_id",
+            "required": true,
+            "schema": {
+              "title": "Encaminhamento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EncaminhamentoAcaoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EncaminhamentoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Executar Acao",
+        "tags": [
+          "encaminhamentos"
         ]
       }
     },
@@ -2965,6 +3419,58 @@
           }
         },
         "summary": "Atualizar",
+        "tags": [
+          "pontos-coleta"
+        ]
+      }
+    },
+    "/api/pontos-coleta/{ponto_id}/situacao": {
+      "post": {
+        "operationId": "definir_situacao_api_pontos_coleta__ponto_id__situacao_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ponto_id",
+            "required": true,
+            "schema": {
+              "title": "Ponto Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PontoSituacaoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PontoColetaResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Definir Situacao",
         "tags": [
           "pontos-coleta"
         ]

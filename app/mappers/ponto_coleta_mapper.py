@@ -39,6 +39,7 @@ class PontoColetaMapper:
             categorias_aceitas=list(ponto.categorias_aceitas),
             horario_atendimento=ponto.horario_atendimento,
             responsavel_id=ponto.responsavel_id,
+            ativo=ponto.ativo,
             data_adicao=ponto.data_adicao,
             data_modificacao=ponto.data_modificacao,
         )
