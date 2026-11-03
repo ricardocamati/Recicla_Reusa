@@ -249,7 +249,10 @@ def test_referencias_de_interesse_bloqueiam_exclusao_e_reserva_direta(ambiente):
     criar_interesse(interessado, item)
     assert dono.delete("/api/itens/" + item["id"]).status_code == 409
     assert interessado.delete("/api/usuarios/" + usuario_id).status_code == 409
-    assert dono.put("/api/itens/" + item["id"], json=dados | {"destino": "descarte"}).status_code == 409
+    # Modalidade só muda enquanto rascunho; publicado com interesse, o comando é recusado.
+    troca = dono.put("/api/itens/" + item["id"], json=dados | {"destino": "descarte"})
+    assert troca.status_code == 400
+    assert dono.get("/api/itens/" + item["id"]).json()["destino"] == "doacao"
 
 
 def test_conta_unica_oferece_e_interessa_nas_duas_pontas(ambiente):

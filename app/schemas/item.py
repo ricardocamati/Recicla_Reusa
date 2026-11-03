@@ -49,6 +49,7 @@ DestinoItem = Annotated[
 ]
 StatusItem = Annotated[
     Literal[
+        "rascunho",
         "disponivel",
         "reservado",
         "doado",
@@ -57,6 +58,7 @@ StatusItem = Annotated[
         "em_avaliacao",
         "recondicionado",
         "vendido",
+        "arquivado",
     ],
     BeforeValidator(_normalizar_enum),
 ]
@@ -75,6 +77,8 @@ class ItemCreateRequest(BaseModel):
     condicao: CondicaoItem
     destino: DestinoItem
     valor: float | None = Field(default=None, ge=0)
+    # Cadastro direto publica, como na v2.0; rascunho é opt-in do assistente.
+    publicar: bool = True
 
     @model_validator(mode="after")
     def validar_valor_por_destino(self):
@@ -95,11 +99,14 @@ class ItemUpdateRequest(ItemCreateRequest):
 class FiltrosItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    texto: str | None = Field(default=None, min_length=1, max_length=120)
     categoria: CategoriaItem | None = None
     condicao: CondicaoItem | None = None
     destino: DestinoItem | None = None
-    status: StatusItem | None = None
     cidade: str | None = Field(default=None, min_length=1, max_length=160)
+    preco_min: float | None = Field(default=None, ge=0)
+    preco_max: float | None = Field(default=None, ge=0)
+    incluir_reservados: bool = False
 
 
 class EventoHistoricoResponse(BaseModel):

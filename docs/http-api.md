@@ -52,19 +52,28 @@ O e-mail é normalizado para minúsculas. O CEP aceita a forma com hífen na ent
 
 | Método | Caminho | Autenticação | Entrada | Sucesso |
 |---|---|---|---|---|
-| `GET` | `/api/itens` | sessão | filtros `categoria`, `condicao`, `destino`, `status` e `cidade`, com `offset` e `limite` | `200` com catálogo paginado |
-| `POST` | `/api/itens` | doador | `ItemCreateRequest` | `201`, `Location` e item criado |
+| `GET` | `/api/itens` | sessão | `texto`, `categoria`, `condicao`, `destino`, `cidade`, `preco_min`, `preco_max`, `incluir_reservados`, `offset`, `limite` | `200` com catálogo paginado |
+| `GET` | `/api/itens/meus` | pessoa | `grupo` (`ativos`, `em_andamento`, `encerrados`), `offset`, `limite` | `200` com as ofertas da sessão |
+| `POST` | `/api/itens` | pessoa | `ItemCreateRequest` com `publicar` | `201`, `Location` e item criado |
 | `GET` | `/api/itens/{id}` | sessão | — | `200` com item |
-| `PUT` | `/api/itens/{id}` | doador proprietário | `ItemUpdateRequest` | `200` com item atualizado |
-| `DELETE` | `/api/itens/{id}` | doador proprietário | — | `204` sem corpo |
+| `PUT` | `/api/itens/{id}` | pessoa proprietária | `ItemUpdateRequest` | `200` com item atualizado |
+| `POST` | `/api/itens/{id}/publicar` | pessoa proprietária | — | `200` com item publicado |
+| `POST` | `/api/itens/{id}/arquivar` | pessoa proprietária | — | `200` com item arquivado |
+| `DELETE` | `/api/itens/{id}` | pessoa proprietária | — | `204` sem corpo |
 
-O `proprietario_id` é obtido da sessão no cadastro e não é aceito no corpo. O catálogo pode ser consultado por doadores, beneficiários e pontos de coleta; somente doadores podem cadastrar itens. Alteração e exclusão exigem correspondência entre a sessão e o proprietário do item.
+O `proprietario_id` é obtido da sessão no cadastro e não é aceito no corpo. O catálogo pode ser consultado por contas de pessoa e por pontos de coleta; somente contas de pessoa cadastram ofertas. Alteração e exclusão exigem correspondência entre a sessão e o proprietário do item.
+
+O catálogo devolve apenas itens `disponivel` de doação ou revenda. Descarte, rascunho, arquivado e concluído nunca aparecem; `incluir_reservados=true` acrescenta itens `reservado`, sem oferecer ação de interesse. `destino=descarte` é recusado com `400`, e faixa de preço só vale para revenda. `texto` busca literalmente em título e descrição, sem interpretar expressão regular.
+
+`publicar` no cadastro decide entre oferta publicada (padrão `true`) e rascunho. Rascunho aparece só em `GET /api/itens/meus` e pode ser publicado ou arquivado depois. Editar não muda situação: `publicar` e `arquivar` são comandos próprios, e a modalidade (`destino`) só pode ser corrigida enquanto o item é rascunho.
 
 Categorias aceitas: `informatica`, `notebook`, `desktop`, `telefonia`, `celular`, `tablet`, `televisao`, `audio`, `eletrodomestico`, `perifericos`, `monitor`, `impressora` e `outro`. Também são aceitas entradas com maiúsculas, espaços, hífen e acentos equivalentes, devolvidas no formato canônico em minúsculas.
 
-Condições aceitas: `funcional`, `funcional_com_defeito`, `reparavel`, `sem_conserto` e `recondicionado`. Destinos aceitos: `doacao`, `descarte` e `revenda`. Todo item começa com status `disponivel`. `revenda` exige `valor` não negativo; doação e descarte não aceitam preço.
+Condições aceitas: `funcional`, `funcional_com_defeito`, `reparavel`, `sem_conserto` e `recondicionado` — condição física independente da modalidade. Destinos aceitos: `doacao`, `descarte` e `revenda`. O item nasce `rascunho` quando `publicar=false` e `disponivel` caso contrário. `revenda` exige `valor` maior que zero; doação e descarte não aceitam preço.
 
-`especificacoes` é um subdocumento livre de textos, porque categorias diferentes têm características diferentes. O cadastro grava o primeiro evento em `historico` com etapa `cadastro`, status `disponivel`, data do servidor e o proprietário como responsável.
+`especificacoes` é um subdocumento livre de textos, porque categorias diferentes têm características diferentes. O cadastro grava o primeiro evento em `historico` com etapa `publicacao` (ou `cadastro`, no rascunho), status correspondente, data do servidor e o proprietário como responsável. Publicar e arquivar também registram evento.
+
+`GET /api/itens/meus` agrupa: `ativos` (rascunho e disponível), `em_andamento` (reservado, encaminhado, em avaliação e recondicionado) e `encerrados` (doado, coletado, vendido e arquivado). Arquivar preserva item, histórico e referências; o item arquivado não pode ser excluído.
 
 A listagem aceita `offset` (padrão `0`) e `limite` (padrão `20`, máximo `100`), sempre ordenada por `data_adicao` decrescente. O filtro `cidade` usa a cidade do proprietário e não expõe o endereço.
 

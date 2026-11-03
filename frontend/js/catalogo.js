@@ -14,14 +14,17 @@ let usuario;
 let itens = [];
 
 function queryFromCatalogForm() {
-  const data = new FormData(document.getElementById("catalog-form"));
+  const form = document.getElementById("catalog-form");
+  const data = new FormData(form);
   const params = new URLSearchParams();
-  ["categoria", "condicao", "destino", "status"].forEach((campo) => {
-    const valor = String(data.get(campo) || "");
-    if (valor) params.set(campo, valor);
-  });
-  if (usuario?.tipo === "ponto_coleta") {
-    params.set("destino", "descarte");
+  ["texto", "categoria", "condicao", "destino", "preco_min", "preco_max"].forEach(
+    (campo) => {
+      const valor = String(data.get(campo) || "").trim();
+      if (valor) params.set(campo, valor);
+    },
+  );
+  if (form.elements.incluir_reservados.checked) {
+    params.set("incluir_reservados", "true");
   }
   // A API pagina o catálogo; a tela ainda não tem navegação por páginas.
   params.set("limite", "100");
@@ -92,19 +95,13 @@ async function loadCatalog() {
 
 function configureRoleView() {
   const pointNote = document.getElementById("point-note");
-  const destination = document.getElementById("catalog-destination");
   const isCollectionPoint = usuario.tipo === "ponto_coleta";
-  pointNote.hidden = !isCollectionPoint;
-  destination.disabled = isCollectionPoint;
-  if (isCollectionPoint) destination.value = "descarte";
+  if (pointNote) pointNote.hidden = !isCollectionPoint;
 }
 
 function clearFilters() {
   const form = document.getElementById("catalog-form");
   form.reset();
-  if (usuario.tipo === "ponto_coleta") {
-    form.elements.destino.value = "descarte";
-  }
   loadCatalog();
 }
 

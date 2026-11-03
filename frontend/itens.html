@@ -85,67 +85,93 @@
             </div>
             <form id="item-form" class="form-stack">
               <input name="item_id" type="hidden">
-              <label class="field">Título
-                <input name="titulo" type="text" minlength="3" maxlength="160" required>
-              </label>
-              <label class="field">Descrição
-                <textarea name="descricao" minlength="3" maxlength="2000" required></textarea>
-              </label>
-              <div class="field-row">
-                <label class="field">Categoria
-                  <select name="categoria" required>
-                    <option value="">Selecione</option>
-                    <option value="informatica">Informática</option>
-                    <option value="notebook">Notebook</option>
-                    <option value="desktop">Desktop</option>
-                    <option value="telefonia">Telefonia</option>
-                    <option value="celular">Celular</option>
-                    <option value="tablet">Tablet</option>
-                    <option value="televisao">Televisão</option>
-                    <option value="audio">Áudio</option>
-                    <option value="eletrodomestico">Eletrodoméstico</option>
-                    <option value="perifericos">Periféricos</option>
-                    <option value="monitor">Monitor</option>
-                    <option value="impressora">Impressora</option>
-                    <option value="outro">Outro</option>
-                  </select>
-                </label>
-                <label class="field">Condição
-                  <select name="condicao" required>
-                    <option value="">Selecione</option>
-                    <option value="funcional">Funcional</option>
-                    <option value="funcional_com_defeito">Com defeito</option>
-                    <option value="reparavel">Reparável</option>
-                    <option value="sem_conserto">Sem conserto</option>
-                    <option value="recondicionado">Recondicionado</option>
-                  </select>
-                </label>
-              </div>
-              <div class="field-row">
-                <label class="field">Marca <span class="optional">(opcional)</span>
-                  <input name="marca" type="text" maxlength="120">
-                </label>
-                <label class="field">Modelo <span class="optional">(opcional)</span>
-                  <input name="modelo" type="text" maxlength="120">
-                </label>
-              </div>
-              <div class="field-row">
-                <label class="field">Destino
+              <ol class="wizard-steps" aria-label="Etapas do cadastro">
+                <li data-indicador="1" class="is-active">Intenção</li>
+                <li data-indicador="2">Características</li>
+                <li data-indicador="3">Revisão</li>
+              </ol>
+
+              <fieldset class="wizard-step" data-passo="1">
+                <legend>Qual é a sua intenção?</legend>
+                <label class="field">Modalidade
                   <select id="item-destination" name="destino" required>
                     <option value="doacao">Doação</option>
                     <option value="descarte">Descarte</option>
-                    <option value="revenda">Revenda</option>
+                    <option value="revenda">Venda</option>
                   </select>
                 </label>
-                <label id="item-value-field" class="field">Valor <span class="optional">(revenda)</span>
-                  <input id="item-value" name="valor" type="number" min="0" step="0.01">
+                <p id="item-intention-hint" class="field-hint">Doação e venda aparecem no catálogo depois de publicadas; descarte fica guardado para encaminhamento ao ponto.</p>
+                <div class="form-actions">
+                  <button class="button button-primary" type="button" data-passo-acao="proximo">Continuar</button>
+                </div>
+              </fieldset>
+
+              <fieldset class="wizard-step" data-passo="2" hidden>
+                <legend>Características do equipamento</legend>
+                <label class="field">Título
+                  <input name="titulo" type="text" minlength="3" maxlength="160" required>
                 </label>
-              </div>
-              <div class="form-actions">
-                <button class="button button-primary" type="submit">Salvar item</button>
-                <button id="cancel-item-edit" class="button button-ghost" type="button" hidden>Cancelar edição</button>
-              </div>
-              <p id="item-message" class="form-message" role="status" aria-live="polite"></p>
+                <label class="field">Descrição
+                  <textarea name="descricao" minlength="3" maxlength="2000" required></textarea>
+                </label>
+                <div class="field-row">
+                  <label class="field">Categoria
+                    <select name="categoria" required>
+                      <option value="">Selecione</option>
+                      <option value="informatica">Informática</option>
+                      <option value="notebook">Notebook</option>
+                      <option value="desktop">Desktop</option>
+                      <option value="telefonia">Telefonia</option>
+                      <option value="celular">Celular</option>
+                      <option value="tablet">Tablet</option>
+                      <option value="televisao">Televisão</option>
+                      <option value="audio">Áudio</option>
+                      <option value="eletrodomestico">Eletrodoméstico</option>
+                      <option value="perifericos">Periféricos</option>
+                      <option value="monitor">Monitor</option>
+                      <option value="impressora">Impressora</option>
+                      <option value="outro">Outro</option>
+                    </select>
+                  </label>
+                  <label class="field">Condição física
+                    <select name="condicao" required>
+                      <option value="">Selecione</option>
+                      <option value="funcional">Funcional</option>
+                      <option value="funcional_com_defeito">Funcional com defeito</option>
+                      <option value="reparavel">Reparável</option>
+                      <option value="sem_conserto">Sem conserto</option>
+                      <option value="recondicionado">Recondicionado</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="field-row">
+                  <label class="field">Marca <span class="optional">(opcional)</span>
+                    <input name="marca" type="text" maxlength="120">
+                  </label>
+                  <label class="field">Modelo <span class="optional">(opcional)</span>
+                    <input name="modelo" type="text" maxlength="120">
+                  </label>
+                </div>
+                <label id="item-value-field" class="field" hidden>Preço <span class="optional">(venda)</span>
+                  <input id="item-value" name="valor" type="number" min="0.01" step="0.01">
+                </label>
+                <div class="form-actions">
+                  <button class="button button-ghost" type="button" data-passo-acao="anterior">Voltar</button>
+                  <button class="button button-primary" type="button" data-passo-acao="proximo">Revisar</button>
+                </div>
+              </fieldset>
+
+              <fieldset class="wizard-step" data-passo="3" hidden>
+                <legend>Revisão</legend>
+                <dl id="item-review" class="review-list"></dl>
+                <div class="form-actions">
+                  <button class="button button-ghost" type="button" data-passo-acao="anterior">Voltar</button>
+                  <button id="save-draft" class="button button-secondary" type="button">Salvar rascunho</button>
+                  <button class="button button-primary" type="submit">Publicar</button>
+                  <button id="cancel-item-edit" class="button button-ghost" type="button" hidden>Cancelar edição</button>
+                </div>
+                <p id="item-message" class="form-message" role="status" aria-live="polite"></p>
+              </fieldset>
             </form>
           </section>
 
@@ -155,6 +181,11 @@
                 <p class="eyebrow">Seu inventário</p>
                 <h2 id="my-items-title">Meus itens</h2>
               </div>
+            </div>
+            <div class="tabs" role="tablist" aria-label="Situação das minhas ofertas">
+              <button class="tab is-active" type="button" role="tab" data-grupo="ativos" aria-selected="true">Ativos</button>
+              <button class="tab" type="button" role="tab" data-grupo="em_andamento" aria-selected="false">Em andamento</button>
+              <button class="tab" type="button" role="tab" data-grupo="encerrados" aria-selected="false">Encerrados</button>
             </div>
             <p id="my-items-message" class="form-message" role="status" aria-live="polite"></p>
             <div id="my-items-list" class="item-grid item-grid-owned" aria-live="polite"></div>

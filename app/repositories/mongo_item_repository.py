@@ -1,3 +1,4 @@
+import re
 from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Any
@@ -49,12 +50,34 @@ class MongoItemRepository:
         proprietario_ids: set[str] | None = None,
         offset: int = 0,
         limite: int = 20,
+        somente_catalogo: bool = False,
     ) -> list[Item]:
         dados = filtros.model_dump()
-        dados.pop("cidade", None)
+        for campo in ("cidade", "texto", "preco_min", "preco_max", "incluir_reservados"):
+            dados.pop(campo, None)
         consulta: dict[str, Any] = {
             campo: valor for campo, valor in dados.items() if valor is not None
         }
+        if filtros.texto:
+            termo = re.escape(filtros.texto.strip())
+            consulta["$or"] = [
+                {"titulo": {"$regex": termo, "$options": "i"}},
+                {"descricao": {"$regex": termo, "$options": "i"}},
+            ]
+        faixa: dict[str, Any] = {}
+        if filtros.preco_min is not None:
+            faixa["$gte"] = filtros.preco_min
+        if filtros.preco_max is not None:
+            faixa["$lte"] = filtros.preco_max
+        if faixa:
+            consulta["valor"] = faixa
+        if somente_catalogo:
+            consulta["destino"] = {"$ne": "descarte"}
+            consulta["status"] = (
+                {"$in": ["disponivel", "reservado"]}
+                if filtros.incluir_reservados
+                else "disponivel"
+            )
         if proprietario_ids is not None:
             object_ids = [
                 object_id
@@ -66,6 +89,27 @@ class MongoItemRepository:
             consulta["proprietario_id"] = {"$in": object_ids}
         documentos = (
             self._colecao.find(consulta)
+            .sort("data_adicao", -1)
+            .skip(offset)
+            .limit(limite)
+        )
+        return [self._para_modelo(documento) for documento in documentos]
+
+    def listar_por_proprietario(
+        self,
+        proprietario_id: str,
+        statuses: tuple[str, ...],
+        *,
+        offset: int = 0,
+        limite: int = 20,
+    ) -> list[Item]:
+        object_id = self._converter_id(proprietario_id)
+        if object_id is None:
+            return []
+        documentos = (
+            self._colecao.find(
+                {"proprietario_id": object_id, "status": {"$in": list(statuses)}}
+            )
             .sort("data_adicao", -1)
             .skip(offset)
             .limit(limite)
