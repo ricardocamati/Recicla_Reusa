@@ -48,15 +48,13 @@ Referências: V2-RF-03, V2-RF-04, V2-RF-05, V2-RF-10 · V2-CT-06 a V2-CT-09, V2-
 
 Referências: V2-RF-08, V2-RF-09 · V2-CT-13, V2-CT-14.
 
-- [x] Criar a coleção `pontos_coleta`, com endereço aninhado, categorias aceitas e horário.
-- [x] Expor CRUD autenticado, restrito à conta responsável pelo ponto.
-- [x] Garantir que a conta `ponto_coleta` continue provisionada por comando local.
-- [x] Impedir exclusão de responsável com ponto vinculado e recusar ponto incompatível no encaminhamento.
-- [x] Criar índices e testes de integridade referencial.
+- [ ] Criar a coleção `pontos_coleta`, com endereço aninhado, categorias aceitas e horário.
+- [ ] Expor CRUD autenticado, restrito à conta responsável pelo ponto.
+- [ ] Garantir que a conta `ponto_coleta` continue provisionada por comando local.
+- [ ] Impedir exclusão de responsável com ponto vinculado e recusar ponto incompatível no encaminhamento.
+- [ ] Criar índices e testes de integridade referencial.
 
 **Concluir a etapa quando:** V2-CT-13 e V2-CT-14 passarem, a disputa entre criar ponto e excluir responsável terminar sem registro órfão e os índices existirem no banco real.
-
-**Situação:** concluída em 2 de novembro de 2026 — 103 testes aprovados e validação em MongoDB real. A exclusão de responsável com ponto vinculado é recusada; sem transações no Compose atual, a corrida foi observada com resultado consistente, mas não prova todas as ordens. O encaminhamento de item usa o validador de compatibilidade na etapa 5.
 
 ## Etapa 4 — Interesses
 
