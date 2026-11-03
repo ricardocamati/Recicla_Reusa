@@ -73,7 +73,7 @@ def payload(**alteracoes: Any) -> dict[str, Any]:
         "nome": "Maria da Silva",
         "email": "maria@example.com",
         "senha": "Senha123",
-        "tipo": "doador",
+        "tipo": "pessoa",
         "endereco": {
             "logradouro": "Avenida Brasil",
             "numero": "1200",
@@ -117,7 +117,7 @@ async def test_cadastro_aceita_endereco_sem_complemento(
 ) -> None:
     dados = payload(
         email="sem-complemento@example.com",
-        tipo="beneficiario",
+        tipo="pessoa",
         endereco={
             "logradouro": "Rua B",
             "numero": "10",
@@ -182,7 +182,7 @@ async def test_atualizacao_autenticada_preserva_tipo_e_data_adicao(
 
     assert atualizado.status_code == 200
     corpo = atualizado.json()
-    assert corpo["tipo"] == "doador"
+    assert corpo["tipo"] == "pessoa"
     assert corpo["data_adicao"] == "2026-09-08T12:00:00Z"
     assert corpo["data_modificacao"] == "2026-09-08T12:01:00Z"
     assert corpo["endereco"]["cep"] == "87000001"
@@ -265,7 +265,7 @@ async def test_login_invalido_tem_resposta_generica(
 
 
 @pytest.mark.anyio
-async def test_cadastro_rejeita_ponto_de_coleta_e_email_duplicado(
+async def test_cadastro_aceita_somente_conta_de_pessoa(
     repositorio: RepositorioEmMemoria,
     instante: datetime,
 ) -> None:
@@ -275,14 +275,19 @@ async def test_cadastro_rejeita_ponto_de_coleta_e_email_duplicado(
             "/api/usuarios",
             json=payload(email="MARIA@EXAMPLE.COM"),
         )
-        ponto = await api.post(
+        # Perfis antigos e o perfil operacional não são criados pelo cadastro público.
+        legado = await api.post(
+            "/api/usuarios", json=payload(email="antigo@example.com", tipo="doador")
+        )
+        operador = await api.post(
             "/api/usuarios",
             json=payload(email="coleta@example.com", tipo="ponto_coleta"),
         )
 
     assert primeiro.status_code == 201
     assert duplicado.status_code == 409
-    assert ponto.status_code == 400
+    assert legado.status_code == 400
+    assert operador.status_code == 400
 
 
 @pytest.mark.anyio
@@ -398,3 +403,17 @@ async def test_cadastro_rejeita_cada_campo_obrigatorio_do_endereco(
 
     assert [resposta.status_code for resposta in respostas] == [400, 400, 400, 400]
     assert repositorio.usuarios == {}
+
+@pytest.mark.anyio
+async def test_cadastro_sem_tipo_cria_conta_de_pessoa(
+    repositorio: RepositorioEmMemoria,
+    instante: datetime,
+) -> None:
+    dados = payload()
+    dados.pop("tipo")
+
+    async with cliente(repositorio, instante) as api:
+        resposta = await api.post("/api/usuarios", json=dados)
+
+    assert resposta.status_code == 201
+    assert resposta.json()["tipo"] == "pessoa"

@@ -112,10 +112,10 @@ A v2.1 começa depois do fechamento da Parte I. Cada etapa substitui comportamen
 
 Referências: V21-RF-01 · V21-CT-01, V21-CT-29.
 
-- [ ] Substituir os perfis públicos de doador e beneficiário por uma conta de pessoa, com operador separado.
-- [ ] Ajustar autorização por operação, mantendo o operador restrito aos próprios locais.
-- [ ] Migrar interesses e itens existentes para a nova regra de papéis, preservando histórico.
-- [ ] Atualizar testes de permissão e a documentação de contratos.
+- [x] Substituir os perfis públicos de doador e beneficiário por uma conta de pessoa, com operador separado.
+- [x] Ajustar autorização por operação, mantendo o operador restrito aos próprios locais.
+- [x] Migrar interesses e itens existentes para a nova regra de papéis, preservando histórico.
+- [x] Atualizar testes de permissão e a documentação de contratos.
 
 ## Etapa 10 — Catálogo de ofertas e cadastro por intenção
 

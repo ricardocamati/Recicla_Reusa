@@ -50,7 +50,7 @@ def ambiente(monkeypatch):
         cliente_mongo.close()
 
 
-def nova_conta(ambiente, nome, tipo="beneficiario"):
+def nova_conta(ambiente, nome, tipo="pessoa"):
     cliente = TestClient(ambiente.app, headers={"Origin": "http://localhost:5500"})
     ambiente.clientes.append(cliente)
     email = f"{nome}-{uuid4().hex[:8]}@example.test"
@@ -168,7 +168,7 @@ def test_indicadores_contam_apenas_itens_concluidos(ambiente):
     ambiente.clientes.append(visitante)
     sem_sessao = visitante.get("/api/indicadores")
 
-    dono, _, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, _, _ = nova_conta(ambiente, "interessado")
     _, comprador_id, _ = nova_conta(ambiente, "comprador")
 
@@ -198,7 +198,7 @@ def test_indicadores_contam_apenas_itens_concluidos(ambiente):
 
 
 def test_doacao_completa_registra_beneficiario_do_aceite(ambiente):
-    dono, dono_id, _ = nova_conta(ambiente, "dono", "doador")
+    dono, dono_id, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, interessado_id, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": item["id"]})
@@ -231,7 +231,7 @@ def test_doacao_completa_registra_beneficiario_do_aceite(ambiente):
 
 
 def test_descarte_exige_ponto_compativel_e_conclui(ambiente):
-    dono, _, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _, _ = nova_conta(ambiente, "dono", "pessoa")
     operador, _ = novo_operador(ambiente)
     compatível = criar_ponto(operador, "Ponto de notebook", ["notebook"])["id"]
     incompatível = criar_ponto(operador, "Ponto de celular", ["celular"])["id"]
@@ -258,7 +258,7 @@ def test_descarte_exige_ponto_compativel_e_conclui(ambiente):
 
 
 def test_revenda_completa_e_segunda_conclusao(ambiente):
-    dono, _, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _, _ = nova_conta(ambiente, "dono", "pessoa")
     comprador, comprador_id, _ = nova_conta(ambiente, "comprador")
     item = criar_item(dono, destino="revenda", valor=300.0, condicao="reparavel")
     assert dono.put(
@@ -290,7 +290,7 @@ def test_revenda_completa_e_segunda_conclusao(ambiente):
 
 
 def test_referencias_do_fluxo_bloqueiam_exclusao(ambiente):
-    dono, dono_id, _ = nova_conta(ambiente, "dono", "doador")
+    dono, dono_id, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, interessado_id, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()

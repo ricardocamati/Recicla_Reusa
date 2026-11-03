@@ -30,17 +30,17 @@ def criar_router_itens(
             )
         return sessao
 
-    def exigir_doador(sessao: Sessao) -> None:
-        if sessao.tipo != "doador":
+    def exigir_pessoa(sessao: Sessao) -> None:
+        if sessao.tipo != "pessoa":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Ação permitida somente para doadores",
+                detail="Ação permitida somente para contas de pessoa",
             )
 
     @router.post("", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
     def criar(request: ItemCreateRequest, response: Response, contexto: Request) -> ItemResponse:
         sessao = sessao_obrigatoria(contexto)
-        exigir_doador(sessao)
+        exigir_pessoa(sessao)
         item = servico.criar(request, proprietario_id=sessao.usuario_id)
         response.headers["Location"] = f"/api/itens/{item.id}"
         return item
@@ -78,7 +78,7 @@ def criar_router_itens(
         contexto: Request,
     ) -> ItemResponse:
         sessao = sessao_obrigatoria(contexto)
-        exigir_doador(sessao)
+        exigir_pessoa(sessao)
         return servico.atualizar(
             item_id,
             request,
@@ -88,7 +88,7 @@ def criar_router_itens(
     @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
     def excluir(item_id: str, request: Request) -> Response:
         sessao = sessao_obrigatoria(request)
-        exigir_doador(sessao)
+        exigir_pessoa(sessao)
         servico.excluir(item_id, proprietario_id=sessao.usuario_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 

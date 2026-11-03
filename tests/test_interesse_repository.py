@@ -19,8 +19,8 @@ def _participantes(db, *, destino="doacao"):
     dono, interessado = ObjectId(), ObjectId()
     item = ObjectId()
     db.usuarios.insert_many([
-        {"_id": dono, "tipo": "doador"},
-        {"_id": interessado, "tipo": "beneficiario"},
+        {"_id": dono, "tipo": "pessoa"},
+        {"_id": interessado, "tipo": "pessoa"},
     ])
     db.itens.insert_one({
         "_id": item,

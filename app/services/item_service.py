@@ -94,7 +94,7 @@ class ItemService:
         self._pontos = pontos
 
     def criar(self, request: ItemCreateRequest, *, proprietario_id: str) -> ItemResponse:
-        proprietario = self._obter_doador(proprietario_id)
+        proprietario = self._obter_pessoa(proprietario_id)
         item = ItemMapper.para_modelo(
             request,
             proprietario_id=proprietario_id,
@@ -139,7 +139,7 @@ class ItemService:
         proprietario_id: str,
     ) -> ItemResponse:
         item = self._buscar_item(item_id)
-        proprietario = self._obter_doador(proprietario_id)
+        proprietario = self._obter_pessoa(proprietario_id)
         if item.proprietario_id != proprietario_id:
             raise ItemNaoAutorizadoError()
 
@@ -215,7 +215,7 @@ class ItemService:
 
     def excluir(self, item_id: str, *, proprietario_id: str) -> None:
         item = self._buscar_item(item_id)
-        self._obter_doador(proprietario_id)
+        self._obter_pessoa(proprietario_id)
         if item.proprietario_id != proprietario_id:
             raise ItemNaoAutorizadoError()
         if item.status != "disponivel":
@@ -315,7 +315,7 @@ class ItemService:
         comprador = self._repositorio_usuarios.buscar_por_id(comprador_id)
         if comprador is None:
             raise UsuarioNaoEncontradoError(comprador_id)
-        if comprador.tipo not in {"doador", "beneficiario"}:
+        if comprador.tipo != "pessoa":
             raise FluxoItemError(400, "Comprador deve ser uma pessoa cadastrada")
 
     def _buscar_item(self, item_id: str) -> Item:
@@ -324,11 +324,11 @@ class ItemService:
             raise ItemNaoEncontradoError(item_id)
         return item
 
-    def _obter_doador(self, usuario_id: str) -> Usuario:
+    def _obter_pessoa(self, usuario_id: str) -> Usuario:
         usuario = self._repositorio_usuarios.buscar_por_id(usuario_id)
         if usuario is None:
             raise UsuarioNaoEncontradoError(usuario_id)
-        if usuario.tipo != "doador":
+        if usuario.tipo != "pessoa":
             raise ItemNaoAutorizadoError()
         return usuario
 

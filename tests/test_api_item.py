@@ -165,21 +165,6 @@ async def test_doador_cadastra_item_valido_e_nao_duplica_endereco(
 
 
 @pytest.mark.anyio
-async def test_beneficiario_nao_pode_cadastrar_item(
-    repositorio_usuarios: RepositorioEmMemoria,
-    repositorio_itens: RepositorioItensEmMemoria,
-    instante: datetime,
-) -> None:
-    async with cliente(repositorio_usuarios, repositorio_itens, instante) as api:
-        await cadastrar_usuario(api, email="beneficiario@example.com", tipo="beneficiario")
-        await autenticar(api, "beneficiario@example.com")
-        resposta = await api.post("/api/itens", json=payload_item())
-
-    assert resposta.status_code == 403
-    assert repositorio_itens.itens == {}
-
-
-@pytest.mark.anyio
 async def test_ponto_coleta_consulta_mas_nao_cadastra_item(
     repositorio_usuarios: RepositorioEmMemoria,
     repositorio_itens: RepositorioItensEmMemoria,
@@ -189,7 +174,7 @@ async def test_ponto_coleta_consulta_mas_nao_cadastra_item(
         cadastro = await cadastrar_usuario(
             api,
             email="ponto@example.com",
-            tipo="beneficiario",
+            tipo="pessoa",
         )
         usuario = repositorio_usuarios.usuarios[cadastro.json()["id"]]
         usuario.tipo = "ponto_coleta"

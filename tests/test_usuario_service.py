@@ -45,7 +45,7 @@ def request(
         nome=nome,
         email=email,
         senha="Senha123",
-        tipo="doador",
+        tipo="pessoa",
         endereco={
             "logradouro": "Rua das Flores",
             "numero": "10A",
@@ -101,7 +101,7 @@ def test_atualizar_preserva_id_tipo_e_data_adicao_e_altera_modificacao() -> None
     resposta = service.atualizar(criado.id or "", update_request())
 
     assert resposta.id == criado.id
-    assert resposta.tipo == "doador"
+    assert resposta.tipo == "pessoa"
     assert resposta.data_adicao == datetime(2026, 9, 7, 12, 0, tzinfo=UTC)
     assert resposta.data_modificacao == datetime(2026, 9, 7, 13, 0, tzinfo=UTC)
     assert resposta.endereco.cidade == "Sarandi"

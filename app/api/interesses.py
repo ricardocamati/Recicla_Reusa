@@ -22,10 +22,8 @@ def criar_router_interesses(servico: InteresseService, sessoes: ArmazenamentoDeS
                 if sessao is None:
                     return JSONResponse(status_code=401, content={"detail": "Autenticação necessária"}, headers={"WWW-Authenticate": "Cookie"})
                 tipo = sessao.tipo
-                if tipo not in {"doador", "beneficiario"}:
+                if tipo != "pessoa":
                     return JSONResponse(status_code=403, content={"detail": "Ação não permitida para este perfil"})
-                if request.method == "GET" and request.url.path == "/api/interesses" and request.query_params.get("escopo", "meus") == "recebidos" and tipo != "doador":
-                    return JSONResponse(status_code=403, content={"detail": "Somente doadores podem consultar interesses recebidos"})
                 detalhe_id = request.path_params.get("interesse_id")
                 if detalhe_id is not None:
                     if not ObjectId.is_valid(detalhe_id):

@@ -71,7 +71,7 @@ def test_provisionamento_rejeita_email_duplicado() -> None:
 
 def test_request_de_provisionamento_nao_aceita_tipo_do_corpo() -> None:
     with pytest.raises(ValueError):
-        request(tipo="doador")
+        request(tipo="pessoa")
 
 
 def test_comando_provisiona_conta_controlada_no_mongo(monkeypatch, capsys) -> None:

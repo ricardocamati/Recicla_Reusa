@@ -1,12 +1,12 @@
 # Matriz de rastreabilidade — v2.1
 
-**Situação da implementação: planejada.** Símbolos existentes são pontos de impacto, não prova de aceitação v2.1. Os cenários escritos não estão automaticamente cobertos pelos testes v2.0. Esta tabela centraliza o estado para evitar repetir prioridade/situação em cada caso.
+**Situação da implementação: Etapa 9 concluída.** V21-RF-01 (conta de pessoa e operação) está implementada e coberta por testes de permissão e de migração; as demais linhas seguem planejadas e os símbolos citados são pontos de impacto, não prova de aceitação. Os cenários escritos não estão automaticamente cobertos pelos testes da v2.0.
 
 ## Requisitos funcionais
 
 | Requisito | Regras | Casos escritos | Superfícies de implementação futuras |
 |---|---|---|---|
-| V21-RF-01 — Conta de pessoa e operação | V21-RN-01, V21-RN-21, V21-RN-22 | V21-CT-01, V21-CT-29 | `app/api/usuarios.py`, `frontend/js/cadastro.js`; capacidades propostas a revisar |
+| V21-RF-01 — Conta de pessoa e operação | V21-RN-01, V21-RN-21, V21-RN-22 | V21-CT-01, V21-CT-29 — **implementados** | `tipo` restrito a `pessoa`/`ponto_coleta`, cadastro público só de pessoa, operador provisionado; migração em `scripts/migrar_papeis_v2_1.py` |
 | V21-RF-02 — Catálogo de ofertas | V21-RN-03, V21-RN-09, V21-RN-15, V21-RN-19, V21-RN-20, V21-RN-21 | V21-CT-02, V21-CT-03, V21-CT-30 | `frontend/js/catalogo.js::loadCatalog`, `app/services/item_service.py::ItemService.listar` |
 | V21-RF-03 — Cadastro por intenção e gestão | V21-RN-02, V21-RN-04, V21-RN-20, V21-RN-22 | V21-CT-04, V21-CT-25 | `frontend/js/itens.js::saveItem`, `app/services/item_service.py::ItemService.criar` |
 | V21-RF-04 — Interesse e reabertura | V21-RN-05 | V21-CT-05, V21-CT-06 | `frontend/js/interesses.js::loadInterests`, `app/services/interesse_service.py::InteresseService.criar` |

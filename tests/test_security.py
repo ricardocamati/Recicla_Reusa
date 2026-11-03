@@ -17,7 +17,7 @@ def test_sessao_expira_em_trinta_minutos() -> None:
     agora = [datetime(2026, 9, 8, 12, 0, tzinfo=UTC)]
     sessoes = ArmazenamentoDeSessoes(relogio=lambda: agora[0])
 
-    identificador = sessoes.criar("1", "doador")
+    identificador = sessoes.criar("1", "pessoa")
     assert sessoes.buscar(identificador) is not None
     assert sessoes.buscar(identificador).expira_em == agora[0] + timedelta(minutes=30)
 

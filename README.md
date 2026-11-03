@@ -61,7 +61,7 @@ A v2.0 usa cinco coleções: `usuarios`, `itens`, `interesses`, `pontos_coleta` 
 }
 ```
 
-A v2.1 é apenas documental nesta entrega: a proposta está em [artefatos/v2.1/](artefatos/v2.1/) e no planejamento do [TODO](TODO.md), sem código correspondente.
+A v2.1 está documentada em [artefatos/v2.1/](artefatos/v2.1/) e avança por etapas no [TODO](TODO.md). A Etapa 9 já saiu do papel: o cadastro público agora cria apenas conta de pessoa, que oferece e demonstra interesse com a mesma sessão, enquanto o operador continua provisionado e restrito aos próprios pontos. As etapas seguintes da v2.1 ainda não têm código.
 
 ## 6. Stack planejada
 
@@ -186,6 +186,6 @@ O resultado da execução está em [docs/verificacao-etapa8.md](docs/verificacao
 
 ## 12. Limites atuais
 
-Os indicadores somam a plataforma inteira, sem recorte por conta ou cidade, e essa escolha está documentada no contrato. A edição de ponto de coleta existe apenas na API: a tela cadastra e exclui, mas não sobrescreve complemento nem categorias de um ponto existente. A v2.1 permanece documental, sem código correspondente. A autenticação usa sessão em memória, adequada ao escopo acadêmico e não a uma implantação com múltiplas instâncias.
+Os indicadores somam a plataforma inteira, sem recorte por conta ou cidade, e essa escolha está documentada no contrato. A edição de ponto de coleta existe apenas na API: a tela cadastra e exclui, mas não sobrescreve complemento nem categorias de um ponto existente. Da v2.1, apenas a conta única de pessoa (Etapa 9) está implementada; o restante permanece documental. Bancos criados na v2.0 são normalizados por `scripts/migrar_papeis_v2_1.py`, que simula por padrão e só altera com `--aplicar`. A autenticação usa sessão em memória, adequada ao escopo acadêmico e não a uma implantação com múltiplas instâncias.
 
 > Projeto iniciado a partir do **template fornecido pelo professor Munif Gebara Júnior** e adaptado para Python conforme a proposta da AEP.
