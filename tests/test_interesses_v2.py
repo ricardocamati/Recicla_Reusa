@@ -31,7 +31,7 @@ class ServicoInteressesFake:
 @pytest.mark.anyio
 async def test_post_interesse_autenticado_retorna_201_e_nao_aceita_identidade_do_payload():
     sessoes = ArmazenamentoDeSessoes()
-    token = sessoes.criar("beneficiario-1", "beneficiario")
+    token = sessoes.criar("beneficiario-1", "pessoa")
     servico = ServicoInteressesFake()
     app = FastAPI()
     app.include_router(criar_router_interesses(servico, sessoes))
@@ -52,7 +52,7 @@ async def test_post_interesse_autenticado_retorna_201_e_nao_aceita_identidade_do
 @pytest.mark.anyio
 async def test_post_interesse_cria_vinculo_para_identidade_da_sessao():
     sessoes = ArmazenamentoDeSessoes()
-    token = sessoes.criar("beneficiario-1", "beneficiario")
+    token = sessoes.criar("beneficiario-1", "pessoa")
     servico = ServicoInteressesFake()
     app = FastAPI()
     app.include_router(criar_router_interesses(servico, sessoes))
@@ -71,7 +71,7 @@ async def test_post_interesse_cria_vinculo_para_identidade_da_sessao():
 
 class RepositorioServicoFake:
     def __init__(self, *, destino="doacao", proprietario_id="doador-1"):
-        self.usuario = {"tipo": "beneficiario"}
+        self.usuario = {"tipo": "pessoa"}
         self.item = {"proprietario_id": proprietario_id, "destino": destino, "status": "disponivel"}
         self.criados = []
 
@@ -121,7 +121,7 @@ def test_service_rejeita_interesse_proprio_descarte_ou_indisponivel(proprietario
 @pytest.mark.anyio
 async def test_autenticacao_acontece_antes_da_validacao_do_json():
     sessoes = ArmazenamentoDeSessoes()
-    token = sessoes.criar("beneficiario-1", "beneficiario")
+    token = sessoes.criar("beneficiario-1", "pessoa")
     servico = ServicoInteressesFake()
     app = FastAPI()
     app.include_router(criar_router_interesses(servico, sessoes))
@@ -134,4 +134,37 @@ async def test_autenticacao_acontece_antes_da_validacao_do_json():
     assert anonimo.status_code == 401
     assert anonimo.headers["www-authenticate"] == "Cookie"
     assert autenticado.status_code == 400
+    assert servico.criados == []
+
+
+class ServicoInteressesComListagem(ServicoInteressesFake):
+    def __init__(self):
+        super().__init__()
+        self.listagens = []
+
+    def listar(self, usuario_id, *, escopo="meus", **kwargs):
+        self.listagens.append((usuario_id, escopo))
+        return []
+
+
+@pytest.mark.anyio
+async def test_conta_de_pessoa_consulta_recebidos_e_operador_nao():
+    sessoes = ArmazenamentoDeSessoes()
+    operador = sessoes.criar("operador-1", "ponto_coleta")
+    pessoa = sessoes.criar("pessoa-1", "pessoa")
+    servico = ServicoInteressesComListagem()
+    app = FastAPI()
+    app.include_router(criar_router_interesses(servico, sessoes))
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as api:
+        api.cookies.set(SESSION_COOKIE_NAME, pessoa)
+        permitido = await api.get("/api/interesses", params={"escopo": "recebidos"})
+        api.cookies.set(SESSION_COOKIE_NAME, operador)
+        negado = await api.get("/api/interesses", params={"escopo": "recebidos"})
+        criacao = await api.post("/api/interesses", json={"item_id": "item-1"})
+
+    assert permitido.status_code == 200
+    assert negado.status_code == 403
+    assert criacao.status_code == 403
+    assert servico.listagens == [("pessoa-1", "recebidos")]
     assert servico.criados == []

@@ -3,8 +3,9 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-TipoUsuario = Literal["doador", "beneficiario", "ponto_coleta"]
-TipoCadastro = Literal["doador", "beneficiario"]
+TipoUsuario = Literal["pessoa", "ponto_coleta"]
+# Cadastro público cria apenas conta de pessoa; operador é provisionado.
+TipoCadastro = Literal["pessoa"]
 
 
 class EnderecoBase(BaseModel):
@@ -78,7 +79,9 @@ class DadosUsuarioRequest(BaseModel):
 
 
 class UsuarioCreateRequest(DadosUsuarioRequest):
-    tipo: TipoCadastro
+    # A conta de pessoa é o único cadastro público; o campo segue aceito
+    # para deixar o contrato explícito, mas não escolhe outro perfil.
+    tipo: TipoCadastro = "pessoa"
 
 
 class PontoColetaProvisionRequest(DadosUsuarioRequest):

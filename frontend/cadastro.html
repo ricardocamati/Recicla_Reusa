@@ -35,17 +35,10 @@
           </div>
         </div>
         <form id="register-form" class="form-stack" novalidate>
-          <div class="field-row">
-            <label class="field">Nome completo
-              <input name="nome" type="text" minlength="3" maxlength="120" autocomplete="name" required>
-            </label>
-            <label class="field">Tipo de conta
-              <select name="tipo" autocomplete="off" required>
-                <option value="doador">Doador</option>
-                <option value="beneficiario">Beneficiário</option>
-              </select>
-            </label>
-          </div>
+          <label class="field">Nome completo
+            <input name="nome" type="text" minlength="3" maxlength="120" autocomplete="name" required>
+          </label>
+          <p class="field-hint">Uma conta serve para oferecer e para demonstrar interesse ou comprar.</p>
           <label class="field">E-mail
             <input name="email" type="email" minlength="5" maxlength="160" autocomplete="email" required>
           </label>

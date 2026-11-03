@@ -15,7 +15,7 @@ def usuario(email: str = "joao@example.com") -> Usuario:
     return Usuario(
         nome="João",
         email=email,
-        tipo="beneficiario",
+        tipo="pessoa",
         endereco=Endereco(
             logradouro="Rua A",
             numero="1",

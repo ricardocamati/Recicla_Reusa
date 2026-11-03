@@ -42,7 +42,7 @@ class ServidorApi(BaseHTTPRequestHandler):
         "id": "selenium-user",
         "nome": "Usuário Selenium",
         "email": "selenium@example.com",
-        "tipo": "doador",
+        "tipo": "pessoa",
         "endereco": {
             "logradouro": "Rua de Teste",
             "numero": "100",

@@ -50,7 +50,7 @@ def ambiente(monkeypatch):
         cliente_mongo.close()
 
 
-def nova_conta(ambiente, nome, tipo="beneficiario"):
+def nova_conta(ambiente, nome, tipo="pessoa"):
     cliente = TestClient(ambiente.app, headers={"Origin": "http://localhost:5500"})
     ambiente.clientes.append(cliente)
     email = nome + "@example.test"
@@ -81,7 +81,7 @@ def criar_interesse(cliente, item):
 
 
 def test_ct10_ct11_ct12_reserva_cancelamento_e_privacidade(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, usuario_id = nova_conta(ambiente, "interessado")
     terceiro, _ = nova_conta(ambiente, "terceiro")
     item = criar_item(dono)
@@ -121,7 +121,7 @@ def test_ct10_ct11_ct12_reserva_cancelamento_e_privacidade(ambiente):
 def test_selecao_nula_pode_ser_aceita_por_api(ambiente, destino, status_esperado):
     from bson import ObjectId
 
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono, destino)
     item_oid = ObjectId(item["id"])
@@ -139,7 +139,7 @@ def test_selecao_nula_pode_ser_aceita_por_api(ambiente, destino, status_esperado
 
 
 def test_dois_aceites_reais_tem_um_vencedor_e_um_conflito(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     primeiro, _ = nova_conta(ambiente, "primeiro")
     segundo, _ = nova_conta(ambiente, "segundo")
     item = criar_item(dono)
@@ -160,7 +160,7 @@ def test_dois_aceites_reais_tem_um_vencedor_e_um_conflito(ambiente):
 
 
 def test_descarte_invalido_item_inexistente_e_preflight_patch(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono, "descarte")
     assert interessado.post("/api/interesses", json={"item_id": item["id"]}).status_code == 400
@@ -173,7 +173,7 @@ def test_descarte_invalido_item_inexistente_e_preflight_patch(ambiente):
 
 
 def test_recusa_e_venda_nao_antecipam_avaliacao(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     primeiro, _ = nova_conta(ambiente, "primeiro")
     segundo, _ = nova_conta(ambiente, "segundo")
     item = criar_item(dono, "revenda")
@@ -191,7 +191,7 @@ def test_recusa_e_venda_nao_antecipam_avaliacao(ambiente):
 
 def test_cancelar_aceito_apos_conclusao_nao_altera_interesse(ambiente):
     from bson import ObjectId
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = criar_interesse(interessado, item)
@@ -206,7 +206,7 @@ def test_rollback_real_apos_escrever_item_e_interesse(ambiente, monkeypatch):
     from pymongo.errors import OperationFailure
     from app.exceptions import InteresseError
     from datetime import datetime, UTC
-    dono, dono_id = nova_conta(ambiente, "dono", "doador")
+    dono, dono_id = nova_conta(ambiente, "dono", "pessoa")
     interessado, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = criar_interesse(interessado, item)
@@ -229,7 +229,7 @@ def test_rollback_real_apos_escrever_item_e_interesse(ambiente, monkeypatch):
 
 
 def test_consultas_rejeitam_extras_e_detalhe_prioriza_visibilidade(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, _ = nova_conta(ambiente, "interessado")
     terceiro, _ = nova_conta(ambiente, "terceiro")
     interesse = criar_interesse(interessado, criar_item(dono))
@@ -240,7 +240,7 @@ def test_consultas_rejeitam_extras_e_detalhe_prioriza_visibilidade(ambiente):
 
 
 def test_referencias_de_interesse_bloqueiam_exclusao_e_reserva_direta(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, usuario_id = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     campos = ("titulo", "descricao", "categoria", "marca", "modelo", "condicao", "destino", "valor", "especificacoes")
@@ -250,3 +250,71 @@ def test_referencias_de_interesse_bloqueiam_exclusao_e_reserva_direta(ambiente):
     assert dono.delete("/api/itens/" + item["id"]).status_code == 409
     assert interessado.delete("/api/usuarios/" + usuario_id).status_code == 409
     assert dono.put("/api/itens/" + item["id"], json=dados | {"destino": "descarte"}).status_code == 409
+
+
+def test_conta_unica_oferece_e_interessa_nas_duas_pontas(ambiente):
+    from datetime import UTC, datetime
+
+    from app.security.passwords import hash_password
+
+    ana, ana_id = nova_conta(ambiente, "ana")
+    bia, bia_id = nova_conta(ambiente, "bia")
+    item_ana = criar_item(ana)
+    item_bia = criar_item(bia)
+
+    # A mesma conta oferece e demonstra interesse na oferta da outra pessoa.
+    interesse_de_bia = criar_interesse(bia, item_ana)
+    interesse_de_ana = criar_interesse(ana, item_bia)
+    assert interesse_de_bia["usuario_id"] == bia_id
+    assert interesse_de_ana["usuario_id"] == ana_id
+
+    recebidos_ana = ana.get("/api/interesses", params={"escopo": "recebidos"}).json()
+    recebidos_bia = bia.get("/api/interesses", params={"escopo": "recebidos"}).json()
+    assert [i["item_id"] for i in recebidos_ana] == [item_ana["id"]]
+    assert [i["item_id"] for i in recebidos_bia] == [item_bia["id"]]
+
+    # Operador é provisionado, não se cadastra, e não recebe comandos de compra.
+    agora = datetime.now(UTC)
+    ambiente.usuarios.insert_one(
+        {
+            "nome": "Operador",
+            "email": "operador@example.test",
+            "tipo": "ponto_coleta",
+            "senha_hash": hash_password("Teste12345"),
+            "endereco": {
+                "logradouro": "Rua do Ponto",
+                "numero": "10",
+                "complemento": None,
+                "cep": "87000000",
+                "cidade": "Maringá",
+            },
+            "data_adicao": agora,
+            "data_modificacao": agora,
+        }
+    )
+    operador = TestClient(ambiente.app, headers={"Origin": "http://localhost:5500"})
+    ambiente.clientes.append(operador)
+    login = operador.post(
+        "/api/auth/login",
+        json={"email": "operador@example.test", "senha": "Teste12345"},
+    )
+    assert login.status_code == 200, login.text
+
+    negado_interesse = operador.post("/api/interesses", json={"item_id": item_ana["id"]})
+    negado_recebidos = operador.get("/api/interesses", params={"escopo": "recebidos"})
+    negado_item = operador.post(
+        "/api/itens",
+        json={
+            "titulo": "Oferta indevida",
+            "descricao": "Operador não oferta",
+            "categoria": "notebook",
+            "marca": "Marca teste",
+            "modelo": "Modelo teste",
+            "condicao": "funcional",
+            "destino": "doacao",
+            "especificacoes": {},
+        },
+    )
+    assert negado_interesse.status_code == 403
+    assert negado_recebidos.status_code == 403
+    assert negado_item.status_code == 403

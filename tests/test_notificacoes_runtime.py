@@ -52,7 +52,7 @@ def ambiente(monkeypatch):
         cliente_mongo.close()
 
 
-def nova_conta(ambiente, nome, tipo="beneficiario"):
+def nova_conta(ambiente, nome, tipo="pessoa"):
     cliente = TestClient(ambiente.app, headers={"Origin": "http://localhost:5500"})
     ambiente.clientes.append(cliente)
     email = f"{nome}-{uuid4().hex[:8]}@example.test"
@@ -115,7 +115,7 @@ def corpo(item, **alteracoes):
 
 
 def test_decisao_do_interesse_notifica_o_interessado(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, interessado_id = nova_conta(ambiente, "interessado")
     aceito_item = criar_item(dono)
     recusado_item = criar_item(dono, titulo="Segundo notebook")
@@ -143,7 +143,7 @@ def test_decisao_do_interesse_notifica_o_interessado(ambiente):
 
 
 def test_aceite_notifica_os_demais_interessados_da_reserva(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     escolhido, _ = nova_conta(ambiente, "escolhido")
     outro, _ = nova_conta(ambiente, "outro")
     item = criar_item(dono)
@@ -160,7 +160,7 @@ def test_aceite_notifica_os_demais_interessados_da_reserva(ambiente):
 
 
 def test_cancelamento_do_interessado_notifica_o_proprietario(ambiente):
-    dono, dono_id = nova_conta(ambiente, "dono", "doador")
+    dono, dono_id = nova_conta(ambiente, "dono", "pessoa")
     interessado, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()
@@ -175,7 +175,7 @@ def test_cancelamento_do_interessado_notifica_o_proprietario(ambiente):
 
 
 def test_mudanca_de_status_e_conclusao_notificam_quem_tem_interesse(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()
@@ -197,7 +197,7 @@ def test_mudanca_de_status_e_conclusao_notificam_quem_tem_interesse(ambiente):
 
 
 def test_listagem_e_leitura_sao_restritas_ao_destinatario(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, _ = nova_conta(ambiente, "interessado")
     terceiro, _ = nova_conta(ambiente, "terceiro")
     item = criar_item(dono)
@@ -226,7 +226,7 @@ def test_listagem_e_leitura_sao_restritas_ao_destinatario(ambiente):
 
 
 def test_evento_repetido_nao_duplica_aviso(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, interessado_id = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()
@@ -257,7 +257,7 @@ def test_evento_repetido_nao_duplica_aviso(ambiente):
 
 
 def test_usuario_sem_interesse_nao_recebe_aviso(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, _ = nova_conta(ambiente, "interessado")
     sem_interesse, _ = nova_conta(ambiente, "sem-interesse")
     item = criar_item(dono, destino="revenda", valor=100.0)
@@ -275,7 +275,7 @@ def test_usuario_sem_interesse_nao_recebe_aviso(ambiente):
 def test_falha_ao_registrar_aviso_desfaz_a_transicao(ambiente, monkeypatch):
     import app.repositories.mongo_item_repository as modulo
 
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono, destino="revenda", valor=50.0)
     interessado.post("/api/interesses", json={"item_id": item["id"]})
@@ -294,7 +294,7 @@ def test_falha_ao_registrar_aviso_desfaz_a_transicao(ambiente, monkeypatch):
 
 
 def test_api_rejeita_parametro_extra_e_corpo_invalido(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "doador")
+    dono, _ = nova_conta(ambiente, "dono", "pessoa")
     interessado, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()

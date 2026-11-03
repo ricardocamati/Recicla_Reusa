@@ -238,7 +238,7 @@ class MongoInteresseRepository:
     def _validar_criacao(item, usuario, usuario_id: str) -> None:
         if usuario is None:
             raise InteresseError(404, "Usuário não encontrado")
-        if usuario.get("tipo") not in {"doador", "beneficiario"}:
+        if usuario.get("tipo") != "pessoa":
             raise InteresseError(403, "Este perfil não pode registrar interesses")
         if item is None:
             raise InteresseError(404, "Item não encontrado")

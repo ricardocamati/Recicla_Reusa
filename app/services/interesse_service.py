@@ -33,7 +33,7 @@ class InteresseService:
 
     def criar(self, dados, usuario_id: str) -> InteresseResponse:
         usuario = self._usuario_valido(usuario_id)
-        if usuario.get("tipo") not in {"doador", "beneficiario"}:
+        if usuario.get("tipo") != "pessoa":
             raise InteresseError(403, "Este perfil não pode registrar interesses")
         item_id = dados.item_id if hasattr(dados, "item_id") else dados["item_id"]
         item = self._repositorio.buscar_item(item_id)
@@ -53,8 +53,8 @@ class InteresseService:
         usuario = self._usuario_valido(usuario_id)
         if escopo not in {"meus", "recebidos"}:
             raise InteresseError(400, "Escopo inválido")
-        if escopo == "recebidos" and usuario.get("tipo") != "doador":
-            raise InteresseError(403, "Somente doadores podem consultar interesses recebidos")
+        if escopo == "recebidos" and usuario.get("tipo") != "pessoa":
+            raise InteresseError(403, "Somente contas de pessoa podem consultar interesses recebidos")
         rows = self._repositorio.listar(usuario_id, escopo=escopo, item_id=item_id, status=status, offset=offset, limite=limite)
         return [InteresseMapper.para_resposta(i) for i in rows]
 
@@ -70,7 +70,7 @@ class InteresseService:
 
     def atualizar(self, interesse_id: str, dados, usuario_id: str) -> InteresseResponse:
         usuario = self._usuario_valido(usuario_id)
-        if usuario.get("tipo") not in {"doador", "beneficiario"}:
+        if usuario.get("tipo") != "pessoa":
             raise InteresseError(403, "Este perfil não pode alterar interesses")
         novo_status = dados.status if hasattr(dados, "status") else dados["status"]
         if novo_status not in {"aceito", "recusado", "cancelado"}:

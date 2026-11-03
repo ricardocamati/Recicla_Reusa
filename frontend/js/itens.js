@@ -268,7 +268,7 @@ async function initItems() {
   usuario = await requireSession();
   if (!usuario) return;
   setupAuthenticatedHeader(usuario);
-  if (usuario.tipo !== "doador") {
+  if (usuario.tipo !== "pessoa") {
     document.getElementById("item-management").hidden = true;
     document.getElementById("not-donor").hidden = false;
     return;

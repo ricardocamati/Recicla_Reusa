@@ -113,7 +113,7 @@ def usuarios() -> RepositorioEmMemoria:
     repo = RepositorioEmMemoria()
     repo.criar(usuario("operador@example.com", "ponto_coleta"))
     repo.criar(usuario("outro.operador@example.com", "ponto_coleta"))
-    repo.criar(usuario("doador@example.com", "doador"))
+    repo.criar(usuario("doador@example.com", "pessoa"))
     return repo
 
 

@@ -76,7 +76,7 @@ def test_javascript_nao_persiste_segredos_nem_renderiza_html_da_api() -> None:
 def test_javascript_aplica_permissoes_e_erros_http() -> None:
     javascript = ler_javascript()
 
-    for perfil in ("doador", "beneficiario", "ponto_coleta"):
+    for perfil in ("pessoa", "pessoa", "ponto_coleta"):
         assert perfil in javascript
     for status in ("401", "403", "404"):
         assert f"error.status === {status}" in javascript

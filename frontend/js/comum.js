@@ -4,8 +4,7 @@ export { ApiError, requestApi };
 
 export const ROTULOS = {
   tipo: {
-    doador: "Doador",
-    beneficiario: "Beneficiário",
+    pessoa: "Pessoa",
     ponto_coleta: "Ponto de coleta",
   },
   categoria: {
@@ -123,7 +122,7 @@ export function setupAuthenticatedHeader(usuario) {
   }
   if (userName) userName.textContent = usuario.nome;
   if (roleBadge) roleBadge.textContent = labelFor("tipo", usuario.tipo);
-  if (itemsLink) itemsLink.hidden = usuario.tipo !== "doador";
+  if (itemsLink) itemsLink.hidden = usuario.tipo === "ponto_coleta";
 
   const logoutButton = byId("logout-button");
   if (logoutButton && !logoutButton.dataset.bound) {
@@ -161,7 +160,7 @@ export function userPayloadFromForm(form) {
     nome: String(data.get("nome") || "").trim(),
     email: String(data.get("email") || "").trim(),
     senha: String(data.get("senha") || ""),
-    tipo: String(data.get("tipo") || "doador"),
+    tipo: "pessoa",
     endereco: addressFromForm(data),
   };
 }
@@ -206,8 +205,8 @@ export function fillProfileForm(form, usuario) {
 }
 
 export function roleDescription(tipo) {
-  if (tipo === "doador") {
-    return "Cadastre seus eletrônicos e ajude a mantê-los em circulação.";
+  if (tipo === "pessoa") {
+    return "Ofereça eletrônicos ou encontre itens para reaproveitar, com a mesma conta.";
   }
   if (tipo === "ponto_coleta") {
     return "Encontre itens destinados a descarte e acompanhe o catálogo.";
