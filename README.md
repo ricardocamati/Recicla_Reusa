@@ -40,9 +40,9 @@ Cada destino terá seu próprio fluxo de status e um histórico rastreável. O s
 
 ### Estado atual do repositório
 
-A primeira entrega conclui os fluxos de usuários e itens nas coleções MongoDB `usuarios` e `itens`: cadastro público de doadores e beneficiários, campos de endereço planos no contrato HTTP, modelo de domínio e documento de usuário, auditoria temporal em UTC, e-mail normalizado com índice único, sessões simples em cookie HttpOnly, catálogo filtrável, autorização por proprietário e frontend simples separado em HTML, CSS e JavaScript.
+A primeira entrega está concluída. A evolução v2.0 já implementa usuários com endereço aninhado, itens com especificações e histórico, pontos de coleta e a API de interesses. Permanecem a auditoria temporal em UTC, e-mail normalizado com índice único, sessões em cookie HttpOnly e autorização por identidade/propriedade.
 
-Itens referenciam o usuário por `proprietario_id` e não duplicam o endereço. O histórico de ciclo de vida, interesses e pontos de coleta permanecem na evolução da v2.0; a implementação atual mantém a evolução visível no histórico de commits.
+Itens referenciam o usuário por `proprietario_id` e não duplicam o endereço. O aceite de interesse em uma doação reserva o item e registra seu histórico na mesma transação MongoDB. Os fluxos completos, notificações, indicadores e as novas telas seguem no [TODO](TODO.md); não estão concluídos por essa API. Consulte a [verificação da etapa de interesses](docs/verificacao-interesses.md).
 
 ### Evolução planejada
 

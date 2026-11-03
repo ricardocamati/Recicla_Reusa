@@ -26,10 +26,6 @@ Referências: V2-RF-01, V2-RF-02, V2-RF-15 · V2-CT-01 a V2-CT-05.
 - [x] Manter o contrato de sessão, cookie e autorização por identidade sem alteração.
 - [x] Atualizar testes de usuários e a documentação HTTP afetada.
 
-**Concluir a etapa quando:** V2-CT-01 a V2-CT-05 passarem, a suíte completa estiver verde e nenhuma resposta pública expuser e-mail, endereço completo ou hash.
-
-**Situação:** concluída em 2 de novembro de 2026 — 79 testes aprovados e validação em replica set real. Documentos antigos com endereço plano continuam legíveis; migração fica para quando houver dados a converter.
-
 ## Etapa 2 — Itens: especificações, histórico e consultas
 
 Referências: V2-RF-03, V2-RF-04, V2-RF-05, V2-RF-10 · V2-CT-06 a V2-CT-09, V2-CT-15, V2-CT-16, V2-CT-22.
@@ -39,10 +35,6 @@ Referências: V2-RF-03, V2-RF-04, V2-RF-05, V2-RF-10 · V2-CT-06 a V2-CT-09, V2-
 - [x] Implementar filtros e paginação do catálogo sem expor endereço do proprietário.
 - [x] Proteger atualização e exclusão por propriedade, com conflito explícito quando o status mudou na concorrência.
 - [x] Atualizar testes de item, repositório e API.
-
-**Concluir a etapa quando:** V2-CT-06 a V2-CT-09, V2-CT-15, V2-CT-16 e V2-CT-22 passarem, a alteração concorrente retornar conflito em vez de sobrescrever, e o item não duplicar endereço.
-
-**Situação:** concluída em 2 de novembro de 2026 — 88 testes aprovados e validação em replica set real. A concorrência usa o status esperado como precondição atômica, sem campo de versão exposto. A tela de catálogo pede o limite máximo da API enquanto não houver navegação por páginas.
 
 ## Etapa 3 — Pontos de coleta
 
@@ -54,21 +46,17 @@ Referências: V2-RF-08, V2-RF-09 · V2-CT-13, V2-CT-14.
 - [x] Impedir exclusão de responsável com ponto vinculado e recusar ponto incompatível no encaminhamento.
 - [x] Criar índices e testes de integridade referencial.
 
-**Concluir a etapa quando:** V2-CT-13 e V2-CT-14 passarem, a disputa entre criar ponto e excluir responsável terminar sem registro órfão e os índices existirem no banco real.
-
-**Situação:** concluída em 2 de novembro de 2026 — 103 testes aprovados e validação em MongoDB real. A exclusão de responsável com ponto vinculado é recusada; sem transações no Compose atual, a corrida foi observada com resultado consistente, mas não prova todas as ordens. O encaminhamento de item usa o validador de compatibilidade na etapa 5.
-
 ## Etapa 4 — Interesses
 
 Referências: V2-RF-06, V2-RF-07 · V2-CT-10, V2-CT-11, V2-CT-12.
 
-- [ ] Criar a coleção `interesses` relacionando item e interessado, com status e datas.
-- [ ] Registrar interesse, listar próprios e recebidos, e permitir decisão do proprietário.
-- [ ] Impedir interesse do próprio dono e segunda relação para o mesmo par item/pessoa.
-- [ ] Reservar a doação de forma transacional ao aceitar, com efeito e histórico na mesma unidade.
-- [ ] Cobrir com testes de API, repositório e concorrência.
+- [x] Criar a coleção `interesses` relacionando item e interessado, com status e datas.
+- [x] Registrar interesse, listar próprios e recebidos, e permitir decisão do proprietário.
+- [x] Impedir interesse do próprio dono e segunda relação para o mesmo par item/pessoa.
+- [x] Reservar a doação de forma transacional ao aceitar, com efeito e histórico na mesma unidade.
+- [x] Cobrir com testes de API, repositório e concorrência.
 
-**Concluir a etapa quando:** V2-CT-10 a V2-CT-12 passarem, dois aceites simultâneos produzirem um vencedor e um conflito, e o cancelamento devolver o item a disponível.
+Validações: [API, MongoDB real e Docker](docs/verificacao-interesses.md).
 
 ## Etapa 5 — Fluxos de doação, descarte e revenda
 
@@ -80,8 +68,6 @@ Referências: V2-RF-11, V2-RF-12, V2-RF-13 · V2-CT-17 a V2-CT-21.
 - [ ] Concluir doação, descarte e revenda uma única vez, atualizando item, histórico e indicador na mesma transação.
 - [ ] Testar transições inválidas, segunda conclusão e rollback.
 
-**Concluir a etapa quando:** V2-CT-17 a V2-CT-21 passarem, a segunda conclusão for recusada sem efeito parcial e o histórico refletir cada passo.
-
 ## Etapa 6 — Notificações
 
 Referências: V2-RF-17 · V2-CT-26 a V2-CT-30.
@@ -91,8 +77,6 @@ Referências: V2-RF-17 · V2-CT-26 a V2-CT-30.
 - [ ] Expor caixa de entrada com listagem e marcação de leitura, restrita ao destinatário.
 - [ ] Não notificar quem não tem vínculo com o item nem duplicar aviso do mesmo evento.
 - [ ] Testar emissão, privacidade, idempotência e rollback.
-
-**Concluir a etapa quando:** V2-CT-26 a V2-CT-30 passarem, reenvio da mesma operação não criar aviso novo e nenhum destinatário receber dado de terceiro.
 
 ## Etapa 7 — Indicadores e frontend das novas telas
 
@@ -104,8 +88,6 @@ Referências: V2-RF-14, V2-RF-16 · V2-CT-23, V2-CT-24 · [docs/http-api.md](doc
 - [ ] Regenerar a OpenAPI do runtime e confrontá-la com a especificação versionada, registrando diferenças.
 - [ ] Cobrir as telas com Selenium e atualizar os contratos documentados.
 
-**Concluir a etapa quando:** V2-CT-23 e V2-CT-24 passarem, as três telas funcionarem em navegador real e o contrato gerado tiver teste de correspondência.
-
 ## Etapa 8 — Fechamento da v2.0
 
 Referências: V2-RNF-05 a V2-RNF-10, V2-CT-25 · [matriz](artefatos/v2.0/matriz_rastreabilidade.md).
@@ -115,8 +97,6 @@ Referências: V2-RNF-05 a V2-RNF-10, V2-CT-25 · [matriz](artefatos/v2.0/matriz_
 - [ ] Validar auditoria temporal e versão em todas as coleções.
 - [ ] Confirmar que a limpeza de fixtures é seletiva e comprovada.
 - [ ] Atualizar evidências, matriz, README e registro da entrega; conferir links e identificadores.
-
-**Concluir a etapa quando:** V2-CT-25 passar, as três jornadas terminarem verdes em execuções repetidas, a matriz vincular cada requisito a teste e evidência, e a árvore do repositório estiver limpa.
 
 # Parte II — v2.1
 
@@ -131,8 +111,6 @@ Referências: V21-RF-01 · V21-CT-01, V21-CT-29.
 - [ ] Migrar interesses e itens existentes para a nova regra de papéis, preservando histórico.
 - [ ] Atualizar testes de permissão e a documentação de contratos.
 
-**Concluir a etapa quando:** V21-CT-01 e V21-CT-29 passarem, a mesma sessão oferecer e manifestar interesse sem trocar de perfil, e nenhum operador receber comando de compra.
-
 ## Etapa 10 — Catálogo de ofertas e cadastro por intenção
 
 Referências: V21-RF-02, V21-RF-03, V21-RF-14 · V21-CT-02, V21-CT-03, V21-CT-04, V21-CT-24.
@@ -142,8 +120,6 @@ Referências: V21-RF-02, V21-RF-03, V21-RF-14 · V21-CT-02, V21-CT-03, V21-CT-04
 - [ ] Guiar o cadastro em intenção, características e revisão, com rascunho e publicação.
 - [ ] Exibir Ativos, Em andamento e Encerrados, com arquivamento sem apagar referências.
 - [ ] Atualizar testes de catálogo, cadastro e arquivamento.
-
-**Concluir a etapa quando:** V21-CT-02 a V21-CT-04 e V21-CT-24 passarem, preço não aparecer em doação nem descarte, e editar não alterar estado por campo genérico.
 
 ## Etapa 11 — Interesse, retomada e reserva
 
@@ -155,8 +131,6 @@ Referências: V21-RF-04, V21-RF-05 · V21-CT-05 a V21-CT-08.
 - [ ] Tratar desistência e não comparecimento liberando o item.
 - [ ] Cobrir concorrência de reserva e conflitos com testes reais.
 
-**Concluir a etapa quando:** V21-CT-05 a V21-CT-08 passarem, dois pedidos simultâneos produzirem uma única reserva e a liberação devolver o item a disponível sem apagar histórico.
-
 ## Etapa 12 — Combinação, entrega bilateral e venda
 
 Referências: V21-RF-06, V21-RF-07, V21-RF-08 · V21-CT-09 a V21-CT-12.
@@ -166,8 +140,6 @@ Referências: V21-RF-06, V21-RF-07, V21-RF-08 · V21-CT-09 a V21-CT-12.
 - [ ] Permitir venda direta de usado, congelando o preço no aceite e exigindo liberação para alterá-lo.
 - [ ] Atualizar indicadores apenas na confirmação, contando uma vez por item.
 - [ ] Testar pendência sem confirmação, terceiro não autorizado e reenvio da mesma operação.
-
-**Concluir a etapa quando:** V21-CT-09 a V21-CT-12 passarem, declaração sozinha não concluir, e o preço reservado não puder mudar sem liberação e novo aceite.
 
 ## Etapa 13 — Descarte guiado e operação do ponto
 
@@ -179,8 +151,6 @@ Referências: V21-RF-09, V21-RF-10, V21-RF-11 · V21-CT-13 a V21-CT-21.
 - [ ] Dar ao operador filas de previstas e recebidas, com filtro por local, paginação e motivo de impossibilidade.
 - [ ] Tratar inativação de ponto com previsões ativas e disputa entre previsão e mudança de categoria.
 
-**Concluir a etapa quando:** V21-CT-13 a V21-CT-21 passarem, troca de ponto ser atômica, recebimento ocorrer uma única vez e inativação não apagar histórico.
-
 ## Etapa 14 — Indicação de lugar pelo autor
 
 Referências: V21-RF-16, V21-RNF-07 · V21-CT-31 a V21-CT-34.
@@ -191,8 +161,6 @@ Referências: V21-RF-16, V21-RNF-07 · V21-CT-31 a V21-CT-34.
 - [ ] Permitir desfazer enquanto o item não estiver arquivado, sem perder histórico.
 - [ ] Separar, nos indicadores, recebimento no ponto de destinação apenas informada.
 
-**Concluir a etapa quando:** V21-CT-31 a V21-CT-34 passarem, nenhuma indicação aparecer no diretório nem contar como recebimento, e a validação recusar coordenadas e arquivos.
-
 ## Etapa 15 — Avisos, navegação e fechamento da v2.1
 
 Referências: V21-RF-12, V21-RF-13, V21-RF-15 · V21-CT-22, V21-CT-23, V21-CT-25 a V21-CT-28, V21-CT-30 · [matriz](artefatos/v2.1/matriz_rastreabilidade.md).
@@ -202,5 +170,3 @@ Referências: V21-RF-12, V21-RF-13, V21-RF-15 · V21-CT-22, V21-CT-23, V21-CT-25
 - [ ] Mostrar próximas ações por ator, estados vazios úteis, foco acessível e bloqueio de duplo envio.
 - [ ] Preservar filtros e página ao voltar do detalhe e oferecer reconciliação quando a resposta se perder.
 - [ ] Rodar as três jornadas em stack isolada, atualizar evidências, matriz e contratos.
-
-**Concluir a etapa quando:** V21-CT-22, V21-CT-23, V21-CT-25 a V21-CT-28 e V21-CT-30 passarem, as jornadas terminarem verdes em execuções repetidas e nenhum indicador misturar previsão, recebimento e reciclagem.

@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from typing import Protocol
 
 from app.exceptions import (
+    ConflitoEstadoError,
     ItemNaoAutorizadoError,
     ItemNaoEncontradoError,
     TransicaoInvalidaError,
@@ -60,10 +61,12 @@ class ItemService:
         repositorio_usuarios: RepositorioDeUsuariosParaItens,
         *,
         relogio: Callable[[], datetime] | None = None,
+        reservas_por_interesse: bool = False,
     ) -> None:
         self._repositorio = repositorio
         self._repositorio_usuarios = repositorio_usuarios
         self._relogio = relogio or (lambda: datetime.now(UTC))
+        self._reservas_por_interesse = reservas_por_interesse
 
     def criar(self, request: ItemCreateRequest, *, proprietario_id: str) -> ItemResponse:
         proprietario = self._obter_doador(proprietario_id)
@@ -118,6 +121,10 @@ class ItemService:
         instante = self._relogio()
         status_anterior = item.status
         novo_status = request.status
+        if (self._reservas_por_interesse and item.destino == "doacao"
+                and novo_status == "reservado" and status_anterior != "reservado"):
+            # A reserva é efeito do aceite, nunca de um PUT isolado.
+            raise ConflitoEstadoError()
         if item.status in STATUS_CONCLUIDOS:
             if (novo_status is not None and novo_status != item.status) or (
                 request.destino != item.destino
@@ -138,7 +145,7 @@ class ItemService:
 
         atualizado = self._repositorio.atualizar(
             item,
-            status_esperado=status_anterior if transicao else None,
+            status_esperado=status_anterior,
         )
         return self._resposta(atualizado, proprietario)
 

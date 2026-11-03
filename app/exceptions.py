@@ -49,3 +49,10 @@ class PontoIncompativelError(Exception):
 class ReferenciaAtivaError(Exception):
     def __init__(self) -> None:
         super().__init__("Registro possui referências ativas")
+
+
+class InteresseError(Exception):
+    def __init__(self, status_code: int, detail: str) -> None:
+        super().__init__(detail)
+        self.status_code = status_code
+        self.detail = detail
