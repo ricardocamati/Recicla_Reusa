@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Pontos de coleta no Recicla/Reusa.">
+  <title>Pontos de coleta | Recicla/Reusa</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="brand" href="./index.html" aria-label="Recicla/Reusa, início">
+        <span class="brand-mark" aria-hidden="true">↺</span>
+        <span>Recicla/<span>Reusa</span></span>
+      </a>
+      <nav class="header-actions" aria-label="Navegação principal">
+        <a class="nav-link" href="./catalogo.html">Catálogo</a>
+        <a class="nav-link" href="./itens.html">Meus itens</a>
+        <a class="nav-link" href="./interesses.html">Interesses</a>
+        <a class="nav-link active" href="./pontos.html" aria-current="page">Pontos</a>
+        <a class="nav-link" href="./notificacoes.html">Notificações</a>
+        <a class="nav-link" href="./perfil.html">Meu perfil</a>
+        <span id="session-chip" class="session-chip" hidden></span>
+        <button id="logout-button" class="button button-ghost" type="button" hidden>Sair</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="global-message" class="message" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <main class="page-content">
+    <div class="container">
+      <section class="workspace-heading">
+        <div>
+          <p class="eyebrow">Descarte formal</p>
+          <h1>Pontos de coleta, <span id="user-name">...</span>.</h1>
+          <p class="section-description">Encontre locais que recebem cada categoria de equipamento.</p>
+        </div>
+        <span id="role-badge" class="role-badge">...</span>
+      </section>
+
+      <section class="section-block" aria-labelledby="pontos-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Rede de coleta</p>
+            <h2 id="pontos-title">Locais cadastrados</h2>
+          </div>
+          <form id="pontos-filtros" class="form-actions">
+            <label class="field field-inline">Cidade
+              <input id="filtro-ponto-cidade" name="cidade" type="text" maxlength="160" placeholder="Maringá">
+            </label>
+            <label class="field field-inline">Categoria
+              <select id="filtro-ponto-categoria" name="categoria">
+                <option value="">Todas</option>
+                <option value="informatica">Informática</option>
+                <option value="notebook">Notebook</option>
+                <option value="celular">Celular</option>
+                <option value="monitor">Monitor</option>
+                <option value="impressora">Impressora</option>
+                <option value="outro">Outro</option>
+              </select>
+            </label>
+            <button class="button button-secondary" type="submit">Filtrar</button>
+          </form>
+        </div>
+        <p id="pontos-message" class="form-message" role="status" aria-live="polite"></p>
+        <div id="pontos-list" class="item-grid" aria-live="polite"></div>
+      </section>
+
+      <section id="ponto-admin" class="section-block" aria-labelledby="ponto-admin-title" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Conta operacional</p>
+            <h2 id="ponto-admin-title">Seus pontos</h2>
+          </div>
+        </div>
+        <div class="card form-card">
+          <form id="ponto-form" class="form-stack">
+            <label class="field">Nome do ponto
+              <input name="nome" type="text" minlength="3" maxlength="120" required>
+            </label>
+            <div class="field-row">
+              <label class="field">Logradouro
+                <input name="logradouro" type="text" minlength="1" maxlength="160" required>
+              </label>
+              <label class="field">Número
+                <input name="numero" type="text" maxlength="20" required>
+              </label>
+            </div>
+            <div class="field-row">
+              <label class="field">CEP
+                <input name="cep" type="text" maxlength="9" required>
+              </label>
+              <label class="field">Cidade
+                <input name="cidade" type="text" maxlength="160" required>
+              </label>
+            </div>
+            <label class="field">Categorias aceitas
+              <select name="categorias_aceitas" multiple size="5" required>
+                <option value="informatica">Informática</option>
+                <option value="notebook">Notebook</option>
+                <option value="desktop">Desktop</option>
+                <option value="celular">Celular</option>
+                <option value="tablet">Tablet</option>
+                <option value="televisao">Televisão</option>
+                <option value="monitor">Monitor</option>
+                <option value="impressora">Impressora</option>
+                <option value="outro">Outro</option>
+              </select>
+            </label>
+            <label class="field">Horário de atendimento
+              <input name="horario_atendimento" type="text" minlength="3" maxlength="160" required>
+            </label>
+            <div class="form-actions">
+              <button class="button button-primary" type="submit">Salvar ponto</button>
+            </div>
+            <p id="ponto-form-message" class="form-message" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p><strong>Recicla/Reusa</strong></p>
+      <p>Cada escolha pode iniciar um novo ciclo.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="./js/pontos.js"></script>
+</body>
+</html>

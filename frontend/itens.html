@@ -41,6 +41,38 @@
 
       <p id="not-donor" class="message error" hidden>Somente doadores podem administrar itens. Consulte o <a href="./catalogo.html">catálogo</a>.</p>
 
+      <section class="section-block" aria-labelledby="indicadores-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Impacto</p>
+            <h2 id="indicadores-title">Itens concluídos</h2>
+          </div>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card card">
+            <span class="icon-badge icon-green" aria-hidden="true">✓</span>
+            <h3>Doados</h3>
+            <p><strong id="indicador-doados">0</strong> item(ns)</p>
+          </article>
+          <article class="feature-card card">
+            <span class="icon-badge icon-blue" aria-hidden="true">◇</span>
+            <h3>Coletados</h3>
+            <p><strong id="indicador-coletados">0</strong> item(ns)</p>
+          </article>
+          <article class="feature-card card">
+            <span class="icon-badge icon-yellow" aria-hidden="true">↗</span>
+            <h3>Vendidos</h3>
+            <p><strong id="indicador-vendidos">0</strong> item(ns)</p>
+          </article>
+          <article class="feature-card card">
+            <span class="icon-badge" aria-hidden="true">Σ</span>
+            <h3>Total</h3>
+            <p><strong id="indicador-total">0</strong> item(ns)</p>
+          </article>
+        </div>
+        <p id="indicadores-message" class="form-message" role="status" aria-live="polite"></p>
+      </section>
+
       <section id="item-management" class="management-section" aria-labelledby="management-title">
         <div class="card-grid card-grid-management">
           <section class="card form-card" aria-labelledby="management-title">

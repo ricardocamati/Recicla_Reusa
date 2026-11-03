@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Sua caixa de entrada no Recicla/Reusa.">
+  <title>Notificações | Recicla/Reusa</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="brand" href="./index.html" aria-label="Recicla/Reusa, início">
+        <span class="brand-mark" aria-hidden="true">↺</span>
+        <span>Recicla/<span>Reusa</span></span>
+      </a>
+      <nav class="header-actions" aria-label="Navegação principal">
+        <a class="nav-link" href="./catalogo.html">Catálogo</a>
+        <a class="nav-link" href="./itens.html">Meus itens</a>
+        <a class="nav-link" href="./interesses.html">Interesses</a>
+        <a class="nav-link" href="./pontos.html">Pontos</a>
+        <a class="nav-link active" href="./notificacoes.html" aria-current="page">Notificações</a>
+        <a class="nav-link" href="./perfil.html">Meu perfil</a>
+        <span id="session-chip" class="session-chip" hidden></span>
+        <button id="logout-button" class="button button-ghost" type="button" hidden>Sair</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="global-message" class="message" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <main class="page-content">
+    <div class="container">
+      <section class="workspace-heading">
+        <div>
+          <p class="eyebrow">Caixa de entrada</p>
+          <h1>Seus avisos, <span id="user-name">...</span>.</h1>
+          <p class="section-description">Decisões sobre interesses e mudanças nos itens que você acompanha.</p>
+        </div>
+        <span id="role-badge" class="role-badge">...</span>
+      </section>
+
+      <section class="section-block" aria-labelledby="avisos-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Acompanhamento</p>
+            <h2 id="avisos-title">Notificações</h2>
+          </div>
+          <div class="form-actions">
+            <label class="field field-inline">Mostrar
+              <select id="filtro-lida">
+                <option value="todas">Todas</option>
+                <option value="nao-lidas">Não lidas</option>
+                <option value="lidas">Lidas</option>
+              </select>
+            </label>
+            <button id="atualizar-notificacoes" class="button button-ghost" type="button">Atualizar</button>
+          </div>
+        </div>
+        <p id="notificacoes-message" class="form-message" role="status" aria-live="polite"></p>
+        <div id="notificacoes-list" class="item-grid" aria-live="polite"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p><strong>Recicla/Reusa</strong></p>
+      <p>Cada escolha pode iniciar um novo ciclo.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="./js/notificacoes.js"></script>
+</body>
+</html>

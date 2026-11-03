@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Acompanhe seus interesses no Recicla/Reusa.">
+  <title>Interesses | Recicla/Reusa</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="brand" href="./index.html" aria-label="Recicla/Reusa, início">
+        <span class="brand-mark" aria-hidden="true">↺</span>
+        <span>Recicla/<span>Reusa</span></span>
+      </a>
+      <nav class="header-actions" aria-label="Navegação principal">
+        <a class="nav-link" href="./catalogo.html">Catálogo</a>
+        <a class="nav-link" href="./itens.html">Meus itens</a>
+        <a class="nav-link active" href="./interesses.html" aria-current="page">Interesses</a>
+        <a class="nav-link" href="./pontos.html">Pontos</a>
+        <a class="nav-link" href="./notificacoes.html">Notificações</a>
+        <a class="nav-link" href="./perfil.html">Meu perfil</a>
+        <span id="session-chip" class="session-chip" hidden></span>
+        <button id="logout-button" class="button button-ghost" type="button" hidden>Sair</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="global-message" class="message" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <main class="page-content">
+    <div class="container">
+      <section class="workspace-heading">
+        <div>
+          <p class="eyebrow">Manifestações</p>
+          <h1>Interesses, <span id="user-name">...</span>.</h1>
+          <p class="section-description">Acompanhe o que você manifestou e decida sobre quem quer receber seus itens.</p>
+        </div>
+        <span id="role-badge" class="role-badge">...</span>
+      </section>
+
+      <section class="section-block" aria-labelledby="meus-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Seus pedidos</p>
+            <h2 id="meus-title">Meus interesses</h2>
+          </div>
+          <button id="atualizar-meus" class="button button-ghost" type="button">Atualizar</button>
+        </div>
+        <p id="meus-message" class="form-message" role="status" aria-live="polite"></p>
+        <div id="meus-interesses-list" class="item-grid" aria-live="polite"></div>
+      </section>
+
+      <section id="recebidos-section" class="section-block" aria-labelledby="recebidos-title" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Seus itens</p>
+            <h2 id="recebidos-title">Interesses recebidos</h2>
+          </div>
+          <button id="atualizar-recebidos" class="button button-ghost" type="button">Atualizar</button>
+        </div>
+        <p id="recebidos-message" class="form-message" role="status" aria-live="polite"></p>
+        <div id="recebidos-interesses-list" class="item-grid" aria-live="polite"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <p><strong>Recicla/Reusa</strong></p>
+      <p>Cada escolha pode iniciar um novo ciclo.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="./js/interesses.js"></script>
+</body>
+</html>

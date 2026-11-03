@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from pymongo import MongoClient
 
 from app.api.itens import criar_router_itens
+from app.api.indicadores import criar_router_indicadores
 from app.api.interesses import criar_router_interesses
 from app.api.notificacoes import criar_router_notificacoes
 from app.api.pontos_coleta import criar_router_pontos_coleta
@@ -30,6 +31,7 @@ from app.exceptions import (
     UsuarioNaoEncontradoError,
 )
 from app.repositories.mongo_item_repository import MongoItemRepository
+from app.repositories.mongo_indicador_repository import MongoIndicadorRepository
 from app.repositories.mongo_interesse_repository import MongoInteresseRepository
 from app.repositories.mongo_notificacao_repository import MongoNotificacaoRepository
 from app.repositories.mongo_ponto_coleta_repository import MongoPontoColetaRepository
@@ -37,6 +39,7 @@ from app.repositories.mongo_usuario_repository import MongoUsuarioRepository
 from app.security.origins import origem_permitida, requisicao_com_sessao_mutavel
 from app.security.sessions import ArmazenamentoDeSessoes
 from app.services.item_service import ItemService, RepositorioDeItens
+from app.services.indicador_service import IndicadorService, RepositorioDeIndicadores
 from app.services.interesse_service import InteresseService, RepositorioDeInteresses
 from app.services.notificacao_service import NotificacaoService, RepositorioDeNotificacoes
 from app.services.ponto_coleta_service import PontoColetaService, RepositorioDePontos
@@ -50,6 +53,7 @@ def criar_app(
     repositorio_pontos: RepositorioDePontos | None = None,
     repositorio_interesses: RepositorioDeInteresses | None = None,
     repositorio_notificacoes: RepositorioDeNotificacoes | None = None,
+    repositorio_indicadores: RepositorioDeIndicadores | None = None,
     relogio: Callable[[], datetime] | None = None,
     sessoes: ArmazenamentoDeSessoes | None = None,
 ) -> FastAPI:
@@ -60,6 +64,7 @@ def criar_app(
     repositorio_pontos_mongo = None
     repositorio_interesses_mongo = None
     repositorio_notificacoes_mongo = None
+    repositorio_indicadores_mongo = None
     if repositorio is None:
         cliente_mongo = MongoClient(settings.mongo_uri)
         banco = cliente_mongo[settings.mongo_database]
@@ -99,6 +104,8 @@ def criar_app(
             colecao_notificacoes, criar_indices=False
         )
         repositorio_notificacoes = repositorio_notificacoes_mongo
+        repositorio_indicadores_mongo = MongoIndicadorRepository(colecao_itens)
+        repositorio_indicadores = repositorio_indicadores_mongo
 
     relogio = relogio or (lambda: datetime.now(UTC))
     sessoes = sessoes or ArmazenamentoDeSessoes(relogio=relogio)
@@ -123,6 +130,11 @@ def criar_app(
     servico_notificacoes = (
         NotificacaoService(repositorio_notificacoes, relogio=relogio)
         if repositorio_notificacoes is not None
+        else None
+    )
+    servico_indicadores = (
+        IndicadorService(repositorio_indicadores)
+        if repositorio_indicadores is not None
         else None
     )
 
@@ -169,6 +181,7 @@ def criar_app(
         app.state.mongo_ponto_repository = repositorio_pontos_mongo
         app.state.mongo_interesse_repository = repositorio_interesses_mongo
         app.state.mongo_notificacao_repository = repositorio_notificacoes_mongo
+        app.state.mongo_indicador_repository = repositorio_indicadores_mongo
 
     router_usuarios, router_auth = criar_routers(
         servico,
@@ -185,6 +198,8 @@ def criar_app(
         app.include_router(criar_router_interesses(servico_interesses, sessoes))
     if servico_notificacoes is not None:
         app.include_router(criar_router_notificacoes(servico_notificacoes, sessoes))
+    if servico_indicadores is not None:
+        app.include_router(criar_router_indicadores(servico_indicadores, sessoes))
 
     @app.get("/health", tags=["infraestrutura"])
     def health() -> dict[str, str]:
