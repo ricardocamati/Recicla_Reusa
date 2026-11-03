@@ -19,9 +19,11 @@ class MongoUsuarioRepository:
         *,
         criar_indice: bool = True,
         colecao_pontos_coleta: Collection[dict[str, Any]] | None = None,
+        colecao_interesses: Collection[dict[str, Any]] | None = None,
     ) -> None:
         self._colecao = colecao
         self._colecao_pontos_coleta = colecao_pontos_coleta
+        self._colecao_interesses = colecao_interesses
         if criar_indice:
             self.criar_indice_email()
 
@@ -88,6 +90,9 @@ class MongoUsuarioRepository:
         object_id = self._converter_id(usuario_id)
         if object_id is None:
             return
+        if (self._colecao_interesses is not None
+                and self._colecao_interesses.count_documents({"usuario_id": object_id})):
+            raise ReferenciaAtivaError()
         if self._colecao_pontos_coleta is not None:
             vinculados = self._colecao_pontos_coleta.count_documents(
                 {"responsavel_id": object_id}

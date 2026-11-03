@@ -2,6 +2,7 @@
 services:
   mongo:
     image: mongo:${MONGO_VERSION:-7.0}
+    entrypoint: ["bash", "/opt/recicla-mongo/entrypoint.sh"]
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-root}
@@ -10,8 +11,9 @@ services:
       - "127.0.0.1:${MONGO_PORT:-27018}:27017"
     volumes:
       - mongo-data:/data/db
+      - ./docker/mongo:/opt/recicla-mongo:ro
     healthcheck:
-      test: ["CMD-SHELL", "mongosh --quiet --host localhost --username \"$$MONGO_INITDB_ROOT_USERNAME\" --password \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval 'db.adminCommand({ ping: 1 }).ok' | grep 1"]
+      test: ["CMD", "mongosh", "--quiet", "--host", "localhost", "/opt/recicla-mongo/healthcheck.js"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -23,10 +25,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      MONGO_URI: "mongodb://${MONGO_ROOT_USERNAME:-root}:${MONGO_ROOT_PASSWORD:-Mongo}@mongo:27017/${MONGO_DATABASE:-recicla_reusa}?authSource=admin"
+      MONGO_URI: "mongodb://${MONGO_ROOT_USERNAME:-root}:${MONGO_ROOT_PASSWORD:-Mongo}@mongo:27017/${MONGO_DATABASE:-recicla_reusa}?authSource=admin&replicaSet=rs0"
       MONGO_DATABASE: "${MONGO_DATABASE:-recicla_reusa}"
       MONGO_COLLECTION_USUARIOS: "${MONGO_COLLECTION_USUARIOS:-usuarios}"
       MONGO_COLLECTION_ITENS: "${MONGO_COLLECTION_ITENS:-itens}"
+      MONGO_COLLECTION_PONTOS_COLETA: "${MONGO_COLLECTION_PONTOS_COLETA:-pontos_coleta}"
+      MONGO_COLLECTION_INTERESSES: "${MONGO_COLLECTION_INTERESSES:-interesses}"
       CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5500,http://127.0.0.1:5500},http://localhost:${FRONTEND_PORT:-8080},http://127.0.0.1:${FRONTEND_PORT:-8080}"
       SECURE_COOKIES: "${SECURE_COOKIES:-false}"
     ports:

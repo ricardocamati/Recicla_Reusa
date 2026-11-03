@@ -10,12 +10,14 @@ from fastapi.responses import JSONResponse
 from pymongo import MongoClient
 
 from app.api.itens import criar_router_itens
+from app.api.interesses import criar_router_interesses
 from app.api.pontos_coleta import criar_router_pontos_coleta
 from app.api.usuarios import criar_routers
 from app.config import Settings
 from app.exceptions import (
     ConflitoEstadoError,
     EmailDuplicadoError,
+    InteresseError,
     ItemNaoAutorizadoError,
     ItemNaoEncontradoError,
     PontoIncompativelError,
@@ -25,11 +27,13 @@ from app.exceptions import (
     UsuarioNaoEncontradoError,
 )
 from app.repositories.mongo_item_repository import MongoItemRepository
+from app.repositories.mongo_interesse_repository import MongoInteresseRepository
 from app.repositories.mongo_ponto_coleta_repository import MongoPontoColetaRepository
 from app.repositories.mongo_usuario_repository import MongoUsuarioRepository
 from app.security.origins import origem_permitida, requisicao_com_sessao_mutavel
 from app.security.sessions import ArmazenamentoDeSessoes
 from app.services.item_service import ItemService, RepositorioDeItens
+from app.services.interesse_service import InteresseService, RepositorioDeInteresses
 from app.services.ponto_coleta_service import PontoColetaService, RepositorioDePontos
 from app.services.usuario_service import UsuarioService, RepositorioDeUsuarios
 
@@ -39,6 +43,7 @@ def criar_app(
     *,
     repositorio_itens: RepositorioDeItens | None = None,
     repositorio_pontos: RepositorioDePontos | None = None,
+    repositorio_interesses: RepositorioDeInteresses | None = None,
     relogio: Callable[[], datetime] | None = None,
     sessoes: ArmazenamentoDeSessoes | None = None,
 ) -> FastAPI:
@@ -47,36 +52,54 @@ def criar_app(
     repositorio_mongo = None
     repositorio_itens_mongo = None
     repositorio_pontos_mongo = None
+    repositorio_interesses_mongo = None
     if repositorio is None:
         cliente_mongo = MongoClient(settings.mongo_uri)
         banco = cliente_mongo[settings.mongo_database]
         colecao_usuarios = banco[settings.mongo_collection_usuarios]
         colecao_pontos = banco[settings.mongo_collection_pontos_coleta]
+        colecao_interesses = banco[settings.mongo_collection_interesses]
         repositorio_mongo = MongoUsuarioRepository(
             colecao_usuarios,
             criar_indice=False,
             colecao_pontos_coleta=colecao_pontos,
+            colecao_interesses=colecao_interesses,
         )
         repositorio = repositorio_mongo
         colecao_itens = banco[settings.mongo_collection_itens]
-        repositorio_itens_mongo = MongoItemRepository(colecao_itens, criar_indices=False)
+        repositorio_itens_mongo = MongoItemRepository(
+            colecao_itens, criar_indices=False, colecao_interesses=colecao_interesses,
+        )
         repositorio_itens = repositorio_itens_mongo
         repositorio_pontos_mongo = MongoPontoColetaRepository(
             colecao_pontos, criar_indices=False
         )
         repositorio_pontos = repositorio_pontos_mongo
+        repositorio_interesses_mongo = MongoInteresseRepository(
+            colecao_interesses,
+            colecao_itens,
+            colecao_usuarios,
+            criar_indices=False,
+        )
+        repositorio_interesses = repositorio_interesses_mongo
 
     relogio = relogio or (lambda: datetime.now(UTC))
     sessoes = sessoes or ArmazenamentoDeSessoes(relogio=relogio)
     servico = UsuarioService(repositorio, relogio=relogio)
     servico_itens = (
-        ItemService(repositorio_itens, repositorio, relogio=relogio)
+        ItemService(repositorio_itens, repositorio, relogio=relogio,
+                    reservas_por_interesse=repositorio_interesses is not None)
         if repositorio_itens is not None
         else None
     )
     servico_pontos = (
         PontoColetaService(repositorio_pontos, repositorio, relogio=relogio)
         if repositorio_pontos is not None
+        else None
+    )
+    servico_interesses = (
+        InteresseService(repositorio_interesses, relogio=relogio)
+        if repositorio_interesses is not None
         else None
     )
 
@@ -88,6 +111,8 @@ def criar_app(
             repositorio_itens_mongo.criar_indices()
         if repositorio_pontos_mongo is not None:
             repositorio_pontos_mongo.criar_indices()
+        if repositorio_interesses_mongo is not None:
+            repositorio_interesses_mongo.criar_indices()
         yield
 
     app = FastAPI(title="Recicla/Reusa", version="1.0.0", lifespan=lifespan)
@@ -96,7 +121,7 @@ def criar_app(
         CORSMiddleware,
         allow_origins=origens_configuradas,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type"],
     )
 
@@ -117,6 +142,7 @@ def criar_app(
         app.state.mongo_repository = repositorio_mongo
         app.state.mongo_item_repository = repositorio_itens_mongo
         app.state.mongo_ponto_repository = repositorio_pontos_mongo
+        app.state.mongo_interesse_repository = repositorio_interesses_mongo
 
     router_usuarios, router_auth = criar_routers(
         servico,
@@ -129,10 +155,16 @@ def criar_app(
         app.include_router(criar_router_itens(servico_itens, sessoes))
     if servico_pontos is not None:
         app.include_router(criar_router_pontos_coleta(servico_pontos, sessoes))
+    if servico_interesses is not None:
+        app.include_router(criar_router_interesses(servico_interesses, sessoes))
 
     @app.get("/health", tags=["infraestrutura"])
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.exception_handler(InteresseError)
+    async def interesse_handler(request: Request, exc: InteresseError) -> JSONResponse:
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
     @app.exception_handler(EmailDuplicadoError)
     async def email_duplicado_handler(

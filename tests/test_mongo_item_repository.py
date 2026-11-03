@@ -86,3 +86,26 @@ def test_repositorio_normaliza_datas_na_precisao_do_mongodb() -> None:
     assert criado.data_modificacao.microsecond == 123000
     assert recuperado.data_adicao == criado.data_adicao
     assert recuperado.data_modificacao == criado.data_modificacao
+
+
+def test_leitura_ignora_selecao_interna_do_interesse():
+    colecao = mongomock.MongoClient(tz_aware=True).teste.itens
+    repo = MongoItemRepository(colecao)
+    doc = repo._para_documento(item())
+    doc["interesse_aceito_id"] = ObjectId()
+    doc["_lock_interesses"] = 1
+    identificador = colecao.insert_one(doc).inserted_id
+    relido = repo.buscar_por_id(str(identificador))
+    assert relido is not None
+    assert not hasattr(relido, "interesse_aceito_id")
+
+
+def test_edicao_nao_apaga_selecao_de_interesse():
+    colecao = mongomock.MongoClient(tz_aware=True).teste.itens
+    repo = MongoItemRepository(colecao)
+    criado = repo.criar(item())
+    selecionado = ObjectId()
+    colecao.update_one({"_id": ObjectId(criado.id)}, {"$set": {"interesse_aceito_id": selecionado}})
+    criado.titulo = "Título editado"
+    repo.atualizar(criado, status_esperado="disponivel")
+    assert colecao.find_one()["interesse_aceito_id"] == selecionado

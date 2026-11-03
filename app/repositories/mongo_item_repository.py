@@ -6,7 +6,7 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from pymongo.collection import Collection
 
-from app.exceptions import ConflitoEstadoError
+from app.exceptions import ConflitoEstadoError, ReferenciaAtivaError
 from app.models.item import EventoHistorico, Item
 from app.schemas.item import FiltrosItem
 
@@ -17,8 +17,10 @@ class MongoItemRepository:
         colecao: Collection[dict[str, Any]],
         *,
         criar_indices: bool = True,
+        colecao_interesses: Collection[dict[str, Any]] | None = None,
     ) -> None:
         self._colecao = colecao
+        self._colecao_interesses = colecao_interesses
         if criar_indices:
             self.criar_indices()
 
@@ -77,9 +79,16 @@ class MongoItemRepository:
             raise ValueError("Item sem identificador não pode ser atualizado")
         self._normalizar_datas(item)
         filtro: dict[str, Any] = {"_id": ObjectId(item.id)}
+        if self._colecao_interesses is not None:
+            atual = self._colecao.find_one(filtro, {"destino": 1})
+            if (atual is not None and atual.get("destino") != item.destino
+                    and self._colecao_interesses.count_documents({"item_id": ObjectId(item.id)})):
+                raise ConflitoEstadoError()
         if status_esperado is not None:
             filtro["status"] = status_esperado
-        resultado = self._colecao.replace_one(filtro, self._para_documento(item))
+        # Campos internos de seleção pertencem ao ciclo de interesses.
+        # Uma edição comum não pode apagá-los por substituição do documento.
+        resultado = self._colecao.update_one(filtro, {"$set": self._para_documento(item)})
         if status_esperado is not None and resultado.matched_count == 0:
             raise ConflitoEstadoError()
         return item
@@ -87,6 +96,9 @@ class MongoItemRepository:
     def excluir(self, item_id: str) -> None:
         object_id = self._converter_id(item_id)
         if object_id is not None:
+            if (self._colecao_interesses is not None
+                    and self._colecao_interesses.count_documents({"item_id": object_id})):
+                raise ReferenciaAtivaError()
             self._colecao.delete_one({"_id": object_id})
 
     @staticmethod
@@ -130,6 +142,8 @@ class MongoItemRepository:
     @staticmethod
     def _para_modelo(documento: dict[str, Any]) -> Item:
         dados = dict(documento)
+        dados.pop("interesse_aceito_id", None)
+        dados.pop("_lock_interesses", None)
         dados["id"] = str(dados.pop("_id"))
         dados["proprietario_id"] = str(dados["proprietario_id"])
         dados["data_adicao"] = MongoItemRepository._normalizar_data(dados["data_adicao"])
