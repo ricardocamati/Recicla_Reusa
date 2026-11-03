@@ -131,56 +131,6 @@ async def autenticar_doador(api: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_doacao_conclui_com_beneficiario_do_interesse_aceito(
-    repositorio_usuarios: RepositorioEmMemoria,
-    repositorio_itens: RepositorioItensEmMemoria,
-) -> None:
-    interesses = RepositorioInteressesFake()
-    async with cliente(app_para(repositorio_usuarios, repositorio_itens, interesses=interesses)) as api:
-        await autenticar_doador(api)
-        criado = (await api.post("/api/itens", json=payload_item())).json()
-        reservado = await api.put(
-            f"/api/itens/{criado['id']}", json=corpo(criado, status="reservado")
-        )
-        # A reserva é efeito do aceite; aqui ela é simulada no repositório para
-        # isolar a conclusão. A sequência real está no teste de integração.
-        repositorio_itens.itens[criado["id"]].status = "reservado"
-        interesses.aceitos[criado["id"]] = "beneficiario-1"
-        doado = await api.put(
-            f"/api/itens/{criado['id']}", json=corpo(criado, status="doado")
-        )
-
-    assert reservado.status_code == 409, reservado.text
-    assert doado.status_code == 200, doado.text
-    resposta = doado.json()
-    assert resposta["status"] == "doado"
-    assert resposta["beneficiario_id"] == "beneficiario-1"
-    assert [evento["status"] for evento in resposta["historico"]] == [
-        "disponivel",
-        "doado",
-    ]
-
-
-@pytest.mark.anyio
-async def test_doacao_sem_interesse_aceito_nao_conclui(
-    repositorio_usuarios: RepositorioEmMemoria,
-    repositorio_itens: RepositorioItensEmMemoria,
-) -> None:
-    async with cliente(
-        app_para(repositorio_usuarios, repositorio_itens, interesses=RepositorioInteressesFake())
-    ) as api:
-        await autenticar_doador(api)
-        criado = (await api.post("/api/itens", json=payload_item())).json()
-        repositorio_itens.itens[criado["id"]].status = "reservado"
-        resposta = await api.put(
-            f"/api/itens/{criado['id']}", json=corpo(criado, status="doado")
-        )
-
-    assert resposta.status_code == 409
-    assert repositorio_itens.itens[criado["id"]].status == "reservado"
-
-
-@pytest.mark.anyio
 async def test_descarte_exige_ponto_compativel_e_preserva_referencia(
     repositorio_usuarios: RepositorioEmMemoria,
     repositorio_itens: RepositorioItensEmMemoria,
@@ -239,68 +189,6 @@ async def test_descarte_exige_ponto_compativel_e_preserva_referencia(
 
 
 @pytest.mark.anyio
-async def test_revenda_conclui_com_comprador_e_valor(
-    repositorio_usuarios: RepositorioEmMemoria,
-    repositorio_itens: RepositorioItensEmMemoria,
-) -> None:
-    async with cliente(app_para(repositorio_usuarios, repositorio_itens)) as api:
-        comprador = (
-            await cadastrar_usuario(api, email="comprador@example.com", nome="Comprador")
-        ).json()
-        await autenticar_doador(api)
-        criado = (
-            await api.post(
-                "/api/itens",
-                json=payload_item(destino="revenda", valor=250.0, condicao="reparavel"),
-            )
-        ).json()
-        avaliacao = await api.put(
-            f"/api/itens/{criado['id']}", json=corpo(criado, status="em_avaliacao")
-        )
-        recondicionado = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo(criado, status="recondicionado", observacao="Laudo: placa substituída"),
-        )
-        sem_comprador = await api.put(
-            f"/api/itens/{criado['id']}", json=corpo(criado, status="vendido")
-        )
-        antecipado = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo(criado, status="recondicionado", comprador_id="comprador-1"),
-        )
-        proprio_dono = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo(criado, status="vendido", comprador_id=criado["proprietario_id"]),
-        )
-        desconhecido = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo(criado, status="vendido", comprador_id="comprador-9"),
-        )
-        vendido = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo(criado, status="vendido", comprador_id=comprador["id"]),
-        )
-        segunda = await api.put(
-            f"/api/itens/{criado['id']}", json=corpo(criado, status="recondicionado")
-        )
-
-    assert avaliacao.status_code == 200, avaliacao.text
-    assert recondicionado.status_code == 200, recondicionado.text
-    assert recondicionado.json()["historico"][-1]["observacao"] == "Laudo: placa substituída"
-    assert sem_comprador.status_code == 400, sem_comprador.text
-    assert "comprador" in sem_comprador.json()["detail"]
-    assert antecipado.status_code == 400, antecipado.text
-    assert "conclusão da revenda" in antecipado.json()["detail"]
-    assert proprio_dono.status_code == 400, proprio_dono.text
-    assert desconhecido.status_code == 404, desconhecido.text
-    assert vendido.status_code == 200, vendido.text
-    assert vendido.json()["status"] == "vendido"
-    assert vendido.json()["comprador_id"] == comprador["id"]
-    assert vendido.json()["valor"] == 250.0
-    assert segunda.status_code == 400, segunda.text
-
-
-@pytest.mark.anyio
 async def test_campos_de_fluxo_incompativeis_com_o_destino(
     repositorio_usuarios: RepositorioEmMemoria,
     repositorio_itens: RepositorioItensEmMemoria,
@@ -336,7 +224,6 @@ async def test_destino_nao_muda_depois_de_iniciado_o_fluxo(
         criado = (
             await api.post("/api/itens", json=payload_item(destino="revenda", valor=100.0))
         ).json()
-        await api.put(f"/api/itens/{criado['id']}", json=corpo(criado, status="em_avaliacao"))
         troca = await api.put(
             f"/api/itens/{criado['id']}", json=corpo(criado, destino="doacao", valor=None)
         )
@@ -432,29 +319,3 @@ async def test_encaminhamento_valida_a_categoria_enviada_no_mesmo_put(
     assert recategorizado.status_code == 200, recategorizado.text
     assert recategorizado.json()["categoria"] == "celular"
     assert recategorizado.json()["ponto_coleta_id"] == "ponto-celular"
-
-
-@pytest.mark.anyio
-async def test_comprador_nao_pode_ser_conta_operacional(
-    repositorio_usuarios: RepositorioEmMemoria,
-    repositorio_itens: RepositorioItensEmMemoria,
-) -> None:
-    async with cliente(app_para(repositorio_usuarios, repositorio_itens)) as api:
-        await cadastrar_usuario(api, email="comprador@example.com", nome="Comprador")
-        await api.post("/api/auth/logout")
-        await autenticar_doador(api)
-        criado = (
-            await api.post("/api/itens", json=payload_item(destino="revenda", valor=90.0))
-        ).json()
-        for status in ("em_avaliacao", "recondicionado"):
-            await api.put(f"/api/itens/{criado['id']}", json=corpo(criado, status=status))
-        operador_conta = replace(
-            repositorio_usuarios.usuarios["1"], id="operador", tipo="ponto_coleta"
-        )
-        repositorio_usuarios.usuarios["operador"] = operador_conta
-        operador = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo(criado, status="vendido", comprador_id="operador"),
-        )
-
-    assert operador.status_code == 400, operador.text

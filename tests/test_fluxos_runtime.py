@@ -163,130 +163,126 @@ def corpo(item, **alteracoes):
     return dados
 
 
-def test_indicadores_contam_apenas_itens_concluidos(ambiente):
-    visitante = TestClient(ambiente.app)
-    ambiente.clientes.append(visitante)
-    sem_sessao = visitante.get("/api/indicadores")
-
-    dono, _, _ = nova_conta(ambiente, "dono", "pessoa")
-    interessado, _, _ = nova_conta(ambiente, "interessado")
-    _, comprador_id, _ = nova_conta(ambiente, "comprador")
-
-    doacao = criar_item(dono)
-    interesse = interessado.post("/api/interesses", json={"item_id": doacao["id"]}).json()
-    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "selecionado"})
-    assert dono.put(
-        f"/api/itens/{doacao['id']}", json=corpo(doacao, status="doado")
-    ).status_code == 200
-
-    revenda = criar_item(dono, destino="revenda", valor=90.0, titulo="Outro notebook")
-    for etapa in ("em_avaliacao", "recondicionado"):
-        assert dono.put(
-            f"/api/itens/{revenda['id']}", json=corpo(revenda, status=etapa)
-        ).status_code == 200
-    assert dono.put(
-        f"/api/itens/{revenda['id']}",
-        json=corpo(revenda, status="vendido", comprador_id=comprador_id),
-    ).status_code == 200
-    criar_item(dono, destino="descarte", valor=None, titulo="Item ainda disponível")
-
-    resposta = dono.get("/api/indicadores")
-
-    assert sem_sessao.status_code == 401, sem_sessao.text
+def selecionar(dono, interesse):
+    resposta = dono.patch(
+        f"/api/interesses/{interesse['id']}", json={"status": "selecionado"}
+    )
     assert resposta.status_code == 200, resposta.text
-    assert resposta.json() == {"doados": 1, "coletados": 0, "vendidos": 1, "total": 2}
+    return resposta.json()
 
 
-def test_doacao_completa_registra_beneficiario_do_aceite(ambiente):
-    dono, dono_id, _ = nova_conta(ambiente, "dono", "pessoa")
-    interessado, interessado_id, _ = nova_conta(ambiente, "interessado")
+def combinar(autor, interesse, local="Portaria do bloco A", previsao=None):
+    resposta = autor.put(
+        f"/api/interesses/{interesse['id']}/combinacao",
+        json={"local_texto": local, "previsao": previsao, "observacao": "Levar documento"},
+    )
+    assert resposta.status_code == 200, resposta.text
+    return resposta.json()
+
+
+def aceitar(contraparte, interesse, revisao=None):
+    numero = revisao or interesse["combinacao"]["revisao"]
+    resposta = contraparte.post(
+        f"/api/interesses/{interesse['id']}/combinacao/aceite", json={"revisao": numero}
+    )
+    assert resposta.status_code == 200, resposta.text
+    return resposta.json()
+
+
+def test_indicadores_contam_apenas_apos_confirmacao(ambiente):
+    dono, _, _ = nova_conta(ambiente, "dono", "pessoa")
+    pessoa_a, _, _ = nova_conta(ambiente, "pessoa-a")
+    pessoa_b, _, _ = nova_conta(ambiente, "pessoa-b")
+    doacao = criar_item(dono)
+    revenda = criar_item(dono, destino="revenda", valor=200.0)
+    selecionar(dono, pessoa_a.post("/api/interesses", json={"item_id": doacao["id"]}).json())
+    selecionar(dono, pessoa_b.post("/api/interesses", json={"item_id": revenda["id"]}).json())
+
+    for item, pessoa in ((doacao, pessoa_a), (revenda, pessoa_b)):
+        proposta = combinar(pessoa, {"id": ambiente.interesses.find_one({"item_id": ObjectId(item["id"])})["_id"]})
+        assert pessoa.post(
+            f"/api/interesses/{proposta['id']}/combinacao/aceite",
+            json={"revisao": proposta["combinacao"]["revisao"]},
+        ).status_code == 403
+        aceitar(dono, proposta)
+
+    antes = dono.get("/api/indicadores").json()
+    assert antes == {"doados": 0, "coletados": 0, "vendidos": 0, "total": 0}
+
+    assert dono.post(f"/api/itens/{doacao['id']}/entrega").status_code == 200
+    assert dono.get("/api/indicadores").json()["doados"] == 0
+    assert pessoa_a.post(f"/api/itens/{doacao['id']}/recebimento").status_code == 200
+    depois = dono.get("/api/indicadores").json()
+    assert depois == {"doados": 1, "coletados": 0, "vendidos": 0, "total": 1}
+
+    assert pessoa_a.post(f"/api/itens/{doacao['id']}/recebimento").status_code == 200
+    assert dono.get("/api/indicadores").json()["doados"] == 1
+
+
+def test_entrega_bilateral_exige_combinacao_e_selecionado(ambiente):
+    dono, _, _ = nova_conta(ambiente, "dono", "pessoa")
+    selecionado, _, _ = nova_conta(ambiente, "selecionado")
+    outro, _, _ = nova_conta(ambiente, "outro")
     item = criar_item(dono)
-    interesse = interessado.post("/api/interesses", json={"item_id": item["id"]})
-    assert interesse.status_code == 201, interesse.text
-    assert (
-        dono.patch(
-            f"/api/interesses/{interesse.json()['id']}", json={"status": "selecionado"}
-        ).status_code
-        == 200
-    )
-    reservado = dono.get(f"/api/itens/{item['id']}").json()
-    assert reservado["status"] == "reservado"
+    interesse = selecionado.post("/api/interesses", json={"item_id": item["id"]}).json()
+    externo = outro.post("/api/interesses", json={"item_id": item["id"]}).json()
+    selecionar(dono, interesse)
 
-    doado = dono.put(
-        f"/api/itens/{item['id']}", json=corpo(item, status="doado")
-    )
+    assert dono.post(f"/api/itens/{item['id']}/entrega").status_code == 409
 
-    assert doado.status_code == 200, doado.text
-    resultado = doado.json()
-    assert resultado["status"] == "doado"
-    assert resultado["beneficiario_id"] == interessado_id
-    assert [evento["status"] for evento in resultado["historico"]] == [
-        "disponivel",
-        "reservado",
-        "doado",
-    ]
-    documento = ambiente.itens.find_one({"titulo": "Notebook de teste"})
-    assert str(documento["beneficiario_id"]) == interessado_id
-    assert str(documento["proprietario_id"]) == dono_id
+    proposta = combinar(dono, interesse)
+    assert proposta["combinacao"]["aceito_por"] is None
+    assert dono.post(
+        f"/api/interesses/{interesse['id']}/combinacao/aceite",
+        json={"revisao": proposta["combinacao"]["revisao"]},
+    ).status_code == 403
+
+    aceito = aceitar(selecionado, proposta)
+    assert aceito["combinacao"]["aceito_por"] is not None
+
+    declarado = dono.post(f"/api/itens/{item['id']}/entrega")
+    assert declarado.status_code == 200, declarado.text
+    assert declarado.json()["status"] == "aguardando_confirmacao"
+
+    assert outro.post(f"/api/itens/{item['id']}/recebimento").status_code == 403
+    assert dono.post(f"/api/itens/{item['id']}/recebimento").status_code == 403
+
+    confirmado = selecionado.post(f"/api/itens/{item['id']}/recebimento")
+    assert confirmado.status_code == 200, confirmado.text
+    assert confirmado.json()["status"] == "concluido"
+
+    encerrados = {str(documento["usuario_id"]): documento for documento in ambiente.interesses.find({})}
+    assert encerrados[interesse["usuario_id"]]["resultado"] == "concluido"
+    assert encerrados[externo["usuario_id"]]["resultado"] == "item_concluido"
+    assert encerrados[externo["usuario_id"]]["status"] == "encerrado"
 
 
-def test_descarte_exige_ponto_compativel_e_conclui(ambiente):
+def test_venda_direta_congela_preco_e_conclui_uma_vez(ambiente):
     dono, _, _ = nova_conta(ambiente, "dono", "pessoa")
-    operador, _ = novo_operador(ambiente)
-    compatível = criar_ponto(operador, "Ponto de notebook", ["notebook"])["id"]
-    incompatível = criar_ponto(operador, "Ponto de celular", ["celular"])["id"]
+    comprador, _, _ = nova_conta(ambiente, "comprador")
+    item = criar_item(dono, destino="revenda", valor=300.0)
+    interesse = comprador.post("/api/interesses", json={"item_id": item["id"]}).json()
+    selecionado = selecionar(dono, interesse)
 
-    item = criar_item(dono, destino="descarte", valor=None)
-    recusado = dono.put(
-        f"/api/itens/{item['id']}",
-        json=corpo(item, status="encaminhado", ponto_coleta_id=incompatível),
-    )
-    encaminhado = dono.put(
-        f"/api/itens/{item['id']}",
-        json=corpo(item, status="encaminhado", ponto_coleta_id=compatível),
-    )
-    coletado = dono.put(f"/api/itens/{item['id']}", json=corpo(item, status="coletado"))
+    assert selecionado["preco_selecionado"] == 300.0
+    assert dono.post(f"/api/itens/{item['id']}/entrega").status_code == 409
 
-    assert recusado.status_code == 400, recusado.text
-    assert encaminhado.status_code == 200, encaminhado.text
-    assert encaminhado.json()["ponto_coleta_id"] == compatível
-    assert coletado.status_code == 200, coletado.text
-    assert coletado.json()["status"] == "coletado"
-    assert coletado.json()["ponto_coleta_id"] == compatível
-    documento = ambiente.itens.find_one({"_id": ObjectId(item["id"])})
-    assert str(documento["ponto_coleta_id"]) == compatível
+    primeira = combinar(comprador, interesse, local="Estação central")
+    revisada = combinar(dono, interesse, local="Estação central, portão 2")
+    assert revisada["combinacao"]["revisao"] == primeira["combinacao"]["revisao"] + 1
+    assert revisada["combinacao"]["aceito_por"] is None
+    assert comprador.post(
+        f"/api/interesses/{interesse['id']}/combinacao/aceite",
+        json={"revisao": primeira["combinacao"]["revisao"]},
+    ).status_code == 409
+    aceitar(comprador, revisada)
 
-
-def test_revenda_completa_e_segunda_conclusao(ambiente):
-    dono, _, _ = nova_conta(ambiente, "dono", "pessoa")
-    comprador, comprador_id, _ = nova_conta(ambiente, "comprador")
-    item = criar_item(dono, destino="revenda", valor=300.0, condicao="reparavel")
-    assert dono.put(
-        f"/api/itens/{item['id']}", json=corpo(item, status="em_avaliacao")
-    ).status_code == 200
-    assert dono.put(
-        f"/api/itens/{item['id']}",
-        json=corpo(item, status="recondicionado", observacao="Placa substituída"),
-    ).status_code == 200
-    sem_comprador = dono.put(
-        f"/api/itens/{item['id']}", json=corpo(item, status="vendido")
-    )
-    vendido = dono.put(
-        f"/api/itens/{item['id']}",
-        json=corpo(item, status="vendido", comprador_id=comprador_id),
-    )
-    segunda = dono.put(
-        f"/api/itens/{item['id']}", json=corpo(item, status="recondicionado")
-    )
-
-    assert sem_comprador.status_code == 400, sem_comprador.text
-    assert vendido.status_code == 200, vendido.text
-    assert vendido.json()["status"] == "vendido"
-    assert vendido.json()["comprador_id"] == comprador_id
-    assert vendido.json()["valor"] == 300.0
-    assert vendido.json()["historico"][-2]["observacao"] == "Placa substituída"
-    assert segunda.status_code == 400, segunda.text
-    assert ambiente.itens.count_documents({"status": "vendido"}) == 1
+    assert dono.post(f"/api/itens/{item['id']}/entrega").status_code == 200
+    assert comprador.post(f"/api/itens/{item['id']}/recebimento").status_code == 200
+    reenvio = comprador.post(f"/api/itens/{item['id']}/recebimento")
+    assert reenvio.status_code == 200
+    assert reenvio.json()["status"] == "concluido"
+    assert dono.get("/api/indicadores").json()["vendidos"] == 1
 
 
 def test_referencias_do_fluxo_bloqueiam_exclusao(ambiente):
@@ -294,10 +290,11 @@ def test_referencias_do_fluxo_bloqueiam_exclusao(ambiente):
     interessado, interessado_id, _ = nova_conta(ambiente, "interessado")
     item = criar_item(dono)
     interesse = interessado.post("/api/interesses", json={"item_id": item["id"]}).json()
-    dono.patch(f"/api/interesses/{interesse['id']}", json={"status": "selecionado"})
-    assert dono.put(
-        f"/api/itens/{item['id']}", json=corpo(item, status="doado")
-    ).status_code == 200
+    selecionar(dono, interesse)
+    proposta = combinar(dono, interesse)
+    aceitar(interessado, proposta)
+    assert dono.post(f"/api/itens/{item['id']}/entrega").status_code == 200
+    assert interessado.post(f"/api/itens/{item['id']}/recebimento").status_code == 200
 
     excluir_beneficiario = interessado.delete(f"/api/usuarios/{interessado_id}")
     excluir_proprietario = dono.delete(f"/api/usuarios/{dono_id}")

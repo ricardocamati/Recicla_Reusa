@@ -15,6 +15,12 @@ class RepositorioDeInteresses(Protocol):
     def criar(self, interesse: Interesse) -> Interesse: ...
     def listar(self, usuario_id: str, *, escopo: str = "meus", item_id: str | None = None, status: str | None = None, offset: int = 0, limite: int = 20) -> list[Interesse]: ...
     def buscar_por_id(self, interesse_id: str) -> Interesse | None: ...
+    def propor_combinacao(
+        self, interesse_id: str, usuario_id: str, dados, instante: datetime
+    ) -> Interesse: ...
+    def aceitar_combinacao(
+        self, interesse_id: str, usuario_id: str, revisao: int, instante: datetime
+    ) -> Interesse: ...
     def executar(
         self,
         interesse_id: str,
@@ -67,6 +73,24 @@ class InteresseService:
         item = self._repositorio.buscar_item(interesse.item_id)
         if item is None or (interesse.usuario_id != usuario_id and str(item.get("proprietario_id")) != usuario_id):
             raise InteresseError(404, "Interesse não encontrado")
+        return InteresseMapper.para_resposta(interesse)
+
+    def propor_combinacao(self, interesse_id: str, dados, usuario_id: str) -> InteresseResponse:
+        usuario = self._usuario_valido(usuario_id)
+        if usuario.get("tipo") != "pessoa":
+            raise InteresseError(403, "Este perfil não pode combinar entregas")
+        interesse = self._repositorio.propor_combinacao(
+            interesse_id, usuario_id, dados, self._relogio()
+        )
+        return InteresseMapper.para_resposta(interesse)
+
+    def aceitar_combinacao(self, interesse_id: str, dados, usuario_id: str) -> InteresseResponse:
+        usuario = self._usuario_valido(usuario_id)
+        if usuario.get("tipo") != "pessoa":
+            raise InteresseError(403, "Este perfil não pode aceitar combinações")
+        interesse = self._repositorio.aceitar_combinacao(
+            interesse_id, usuario_id, dados.revisao, self._relogio()
+        )
         return InteresseMapper.para_resposta(interesse)
 
     def executar_acao(

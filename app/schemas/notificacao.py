@@ -9,6 +9,7 @@ TipoNotificacao = Literal[
     "interesse_cancelado",
     "status_item_alterado",
     "item_concluido",
+    "entrega_declarada",
 ]
 
 

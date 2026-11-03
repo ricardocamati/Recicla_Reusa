@@ -1,4 +1,4 @@
-"""Indicadores: somente itens concluídos entram nos totais."""
+"""Indicadores: cada item conta uma vez, só depois da confirmação."""
 import mongomock
 from datetime import UTC, datetime
 
@@ -6,13 +6,14 @@ from app.repositories.mongo_indicador_repository import MongoIndicadorRepository
 from app.services.indicador_service import IndicadorService
 
 
-def montar(statuses: list[str]):
+def montar(itens: list[tuple[str, str]]):
     colecao = mongomock.MongoClient(tz_aware=True).teste.itens
     instante = datetime(2026, 9, 8, 12, 0, tzinfo=UTC)
-    for indice, status in enumerate(statuses):
+    for indice, (modalidade, status) in enumerate(itens):
         colecao.insert_one(
             {
                 "titulo": f"Item {indice}",
+                "destino": modalidade,
                 "status": status,
                 "data_adicao": instante,
                 "data_modificacao": instante,
@@ -21,9 +22,17 @@ def montar(statuses: list[str]):
     return colecao
 
 
-def test_contabiliza_somente_status_concluidos() -> None:
+def test_contabiliza_somente_concluidos_por_modalidade() -> None:
     colecao = montar(
-        ["doado", "doado", "coletado", "vendido", "disponivel", "reservado", "encaminhado"]
+        [
+            ("doacao", "concluido"),
+            ("doacao", "concluido"),
+            ("descarte", "coletado"),
+            ("revenda", "concluido"),
+            ("doacao", "aguardando_confirmacao"),
+            ("doacao", "reservado"),
+            ("revenda", "disponivel"),
+        ]
     )
 
     indicadores = IndicadorService(MongoIndicadorRepository(colecao)).obter()
@@ -34,9 +43,11 @@ def test_contabiliza_somente_status_concluidos() -> None:
     assert indicadores.total == 4
 
 
-def test_base_sem_itens_concluidos_retorna_zero() -> None:
+def test_base_sem_confirmacao_retorna_zero() -> None:
     indicadores = IndicadorService(
-        MongoIndicadorRepository(montar(["disponivel", "em_avaliacao"]))
+        MongoIndicadorRepository(
+            montar([("doacao", "aguardando_confirmacao"), ("revenda", "reservado")])
+        )
     ).obter()
 
     assert (indicadores.doados, indicadores.coletados, indicadores.vendidos) == (0, 0, 0)

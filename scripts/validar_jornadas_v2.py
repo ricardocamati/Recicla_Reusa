@@ -262,9 +262,76 @@ class Navegador:
         self.clicar(self.driver.find_element(By.CSS_SELECTOR, "#ponto-form button[type='submit']"))
         self.espera.until(lambda d: "Ponto cadastrado" in d.find_element(By.ID, "ponto-form-message").text)
 
-    def avisos(self, titulo: str) -> str:
+    def propor_combinacao(self, lista: str, titulo: str, local: str = "Portaria da jornada") -> None:
+        self.abrir("interesses.html", f"#{lista}")
+        cartao = self.cartao(lista, titulo)
+        formulario = cartao.find_element(By.CSS_SELECTOR, "form.combination-form")
+        campo = formulario.find_element(By.NAME, "local_texto")
+        campo.clear()
+        campo.send_keys(local)
+        self.clicar(formulario.find_element(By.CSS_SELECTOR, "button[type='submit']"))
+        self.espera.until(
+            lambda d: "aguardando aceite"
+            in (self._cartao(lista, titulo).text if self._cartao(lista, titulo) else "")
+        )
+
+    def aceitar_combinacao(self, lista: str, titulo: str) -> None:
+        self.abrir("interesses.html", f"#{lista}")
+        cartao = self.cartao(lista, titulo)
+        botao = self.espera.until(
+            lambda d: next(
+                (
+                    b
+                    for b in cartao.find_elements(By.TAG_NAME, "button")
+                    if b.text == "Aceitar combinação"
+                ),
+                False,
+            )
+        )
+        self.clicar(botao)
+        self.espera.until(
+            lambda d: (self._cartao(lista, titulo) is not None)
+            and "aguardando" not in self._cartao(lista, titulo).text
+            and "aceita" in self._cartao(lista, titulo).text
+        )
+
+    def declarar_entrega(self, titulo: str) -> None:
+        self.abrir("itens.html?grupo=em_andamento", "#my-items-list")
+        cartao = self.cartao("my-items-list", titulo)
+        self.clicar(cartao.find_element(By.CSS_SELECTOR, "button[data-acao='entrega']"))
+        self.espera.until(
+            lambda d: "Entrega declarada" in d.find_element(By.ID, "my-items-message").text
+        )
+
+    def confirmar_recebimento(self, titulo: str) -> None:
+        self.abrir("interesses.html", "#meus-interesses-list")
+        cartao = self.cartao("meus-interesses-list", titulo)
+        botao = self.espera.until(
+            lambda d: next(
+                (
+                    b
+                    for b in cartao.find_elements(By.TAG_NAME, "button")
+                    if b.text == "Confirmar recebimento"
+                ),
+                False,
+            )
+        )
+        self.clicar(botao)
+        def confirmado(driver) -> bool:
+            lista = driver.find_element(By.ID, "meus-interesses-list")
+            return "Confirmar recebimento" not in lista.text
+
+        self.espera.until(confirmado)
+
+    def avisos(self, titulo: str | None = None) -> str:
         self.abrir("notificacoes.html", "#notificacoes-list")
-        return self.cartao("notificacoes-list", titulo).text
+        self.espera.until(
+            lambda d: d.find_elements(By.CSS_SELECTOR, "#notificacoes-list article.item-card")
+        )
+        cartoes = self.driver.find_elements(
+            By.CSS_SELECTOR, "#notificacoes-list article.item-card"
+        )
+        return " ".join(cartao.text for cartao in cartoes)
 
 
 def auditar_datas() -> dict[str, int]:
@@ -346,7 +413,7 @@ def main() -> None:
 
     navegador = Navegador()
     try:
-        # Jornada 1 — doação.
+        # Jornada 1 — doação com entrega bilateral.
         navegador.cadastrar("Doadora Jornada", doador_email, "Doador")
         navegador.entrar(doador_email)
         navegador.criar_item(titulo_doacao, "Doação", "Notebook")
@@ -359,12 +426,21 @@ def main() -> None:
 
         navegador.entrar(doador_email)
         navegador.aceitar_interesse(titulo_doacao)
-        navegador.avancar(titulo_doacao, "doado")
+        navegador.propor_combinacao("recebidos-interesses-list", titulo_doacao)
         navegador.sair()
 
         navegador.entrar(beneficiario_email)
+        navegador.aceitar_combinacao("meus-interesses-list", titulo_doacao)
+        navegador.sair()
+
+        navegador.entrar(doador_email)
+        navegador.declarar_entrega(titulo_doacao)
+        navegador.sair()
+
+        navegador.entrar(beneficiario_email)
+        navegador.confirmar_recebimento(titulo_doacao)
         texto = navegador.avisos(titulo_doacao)
-        assert "passou para doado" in texto.lower(), texto
+        assert "concluído" in texto.lower(), texto
         navegador.sair()
         print("jornada_doacao=ok")
 
@@ -380,27 +456,44 @@ def main() -> None:
         navegador.sair()
         print("jornada_descarte=ok")
 
-        # Jornada 3 — revenda.
+        # Jornada 3 — venda direta com entrega bilateral.
         navegador.entrar(doador_email)
         navegador.criar_item(titulo_revenda, "Revenda", "Tablet", valor="120")
-        navegador.avancar(titulo_revenda, "em_avaliacao")
-        navegador.avancar(titulo_revenda, "recondicionado")
-        navegador.avancar(titulo_revenda, "vendido", ("comprador", "Beneficiária Jornada"))
+        navegador.sair()
+
+        navegador.entrar(beneficiario_email)
+        navegador.manifestar_interesse(titulo_revenda)
+        navegador.sair()
+
+        navegador.entrar(doador_email)
+        navegador.aceitar_interesse(titulo_revenda)
+        navegador.propor_combinacao("recebidos-interesses-list", titulo_revenda, "Estação central")
+        navegador.sair()
+
+        navegador.entrar(beneficiario_email)
+        navegador.aceitar_combinacao("meus-interesses-list", titulo_revenda)
+        navegador.sair()
+
+        navegador.entrar(doador_email)
+        navegador.declarar_entrega(titulo_revenda)
+        navegador.sair()
+
+        navegador.entrar(beneficiario_email)
+        navegador.confirmar_recebimento(titulo_revenda)
         navegador.sair()
         print("jornada_revenda=ok")
     finally:
         navegador.fechar()
 
     documento = itens.find_one({"titulo": titulo_doacao})
-    assert documento["status"] == "doado"
-    assert documento["beneficiario_id"] is not None
-    assert str(documento["beneficiario_id"]) == str(
-        usuarios.find_one({"email": beneficiario_email})["_id"]
-    )
+    assert documento["status"] == "concluido"
+    selecionado = interesses.find_one({"item_id": documento["_id"]})
+    assert selecionado["status"] == "encerrado" and selecionado["resultado"] == "concluido"
+    assert selecionado["combinacao"]["aceito_por"] is not None
     descarte = itens.find_one({"titulo": titulo_descarte})
     assert descarte["status"] == "coletado" and descarte["ponto_coleta_id"] is not None
     revenda = itens.find_one({"titulo": titulo_revenda})
-    assert revenda["status"] == "vendido" and revenda["comprador_id"] is not None
+    assert revenda["status"] == "concluido" and revenda["valor"] == 120.0
     assert avisos.count_documents({"item_id": documento["_id"]}) >= 1
     print("referencias_persistidas=ok")
 

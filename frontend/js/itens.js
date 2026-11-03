@@ -111,23 +111,14 @@ function resetItemForm() {
 }
 
 const PROXIMA_ACAO = {
-  "doacao:reservado": { status: "doado", rotulo: "Marcar como doado" },
+  "doacao:reservado": { entrega: true, rotulo: "Declarar entrega" },
   "descarte:disponivel": {
     status: "encaminhado",
     rotulo: "Encaminhar ao ponto",
     referencia: "ponto",
   },
   "descarte:encaminhado": { status: "coletado", rotulo: "Marcar como coletado" },
-  "revenda:disponivel": { status: "em_avaliacao", rotulo: "Iniciar avaliação" },
-  "revenda:em_avaliacao": {
-    status: "recondicionado",
-    rotulo: "Marcar como recondicionado",
-  },
-  "revenda:recondicionado": {
-    status: "vendido",
-    rotulo: "Registrar venda",
-    referencia: "comprador",
-  },
+  "revenda:reservado": { entrega: true, rotulo: "Declarar entrega" },
 };
 
 let pontos = [];
@@ -174,22 +165,17 @@ function painelFluxo(item) {
     opcoes(select, compativeis.map((ponto) => ({ valor: ponto.id, texto: ponto.nome })));
     painel.append(select);
   }
-  if (acao.referencia === "comprador") {
-    const candidatos = pessoas.filter(
-      (pessoa) => pessoa.id !== item.proprietario_id && pessoa.tipo !== "ponto_coleta",
-    );
-    select = createElement("select", "", "");
-    select.dataset.papel = "comprador";
-    select.setAttribute("aria-label", "Comprador");
-    opcoes(select, candidatos.map((pessoa) => ({ valor: pessoa.id, texto: pessoa.nome })));
-    painel.append(select);
-  }
-
   const botao = createElement("button", "button button-secondary", acao.rotulo);
   botao.type = "button";
-  botao.dataset.acao = acao.status;
+  botao.dataset.acao = acao.status || "entrega";
   botao.dataset.itemId = item.id;
-  botao.addEventListener("click", () => aplicarAcao(item, acao, select));
+  botao.addEventListener("click", () => {
+    if (acao.entrega) {
+      executarComandoItem(item.id, "entrega", "Entrega declarada. Aguardando confirmação.");
+      return;
+    }
+    aplicarAcao(item, acao, select);
+  });
   painel.append(botao);
   return painel;
 }
@@ -219,13 +205,6 @@ async function aplicarAcao(item, acao, select) {
       return;
     }
     extras.ponto_coleta_id = select.value;
-  }
-  if (acao.referencia === "comprador") {
-    if (!select?.value) {
-      setMessage(message, "Selecione o comprador.", "error");
-      return;
-    }
-    extras.comprador_id = select.value;
   }
   setMessage(message);
   try {

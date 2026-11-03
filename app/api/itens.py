@@ -116,6 +116,18 @@ def criar_router_itens(
             proprietario_id=sessao.usuario_id,
         )
 
+    @router.post("/{item_id}/entrega", response_model=ItemResponse)
+    def declarar_entrega(item_id: str, request: Request) -> ItemResponse:
+        sessao = sessao_obrigatoria(request)
+        exigir_pessoa(sessao)
+        return servico.declarar_entrega(item_id, proprietario_id=sessao.usuario_id)
+
+    @router.post("/{item_id}/recebimento", response_model=ItemResponse)
+    def confirmar_recebimento(item_id: str, request: Request) -> ItemResponse:
+        sessao = sessao_obrigatoria(request)
+        exigir_pessoa(sessao)
+        return servico.confirmar_recebimento(item_id, usuario_id=sessao.usuario_id)
+
     @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
     def excluir(item_id: str, request: Request) -> Response:
         sessao = sessao_obrigatoria(request)

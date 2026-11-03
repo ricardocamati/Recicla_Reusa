@@ -4,7 +4,7 @@ from app.schemas.indicador import IndicadorResponse
 
 
 class RepositorioDeIndicadores(Protocol):
-    def contar_por_status(self) -> dict[str, int]: ...
+    def contar_por_modalidade_e_status(self) -> dict[str, int]: ...
 
 
 class IndicadorService:
@@ -12,10 +12,11 @@ class IndicadorService:
         self._repositorio = repositorio
 
     def obter(self) -> IndicadorResponse:
-        contagem = self._repositorio.contar_por_status()
-        doados = int(contagem.get("doado", 0))
-        coletados = int(contagem.get("coletado", 0))
-        vendidos = int(contagem.get("vendido", 0))
+        # Cada item conta uma única vez, e só depois da confirmação de recebimento.
+        contagem = self._repositorio.contar_por_modalidade_e_status()
+        doados = int(contagem.get("doacao:concluido", 0))
+        vendidos = int(contagem.get("revenda:concluido", 0))
+        coletados = int(contagem.get("descarte:coletado", 0))
         return IndicadorResponse(
             doados=doados,
             coletados=coletados,

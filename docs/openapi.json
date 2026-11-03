@@ -1,6 +1,136 @@
 {
   "components": {
     "schemas": {
+      "CombinacaoAceiteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "revisao": {
+            "minimum": 1.0,
+            "title": "Revisao",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revisao"
+        ],
+        "title": "CombinacaoAceiteRequest",
+        "type": "object"
+      },
+      "CombinacaoRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "local_texto": {
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Local Texto",
+            "type": "string"
+          },
+          "observacao": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacao"
+          },
+          "previsao": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previsao"
+          }
+        },
+        "required": [
+          "local_texto"
+        ],
+        "title": "CombinacaoRequest",
+        "type": "object"
+      },
+      "CombinacaoResponse": {
+        "properties": {
+          "aceito_em": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aceito Em"
+          },
+          "aceito_por": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aceito Por"
+          },
+          "local_texto": {
+            "title": "Local Texto",
+            "type": "string"
+          },
+          "observacao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacao"
+          },
+          "previsao": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previsao"
+          },
+          "proposto_em": {
+            "format": "date-time",
+            "title": "Proposto Em",
+            "type": "string"
+          },
+          "proposto_por": {
+            "title": "Proposto Por",
+            "type": "string"
+          },
+          "revisao": {
+            "title": "Revisao",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "local_texto",
+          "revisao",
+          "proposto_por",
+          "proposto_em"
+        ],
+        "title": "CombinacaoResponse",
+        "type": "object"
+      },
       "EnderecoRequest": {
         "additionalProperties": false,
         "properties": {
@@ -274,6 +404,16 @@
       },
       "InteresseResponse": {
         "properties": {
+          "combinacao": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CombinacaoResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "data_adicao": {
             "format": "date-time",
             "title": "Data Adicao",
@@ -320,6 +460,17 @@
               }
             ],
             "title": "Preco Selecionado"
+          },
+          "resultado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultado"
           },
           "status": {
             "enum": [
@@ -603,12 +754,10 @@
               "rascunho",
               "disponivel",
               "reservado",
-              "doado",
+              "aguardando_confirmacao",
+              "concluido",
               "encaminhado",
               "coletado",
-              "em_avaliacao",
-              "recondicionado",
-              "vendido",
               "arquivado"
             ],
             "title": "Status",
@@ -764,12 +913,10 @@
                   "rascunho",
                   "disponivel",
                   "reservado",
-                  "doado",
+                  "aguardando_confirmacao",
+                  "concluido",
                   "encaminhado",
                   "coletado",
-                  "em_avaliacao",
-                  "recondicionado",
-                  "vendido",
                   "arquivado"
                 ],
                 "type": "string"
@@ -895,7 +1042,8 @@
               "interesse_recusado",
               "interesse_cancelado",
               "status_item_alterado",
-              "item_concluido"
+              "item_concluido",
+              "entrega_declarada"
             ],
             "title": "Tipo",
             "type": "string"
@@ -1682,6 +1830,110 @@
         ]
       }
     },
+    "/api/interesses/{interesse_id}/combinacao": {
+      "put": {
+        "operationId": "propor_combinacao_api_interesses__interesse_id__combinacao_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "interesse_id",
+            "required": true,
+            "schema": {
+              "title": "Interesse Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CombinacaoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InteresseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Propor Combinacao",
+        "tags": [
+          "interesses"
+        ]
+      }
+    },
+    "/api/interesses/{interesse_id}/combinacao/aceite": {
+      "post": {
+        "operationId": "aceitar_combinacao_api_interesses__interesse_id__combinacao_aceite_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "interesse_id",
+            "required": true,
+            "schema": {
+              "title": "Interesse Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CombinacaoAceiteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InteresseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Aceitar Combinacao",
+        "tags": [
+          "interesses"
+        ]
+      }
+    },
     "/api/itens": {
       "get": {
         "operationId": "listar_api_itens_get",
@@ -2174,6 +2426,48 @@
         ]
       }
     },
+    "/api/itens/{item_id}/entrega": {
+      "post": {
+        "operationId": "declarar_entrega_api_itens__item_id__entrega_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Declarar Entrega",
+        "tags": [
+          "itens"
+        ]
+      }
+    },
     "/api/itens/{item_id}/publicar": {
       "post": {
         "operationId": "publicar_api_itens__item_id__publicar_post",
@@ -2211,6 +2505,48 @@
           }
         },
         "summary": "Publicar",
+        "tags": [
+          "itens"
+        ]
+      }
+    },
+    "/api/itens/{item_id}/recebimento": {
+      "post": {
+        "operationId": "confirmar_recebimento_api_itens__item_id__recebimento_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirmar Recebimento",
         "tags": [
           "itens"
         ]

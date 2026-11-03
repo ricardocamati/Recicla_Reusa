@@ -17,24 +17,24 @@ from app.models.usuario import Usuario
 from app.schemas.item import FiltrosItem, ItemCreateRequest, ItemResponse, ItemUpdateRequest
 
 TRANSICOES: dict[str, dict[str, set[str]]] = {
+    # Doação e venda compartilham a entrega bilateral: declarar e confirmar.
     "doacao": {
         "disponivel": {"reservado"},
-        "reservado": {"doado"},
+        "reservado": {"aguardando_confirmacao"},
+        "aguardando_confirmacao": {"concluido"},
     },
     "descarte": {
         "disponivel": {"encaminhado"},
         "encaminhado": {"coletado"},
     },
     "revenda": {
-        "disponivel": {"em_avaliacao"},
-        # A seleção de interesse reserva a venda; a avaliação segue a partir daí.
-        "reservado": {"em_avaliacao"},
-        "em_avaliacao": {"recondicionado"},
-        "recondicionado": {"vendido"},
+        "disponivel": {"reservado"},
+        "reservado": {"aguardando_confirmacao"},
+        "aguardando_confirmacao": {"concluido"},
     },
 }
 
-STATUS_CONCLUIDOS = {"doado", "coletado", "vendido"}
+STATUS_CONCLUIDOS = {"concluido", "coletado"}
 
 
 class RepositorioDeItens(Protocol):
@@ -63,6 +63,12 @@ class RepositorioDeItens(Protocol):
         *,
         status_esperado: str | None = None,
         notificacao: EventoNotificacao | None = None,
+    ) -> Item: ...
+    def declarar_entrega(
+        self, item_id: str, proprietario_id: str, instante: datetime
+    ) -> Item: ...
+    def confirmar_recebimento(
+        self, item_id: str, usuario_id: str, instante: datetime
     ) -> Item: ...
     def excluir(self, item_id: str) -> None: ...
 
@@ -217,6 +223,23 @@ class ItemService:
             self._resposta(item, proprietario=proprietarios.get(item.proprietario_id))
             for item in itens
         ]
+
+    def declarar_entrega(self, item_id: str, *, proprietario_id: str) -> ItemResponse:
+        item = self._buscar_item(item_id)
+        proprietario = self._obter_pessoa(proprietario_id)
+        if item.proprietario_id != proprietario_id:
+            raise ItemNaoAutorizadoError()
+        atualizado = self._repositorio.declarar_entrega(
+            item_id, proprietario_id, self._relogio()
+        )
+        return self._resposta(atualizado, proprietario)
+
+    def confirmar_recebimento(self, item_id: str, *, usuario_id: str) -> ItemResponse:
+        self._obter_pessoa(usuario_id)
+        atualizado = self._repositorio.confirmar_recebimento(
+            item_id, usuario_id, self._relogio()
+        )
+        return self._resposta(atualizado)
 
     def buscar_por_id(self, item_id: str) -> ItemResponse:
         item = self._buscar_item(item_id)

@@ -8,7 +8,13 @@ from bson.errors import InvalidId
 from pymongo.collection import Collection
 from pymongo.errors import ConfigurationError, InvalidOperation, PyMongoError
 
-from app.exceptions import ConflitoEstadoError, FluxoItemError, ReferenciaAtivaError
+from app.exceptions import (
+    ConflitoEstadoError,
+    FluxoItemError,
+    ItemNaoAutorizadoError,
+    ItemNaoEncontradoError,
+    ReferenciaAtivaError,
+)
 from app.models.item import EventoHistorico, Item
 from app.models.notificacao import EventoNotificacao
 from app.repositories.notificacao_documento import montar_documento, registrar
@@ -210,6 +216,191 @@ class MongoItemRepository:
                 instante=item.data_modificacao,
             )
             registrar(self._colecao_notificacoes, registro, session=session)
+
+    def declarar_entrega(
+        self, item_id: str, proprietario_id: str, instante: datetime
+    ) -> Item:
+        """Proprietário declara a entrega depois de combinação aceita."""
+        object_id = self._converter_id(item_id)
+        if object_id is None:
+            raise ItemNaoEncontradoError(item_id)
+        if self._colecao_interesses is None:
+            raise FluxoItemError(409, "Entrega exige interesse selecionado")
+        instante = self._normalizar_instante(instante)
+
+        def operacao(session):
+            item = self._colecao.find_one({"_id": object_id}, session=session)
+            if item is None:
+                raise ItemNaoEncontradoError(item_id)
+            if str(item.get("proprietario_id")) != proprietario_id:
+                raise ItemNaoAutorizadoError()
+            if item.get("status") != "reservado":
+                raise FluxoItemError(409, "Item não está reservado para entrega")
+            interesse = self._colecao_interesses.find_one(
+                {"_id": item.get("interesse_aceito_id")}, session=session
+            )
+            if interesse is None or interesse.get("status") != "selecionado":
+                raise FluxoItemError(409, "Entrega exige interesse selecionado")
+            combinacao = interesse.get("combinacao") or {}
+            if not combinacao.get("aceito_por"):
+                raise FluxoItemError(409, "Combinação de entrega ainda não foi aceita")
+            resultado = self._colecao.update_one(
+                {"_id": object_id, "status": "reservado"},
+                {
+                    "$set": {"status": "aguardando_confirmacao", "data_modificacao": instante},
+                    "$push": {
+                        "historico": {
+                            "etapa": "declaracao_entrega",
+                            "status": "aguardando_confirmacao",
+                            "data_evento": instante,
+                            "responsavel_id": ObjectId(proprietario_id),
+                            "observacao": "Proprietário declarou a entrega",
+                        }
+                    },
+                },
+                session=session,
+            )
+            if resultado.matched_count != 1:
+                raise FluxoItemError(409, "Item alterado por outra operação")
+            if self._colecao_notificacoes is not None:
+                evento = EventoNotificacao(
+                    tipo="entrega_declarada",
+                    titulo="Entrega declarada",
+                    mensagem="O proprietário declarou a entrega. Confirme o recebimento.",
+                    evento_id=f"item:{item_id}:entrega_declarada",
+                )
+                registro = montar_documento(
+                    usuario_id=str(interesse["usuario_id"]),
+                    item_id=item_id,
+                    interesse_id=str(interesse["_id"]),
+                    evento=evento,
+                    instante=instante,
+                )
+                registrar(self._colecao_notificacoes, registro, session=session)
+            item["status"] = "aguardando_confirmacao"
+            item["data_modificacao"] = instante
+            return self._para_modelo(item)
+
+        return self._executar_transacao(operacao)
+
+    def confirmar_recebimento(
+        self, item_id: str, usuario_id: str, instante: datetime
+    ) -> Item:
+        """Selecionado confirma o recebimento; conclui item e encerra interesses."""
+        object_id = self._converter_id(item_id)
+        if object_id is None:
+            raise ItemNaoEncontradoError(item_id)
+        if self._colecao_interesses is None:
+            raise FluxoItemError(409, "Confirmação exige interesse selecionado")
+        instante = self._normalizar_instante(instante)
+
+        def operacao(session):
+            item = self._colecao.find_one({"_id": object_id}, session=session)
+            if item is None:
+                raise ItemNaoEncontradoError(item_id)
+            selecionado = self._colecao_interesses.find_one(
+                {"_id": item.get("interesse_aceito_id")}, session=session
+            )
+            if selecionado is None or str(selecionado.get("usuario_id")) != usuario_id:
+                raise ItemNaoAutorizadoError()
+            if item.get("status") == "concluido":
+                # Reenvio identificado: devolve o resultado sem segundo efeito.
+                return self._para_modelo(item)
+            if item.get("status") != "aguardando_confirmacao":
+                raise FluxoItemError(409, "Item não está aguardando confirmação")
+            resultado = self._colecao.update_one(
+                {"_id": object_id, "status": "aguardando_confirmacao"},
+                {
+                    "$set": {"status": "concluido", "data_modificacao": instante},
+                    "$push": {
+                        "historico": {
+                            "etapa": "confirmacao_recebimento",
+                            "status": "concluido",
+                            "data_evento": instante,
+                            "responsavel_id": ObjectId(usuario_id),
+                            "observacao": "Selecionado confirmou o recebimento",
+                        }
+                    },
+                },
+                session=session,
+            )
+            if resultado.matched_count != 1:
+                raise FluxoItemError(409, "Item alterado por outra operação")
+            self._colecao_interesses.update_one(
+                {"_id": selecionado["_id"], "status": "selecionado"},
+                {
+                    "$set": {
+                        "status": "encerrado",
+                        "resultado": "concluido",
+                        "data_modificacao": instante,
+                    }
+                },
+                session=session,
+            )
+            eventos = EventoNotificacao(
+                tipo="item_concluido",
+                titulo="Item concluído",
+                mensagem="A entrega foi confirmada e o item foi concluído.",
+                evento_id=f"item:{item_id}:concluido",
+            )
+            outros = self._colecao_interesses.find(
+                {
+                    "item_id": object_id,
+                    "status": {"$in": ["pendente", "selecionado"]},
+                    "_id": {"$ne": selecionado["_id"]},
+                },
+                session=session,
+            )
+            if self._colecao_notificacoes is not None:
+                registro = montar_documento(
+                    usuario_id=str(selecionado["usuario_id"]),
+                    item_id=item_id,
+                    interesse_id=str(selecionado["_id"]),
+                    evento=eventos,
+                    instante=instante,
+                )
+                registrar(self._colecao_notificacoes, registro, session=session)
+                for outro in outros:
+                    self._colecao_interesses.update_one(
+                        {"_id": outro["_id"]},
+                        {
+                            "$set": {
+                                "status": "encerrado",
+                                "resultado": "item_concluido",
+                                "data_modificacao": instante,
+                            }
+                        },
+                        session=session,
+                    )
+                    registro = montar_documento(
+                        usuario_id=str(outro["usuario_id"]),
+                        item_id=item_id,
+                        interesse_id=str(outro["_id"]),
+                        evento=eventos,
+                        instante=instante,
+                    )
+                    registrar(self._colecao_notificacoes, registro, session=session)
+            item["status"] = "concluido"
+            item["data_modificacao"] = instante
+            return self._para_modelo(item)
+
+        return self._executar_transacao(operacao)
+
+    def _executar_transacao(self, operacao):
+        with self._colecao.database.client.start_session() as sessao:
+            try:
+                return sessao.with_transaction(operacao)
+            except (ConflitoEstadoError, FluxoItemError, ItemNaoEncontradoError, ItemNaoAutorizadoError):
+                raise
+            except (PyMongoError, ConfigurationError, InvalidOperation, NotImplementedError) as erro:
+                raise FluxoItemError(
+                    503, "Operação temporariamente indisponível"
+                ) from erro
+
+    @staticmethod
+    def _normalizar_instante(instante: datetime) -> datetime:
+        utc = instante.replace(tzinfo=UTC) if instante.tzinfo is None else instante.astimezone(UTC)
+        return utc.replace(microsecond=utc.microsecond // 1000 * 1000)
 
     def excluir(self, item_id: str) -> None:
         object_id = self._converter_id(item_id)

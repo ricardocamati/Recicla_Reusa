@@ -53,6 +53,82 @@ function cartaoInteresse(interesse, { recebido }) {
     article.append(createElement("p", "field-hint", `Tentativa ${interesse.tentativa}`));
   }
 
+  if (interesse.status === "selecionado") {
+    const combinacao = interesse.combinacao;
+    const situacao = combinacao
+      ? `Combinação r${combinacao.revisao}: ${combinacao.local_texto} — ${
+          combinacao.aceito_por ? "aceita" : "aguardando aceite da contraparte"
+        }`
+      : "Ainda sem combinação de entrega.";
+    article.append(createElement("p", "item-card-description", situacao));
+
+    const form = createElement("form", "form-stack combination-form");
+    const local = createElement("input", "", "");
+    local.name = "local_texto";
+    local.placeholder = "Local da entrega";
+    local.maxLength = 200;
+    local.required = true;
+    const previsao = createElement("input", "", "");
+    previsao.name = "previsao";
+    previsao.type = "datetime-local";
+    const observacao = createElement("input", "", "");
+    observacao.name = "observacao";
+    observacao.placeholder = "Observação (opcional)";
+    observacao.maxLength = 300;
+    const propor = createElement("button", "button button-secondary", combinacao ? "Alterar combinação" : "Propor combinação");
+    propor.type = "submit";
+    form.append(local, previsao, observacao, propor);
+    form.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      try {
+        await requestApi(`/api/interesses/${encodeURIComponent(interesse.id)}/combinacao`, {
+          method: "PUT",
+          body: JSON.stringify({
+            local_texto: local.value.trim(),
+            previsao: previsao.value ? new Date(previsao.value).toISOString() : null,
+            observacao: observacao.value.trim() || null,
+          }),
+        });
+        await carregarTudo();
+      } catch (error) {
+        handleError(error, recebido ? byIdRecebidos() : byIdMeus());
+      }
+    });
+    article.append(form);
+
+    if (combinacao && !combinacao.aceito_por && combinacao.proposto_por !== usuario.id) {
+      const aceitarCombinacao = createElement("button", "button button-primary", "Aceitar combinação");
+      aceitarCombinacao.type = "button";
+      aceitarCombinacao.addEventListener("click", async () => {
+        try {
+          await requestApi(
+            `/api/interesses/${encodeURIComponent(interesse.id)}/combinacao/aceite`,
+            { method: "POST", body: JSON.stringify({ revisao: combinacao.revisao }) },
+          );
+          await carregarTudo();
+        } catch (error) {
+          handleError(error, recebido ? byIdRecebidos() : byIdMeus());
+        }
+      });
+      article.append(aceitarCombinacao);
+    }
+    if (combinacao && combinacao.aceito_por && !recebido) {
+      const confirmar = createElement("button", "button button-primary", "Confirmar recebimento");
+      confirmar.type = "button";
+      confirmar.addEventListener("click", async () => {
+        try {
+          await requestApi(`/api/itens/${encodeURIComponent(interesse.item_id)}/recebimento`, {
+            method: "POST",
+          });
+          await carregarTudo();
+        } catch (error) {
+          handleError(error, byIdMeus());
+        }
+      });
+      article.append(confirmar);
+    }
+  }
+
   const actions = createElement("div", "item-actions");
   const executar = async (acao, motivo = null) => {
     const alvo = recebido ? byIdRecebidos() : byIdMeus();
