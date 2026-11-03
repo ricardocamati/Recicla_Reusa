@@ -26,6 +26,12 @@ class PontoColetaUpdateRequest(PontoColetaCreateRequest):
     pass
 
 
+class PontoSituacaoRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ativo: bool
+
+
 class PontoColetaResponse(BaseModel):
     id: str
     nome: str
@@ -33,5 +39,6 @@ class PontoColetaResponse(BaseModel):
     categorias_aceitas: list[str]
     horario_atendimento: str
     responsavel_id: str
+    ativo: bool = True
     data_adicao: datetime
     data_modificacao: datetime

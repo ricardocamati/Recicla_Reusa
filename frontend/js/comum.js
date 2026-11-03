@@ -37,8 +37,9 @@ export const ROTULOS = {
   status: {
     disponivel: "Disponível",
     reservado: "Reservado",
-    encaminhado: "Encaminhado",
-    coletado: "Coletado",
+    aguardando_ponto: "Aguardando ponto",
+    entrega_prevista: "Entrega prevista",
+    recebido: "Recebido",
     rascunho: "Rascunho",
     aguardando_confirmacao: "Aguardando confirmação",
     concluido: "Concluído",

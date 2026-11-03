@@ -227,10 +227,16 @@ def test_itens_oferece_acoes_do_fluxo_ao_proprietario() -> None:
     for chave in (
         '"doacao:reservado"',
         '"revenda:reservado"',
-        '"descarte:disponivel"',
-        '"descarte:encaminhado"',
+        '"descarte:aguardando_ponto"',
+        '"descarte:entrega_prevista"',
     ):
         assert chave in itens, chave
+    # Descarte escolhe ponto e agenda entrega; o status não muda por PUT.
+    assert "/api/encaminhamentos" in itens
+    assert "Agendar entrega" in itens
+    assert "Cancelar entrega" in itens
+    assert 'status: "encaminhado"' not in itens
+    assert 'status: "coletado"' not in itens
     # Doação e venda terminam em entrega bilateral, não em conclusão por PUT.
     assert "Declarar entrega" in itens
     assert "executarComandoItem" in itens
@@ -238,6 +244,21 @@ def test_itens_oferece_acoes_do_fluxo_ao_proprietario() -> None:
     assert 'status: "vendido"' not in itens
     assert "ponto_coleta_id" in itens
     assert "/api/pontos-coleta" in itens
+
+
+def test_pontos_oferece_operacao_da_fila() -> None:
+    pontos = ler("js/pontos.js")
+    for marca in (
+        "situacao",
+        "/situacao",
+        "escopo=operador",
+        "Confirmar recebimento",
+        "nao_recebido",
+        "fila-list",
+    ):
+        assert marca in pontos, marca
+    html = ler("pontos.html")
+    assert 'id="fila-operador"' in html
 
 
 def test_interesses_oferece_combinacao_e_recebimento() -> None:

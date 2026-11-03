@@ -112,12 +112,8 @@ function resetItemForm() {
 
 const PROXIMA_ACAO = {
   "doacao:reservado": { entrega: true, rotulo: "Declarar entrega" },
-  "descarte:disponivel": {
-    status: "encaminhado",
-    rotulo: "Encaminhar ao ponto",
-    referencia: "ponto",
-  },
-  "descarte:encaminhado": { status: "coletado", rotulo: "Marcar como coletado" },
+  "descarte:aguardando_ponto": { encaminhar: true, rotulo: "Agendar entrega" },
+  "descarte:entrega_prevista": { cancelarEntrega: true, rotulo: "Cancelar entrega" },
   "revenda:reservado": { entrega: true, rotulo: "Declarar entrega" },
 };
 
@@ -155,10 +151,21 @@ function painelFluxo(item) {
   const painel = createElement("div", "item-actions");
   let select = null;
 
-  if (acao.referencia === "ponto") {
-    const compativeis = pontos.filter((ponto) =>
-      (ponto.categorias_aceitas || []).includes(item.categoria),
+  if (acao.encaminhar) {
+    const compativeis = pontos.filter(
+      (ponto) =>
+        (ponto.categorias_aceitas || []).includes(item.categoria) &&
+        ponto.ativo !== false,
     );
+    if (!compativeis.length) {
+      const aviso = createElement(
+        "p",
+        "item-card-description",
+        "Nenhum ponto ativo aceita esta categoria. Informe outro destino no descarte.",
+      );
+      painel.append(aviso);
+      return painel;
+    }
     select = createElement("select", "", "");
     select.dataset.papel = "ponto";
     select.setAttribute("aria-label", "Ponto de coleta");
@@ -167,11 +174,50 @@ function painelFluxo(item) {
   }
   const botao = createElement("button", "button button-secondary", acao.rotulo);
   botao.type = "button";
-  botao.dataset.acao = acao.status || "entrega";
+  botao.dataset.acao = acao.status
+    || (acao.encaminhar ? "agendar" : acao.cancelarEntrega ? "cancelar-entrega" : "entrega");
   botao.dataset.itemId = item.id;
-  botao.addEventListener("click", () => {
+  botao.addEventListener("click", async () => {
+    const message = document.getElementById("my-items-message");
     if (acao.entrega) {
       executarComandoItem(item.id, "entrega", "Entrega declarada. Aguardando confirmação.");
+      return;
+    }
+    if (acao.encaminhar) {
+      if (!select?.value) {
+        setMessage(message, "Escolha um ponto de coleta.", "error");
+        return;
+      }
+      try {
+        await requestApi("/api/encaminhamentos", {
+          method: "POST",
+          body: JSON.stringify({ item_id: item.id, ponto_id: select.value }),
+        });
+        await loadOwnedItems();
+        setMessage(message, "Entrega prevista no ponto escolhido.", "success");
+      } catch (error) {
+        handleError(error, message);
+      }
+      return;
+    }
+    if (acao.cancelarEntrega) {
+      try {
+        const abertos = await requestApi(
+          `/api/encaminhamentos?escopo=autor&item_id=${encodeURIComponent(item.id)}&status=entrega_prevista`,
+        );
+        if (!abertos.length) {
+          setMessage(message, "Nenhuma entrega prevista para cancelar.", "error");
+          return;
+        }
+        await requestApi(`/api/encaminhamentos/${encodeURIComponent(abertos[0].id)}/acoes`, {
+          method: "POST",
+          body: JSON.stringify({ acao: "cancelar" }),
+        });
+        await loadOwnedItems();
+        setMessage(message, "Entrega cancelada; o item voltou a aguardar ponto.", "success");
+      } catch (error) {
+        handleError(error, message);
+      }
       return;
     }
     aplicarAcao(item, acao, select);

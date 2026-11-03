@@ -151,11 +151,11 @@ Referências: V21-RF-06, V21-RF-07, V21-RF-08 · V21-CT-09 a V21-CT-12.
 
 Referências: V21-RF-09, V21-RF-10, V21-RF-11 · V21-CT-13 a V21-CT-21.
 
-- [ ] Guiar a escolha do ponto por cidade e categoria, sem prometer proximidade.
-- [ ] Registrar entrega prevista somente após confirmação, mantendo o cadastro salvo quando não houver ponto compatível.
-- [ ] Permitir cancelar e trocar ponto antes do recebimento, preservando tentativas anteriores.
-- [ ] Dar ao operador filas de previstas e recebidas, com filtro por local, paginação e motivo de impossibilidade.
-- [ ] Tratar inativação de ponto com previsões ativas e disputa entre previsão e mudança de categoria.
+- [x] Guiar a escolha do ponto por cidade e categoria, sem prometer proximidade.
+- [x] Registrar entrega prevista somente após confirmação, mantendo o cadastro salvo quando não houver ponto compatível.
+- [x] Permitir cancelar e trocar ponto antes do recebimento, preservando tentativas anteriores.
+- [x] Dar ao operador filas de previstas e recebidas, com filtro por local, paginação e motivo de impossibilidade.
+- [x] Tratar inativação de ponto com previsões ativas e disputa entre previsão e mudança de categoria.
 
 ## Etapa 14 — Indicação de lugar pelo autor
 

@@ -15,4 +15,5 @@ class PontoColeta:
     responsavel_id: str
     data_adicao: datetime
     data_modificacao: datetime
+    ativo: bool = True
     id: str | None = None

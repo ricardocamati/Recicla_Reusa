@@ -17,6 +17,9 @@ function cartaoPonto(ponto) {
   const article = createElement("article", "item-card");
   const tags = createElement("div", "item-tags");
   tags.append(createElement("span", "tag", "Ponto de coleta"));
+  if (ponto.ativo === false) {
+    tags.append(createElement("span", "tag", "Inativo"));
+  }
   article.append(tags, createElement("h3", "", ponto.nome));
 
   const endereco = ponto.endereco || {};
@@ -50,7 +53,31 @@ function cartaoPonto(ponto) {
         handleError(error, message);
       }
     });
-    actions.append(remover);
+    const alternar = createElement(
+      "button",
+      "button button-secondary",
+      ponto.ativo === false ? "Ativar" : "Desativar",
+    );
+    alternar.type = "button";
+    alternar.dataset.acao = "situacao";
+    alternar.addEventListener("click", async () => {
+      const message = document.getElementById("pontos-message");
+      try {
+        await requestApi(`/api/pontos-coleta/${encodeURIComponent(ponto.id)}/situacao`, {
+          method: "POST",
+          body: JSON.stringify({ ativo: ponto.ativo === false }),
+        });
+        await carregarPontos();
+        setMessage(
+          message,
+          ponto.ativo === false ? "Ponto reativado." : "Ponto desativado.",
+          "success",
+        );
+      } catch (error) {
+        handleError(error, message);
+      }
+    });
+    actions.append(alternar, remover);
     article.append(actions);
   }
   return article;
@@ -125,6 +152,87 @@ async function salvarPonto(evento) {
   }
 }
 
+const NOME_STATUS = {
+  entrega_prevista: "Entrega prevista",
+  recebido: "Recebido",
+  cancelado: "Cancelado",
+  nao_recebido: "Não recebido",
+};
+
+async function carregarFila() {
+  const lista = document.getElementById("fila-list");
+  const message = document.getElementById("fila-message");
+  if (!lista) return;
+  lista.replaceChildren();
+  try {
+    const previstas = await requestApi(
+      "/api/encaminhamentos?escopo=operador&status=entrega_prevista&limite=50",
+    );
+    if (!previstas.length) {
+      renderEmptyState(lista, "Nenhuma entrega prevista no momento.");
+      return;
+    }
+    for (const entrega of previstas) {
+      let titulo = entrega.item_id;
+      try {
+        const item = await requestApi(`/api/itens/${encodeURIComponent(entrega.item_id)}`);
+        titulo = item.titulo;
+      } catch {
+        /* item pode ter sido removido do catálogo */
+      }
+      const ponto = pontos.find((local) => local.id === entrega.ponto_id);
+      const article = createElement("article", "item-card");
+      article.dataset.encaminhamentoId = entrega.id;
+      article.append(
+        createElement("h3", "", titulo),
+        createElement(
+          "p",
+          "item-card-description",
+          `Entrega prevista em ${ponto ? ponto.nome : "ponto"} — ${NOME_STATUS[entrega.status]}`,
+        ),
+      );
+      const actions = createElement("div", "item-actions");
+      const receber = createElement("button", "button button-primary", "Confirmar recebimento");
+      receber.type = "button";
+      receber.dataset.acao = "receber";
+      receber.addEventListener("click", async () => {
+        try {
+          await requestApi(
+            `/api/encaminhamentos/${encodeURIComponent(entrega.id)}/acoes`,
+            { method: "POST", body: JSON.stringify({ acao: "receber" }) },
+          );
+          await carregarFila();
+          setMessage(message, "Recebimento confirmado.", "success");
+        } catch (error) {
+          handleError(error, message);
+        }
+      });
+      const falha = createElement("button", "button button-ghost", "Não recebido");
+      falha.type = "button";
+      falha.dataset.acao = "nao_recebido";
+      falha.addEventListener("click", async () => {
+        const motivo = window.prompt("Motivo do não recebimento:");
+        if (!motivo) return;
+        try {
+          await requestApi(
+            `/api/encaminhamentos/${encodeURIComponent(entrega.id)}/acoes`,
+            { method: "POST", body: JSON.stringify({ acao: "nao_recebido", motivo }) },
+          );
+          await carregarFila();
+          setMessage(message, "Falha registrada; o item voltou ao autor.", "success");
+        } catch (error) {
+          handleError(error, message);
+        }
+      });
+      actions.append(receber, falha);
+      article.append(actions);
+      lista.append(article);
+    }
+  } catch (error) {
+    handleError(error, message);
+  }
+}
+
 async function initPontos() {
   usuario = await requireSession();
   if (!usuario) return;
@@ -142,6 +250,13 @@ async function initPontos() {
   }
 
   await carregarPontos();
+  if (usuario.tipo === "ponto_coleta") {
+    const fila = document.getElementById("fila-operador");
+    if (fila) {
+      fila.hidden = false;
+      await carregarFila();
+    }
+  }
 }
 
 document.addEventListener("DOMContentLoaded", initPontos);

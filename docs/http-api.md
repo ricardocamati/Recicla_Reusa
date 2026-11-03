@@ -73,11 +73,11 @@ O catálogo devolve apenas itens `disponivel` de doação ou revenda. Descarte, 
 
 Categorias aceitas: `informatica`, `notebook`, `desktop`, `telefonia`, `celular`, `tablet`, `televisao`, `audio`, `eletrodomestico`, `perifericos`, `monitor`, `impressora` e `outro`. Também são aceitas entradas com maiúsculas, espaços, hífen e acentos equivalentes, devolvidas no formato canônico em minúsculas.
 
-Condições aceitas: `funcional`, `funcional_com_defeito`, `reparavel`, `sem_conserto` e `recondicionado` — condição física independente da modalidade. Destinos aceitos: `doacao`, `descarte` e `revenda`. O item nasce `rascunho` quando `publicar=false` e `disponivel` caso contrário. `revenda` exige `valor` maior que zero; doação e descarte não aceitam preço.
+Condições aceitas: `funcional`, `funcional_com_defeito`, `reparavel`, `sem_conserto` e `recondicionado` — condição física independente da modalidade. Destinos aceitos: `doacao`, `descarte` e `revenda`. O item nasce `rascunho` quando `publicar=false`; publicado, fica `disponivel` em doação e revenda e `aguardando_ponto` em descarte. `revenda` exige `valor` maior que zero; doação e descarte não aceitam preço.
 
 `especificacoes` é um subdocumento livre de textos, porque categorias diferentes têm características diferentes. O cadastro grava o primeiro evento em `historico` com etapa `publicacao` (ou `cadastro`, no rascunho), status correspondente, data do servidor e o proprietário como responsável. Publicar e arquivar também registram evento.
 
-`GET /api/itens/meus` agrupa: `ativos` (rascunho e disponível), `em_andamento` (reservado, encaminhado, em avaliação e recondicionado) e `encerrados` (doado, coletado, vendido e arquivado). Arquivar preserva item, histórico e referências; o item arquivado não pode ser excluído.
+`GET /api/itens/meus` agrupa: `ativos` (rascunho, disponível e aguardando ponto), `em_andamento` (reservado, aguardando confirmação e entrega prevista) e `encerrados` (concluído, recebido e arquivado). Arquivar preserva item, histórico e referências; o item arquivado não pode ser excluído.
 
 A listagem aceita `offset` (padrão `0`) e `limite` (padrão `20`, máximo `100`), sempre ordenada por `data_adicao` decrescente. O filtro `cidade` usa a cidade do proprietário e não expõe o endereço.
 
@@ -85,24 +85,20 @@ Transições permitidas, sem saltos entre fluxos:
 
 | Destino | Sequência |
 |---|---|
-| `doacao` | `disponivel` → `reservado` → `doado` |
-| `descarte` | `disponivel` → `encaminhado` → `coletado` |
-| `revenda` | `disponivel` → `em_avaliacao` → `recondicionado` → `vendido` |
+| `doacao` | `disponivel` → `reservado` → `aguardando_confirmacao` → `concluido` |
+| `revenda` | `disponivel` → `reservado` → `aguardando_confirmacao` → `concluido` |
+| `descarte` | `aguardando_ponto` → `entrega_prevista` → `recebido` |
 
-A atualização aceita `status` opcional; transição inválida retorna `400`, item já concluído não volta a outro fluxo e cada transição acrescenta um evento a `historico` sem apagar os anteriores. O `PUT` substitui os campos descritivos, mas `ponto_coleta_id` e `comprador_id` seguem regras próprias do fluxo.
+Doação e venda só avançam pelo `PUT` até `reservado`; declarar entrega e confirmar recebimento têm endpoints próprios. Descarte não muda de status pelo `PUT`: o item publicado fica em `aguardando_ponto` e a entrega é combinada em `/api/encaminhamentos`. Transição inválida retorna `400`, item concluído não volta a outro fluxo e cada mudança acrescenta um evento a `historico`. O `PUT` substitui os campos descritivos; `ponto_coleta_id` e `comprador_id` não são aceitos no corpo — o ponto vem do encaminhamento e o comprador, do interesse selecionado.
 
-Cada destino exige as referências abaixo no momento da transição:
-
-| Transição | Exigência |
+| Comando | Exigência |
 |---|---|
-| `disponivel → encaminhado` | `ponto_coleta_id` de ponto existente que aceite a categoria do item |
-| `encaminhado → coletado` | mantém o ponto definido no encaminhamento |
-| `reservado → doado` | interesse `aceito` no item; o beneficiário vem desse interesse, nunca do corpo |
-| `recondicionado → vendido` | `comprador_id` de outra pessoa cadastrada |
+| `POST /api/itens/{id}/entrega` | interesse `selecionado`, combinação aceita e item `reservado` |
+| `POST /api/itens/{id}/recebimento` | pessoa selecionada e item `aguardando_confirmacao` |
+| `POST /api/encaminhamentos` | descarte próprio `aguardando_ponto` e ponto ativo que aceite a categoria |
+| `POST /api/encaminhamentos/{id}/acoes` | ação `cancelar`, `trocar`, `receber` ou `nao_recebido`, conforme o ator |
 
-`ponto_coleta_id` só é aceito no encaminhamento e não pode ser trocado ou removido depois; `comprador_id` só é aceito na conclusão da revenda e também fica fixado. Campo de fluxo enviado para outro destino retorna `400`, referência já definida retorna `409`, ponto ou pessoa inexistente `404`, categoria não aceita `400` e conclusão de doação sem aceite `409`. O destino pode ser corrigido apenas enquanto o item está `disponivel` e não pode ser alterado junto com uma transição de status; depois de iniciado o fluxo, fica fixo. O encaminhamento valida a categoria enviada no próprio `PUT`. A transição aceita `observacao` opcional (até 300 caracteres), gravada no evento correspondente — por exemplo, o laudo da avaliação na revenda.
-
-A exclusão só é aceita enquanto o item está `disponivel`; depois disso retorna `409`, preservando o histórico e as referências do fluxo. `observacao` sem transição de status é ignorada.
+Campo de fluxo enviado para outro destino retorna `400`, referência já definida retorna `409`, ponto ou pessoa inexistente `404` e categoria não aceita `409`. O destino pode ser corrigido apenas enquanto o item está `disponivel` ou `aguardando_ponto`. A exclusão só é aceita nesses mesmos estados; depois disso retorna `409`, preservando histórico e referências.
 
 `beneficiario_id` é definido pelo servidor. `ponto_coleta_id`, `beneficiario_id` e `comprador_id` aparecem na resposta. Excluir um ponto ainda referenciado por item ou uma pessoa que seja proprietária, beneficiária ou compradora de item retorna `409`, preservando a referência.
 
@@ -198,13 +194,29 @@ O índice único por `evento_id`, destinatário e item garante uma única notifi
 | `POST` | `/api/pontos-coleta` | conta `ponto_coleta` | `PontoColetaCreateRequest` | `201`, `Location` e ponto criado |
 | `GET` | `/api/pontos-coleta/{id}` | sessão | — | `200` com ponto |
 | `PUT` | `/api/pontos-coleta/{id}` | responsável | `PontoColetaUpdateRequest` | `200` com ponto atualizado |
+| `POST` | `/api/pontos-coleta/{id}/situacao` | responsável | `{"ativo": bool}` | `200` com ponto ativo ou inativo |
 | `DELETE` | `/api/pontos-coleta/{id}` | responsável | — | `204` sem corpo |
 
 O ponto guarda nome, endereço aninhado, categorias aceitas e horário de atendimento. O `responsavel_id` vem da sessão, precisa ser uma conta `ponto_coleta` e não é aceito no corpo.
 
 `categorias_aceitas` exige ao menos uma categoria conhecida e recusa repetição. A listagem é ordenada por nome, aceita `offset`/`limite` (padrão 20, máximo 100) e o filtro `categoria` seleciona pontos que aceitam aquela categoria.
 
-Alteração e exclusão só são aceitas para o responsável; outro operador recebe `404`, sem revelar a existência do ponto. Excluir um usuário que ainda responde por um ponto retorna `409`, preservando a referência.
+Ponto inativo não recebe novas entregas previstas, mas as que já existiam continuam válidas e podem ser concluídas; ao desativar, os autores com entrega prevista são notificados para escolher outro ponto. Reativar libera novas entregas. Alteração, situação e exclusão só são aceitas para o responsável; outro operador recebe `404`, sem revelar a existência do ponto. Excluir um usuário que ainda responde por um ponto retorna `409`, preservando a referência.
+
+## Encaminhamentos de descarte
+
+| Método | Caminho | Autenticação | Entrada | Sucesso |
+|---|---|---|---|---|
+| `GET` | `/api/encaminhamentos` | sessão | `escopo=autor\|operador`, `ponto_id`, `item_id`, `status`, `offset`, `limite` | `200` com lista |
+| `GET` | `/api/encaminhamentos/{id}` | autor ou operador do ponto | — | `200` com encaminhamento |
+| `POST` | `/api/encaminhamentos` | pessoa proprietária | `item_id` e `ponto_id` | `201` com `entrega_prevista` |
+| `POST` | `/api/encaminhamentos/{id}/acoes` | autor ou operador do ponto | `acao`, `motivo`, `novo_ponto_id` | `200` com encaminhamento atualizado |
+
+Cada tentativa guarda item, autor, ponto, status, motivo e histórico com autor e data de cada evento. Estados: `entrega_prevista`, `cancelado`, `nao_recebido` e `recebido`. Um item tem no máximo uma tentativa ativa; o índice parcial garante isso mesmo em chamadas simultâneas.
+
+`cancelar` e `trocar` são do autor e só valem com `entrega_prevista`; cancelar devolve o item para `aguardando_ponto`, e trocar encerra a tentativa anterior como `cancelado` e cria outra, preservando o histórico. `receber` é do operador responsável pelo ponto: o item vira `recebido` e passa a contar em `coletados`. Repetir a confirmação devolve o mesmo resultado sem duplicar a contagem. `nao_recebido` é do operador, exige motivo e devolve o item para `aguardando_ponto`.
+
+Escolher o ponto não grava vínculo até a confirmação do `POST`: a listagem pública de pontos serve para comparar cidade, categorias e horário, sem declarar proximidade. A escolha é sempre explícita e o autor pode trocar de ponto enquanto a entrega estiver prevista.
 
 ## Indicadores
 
@@ -212,7 +224,7 @@ Alteração e exclusão só são aceitas para o responsável; outro operador rec
 |---|---|---|---|
 | `GET` | `/api/indicadores` | sessão | `200` com `doados`, `coletados`, `vendidos` e `total` |
 
-Somente itens concluídos entram nos totais: `doado`, `coletado` e `vendido`. Itens disponíveis, reservados ou em andamento não são contados. Os números são da plataforma inteira, não de uma conta específica, e a consulta aceita qualquer sessão autenticada; sem sessão retorna `401`.
+Somente itens concluídos entram nos totais: `concluido` em doação e revenda, `recebido` em descarte. Itens disponíveis, reservados ou em andamento não são contados. Os números são da plataforma inteira, não de uma conta específica, e a consulta aceita qualquer sessão autenticada; sem sessão retorna `401`.
 
 O snapshot da OpenAPI gerada do runtime e suas diferenças em relação a esta descrição estão em [openapi.md](openapi.md).
 

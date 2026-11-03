@@ -27,7 +27,7 @@ def test_contabiliza_somente_concluidos_por_modalidade() -> None:
         [
             ("doacao", "concluido"),
             ("doacao", "concluido"),
-            ("descarte", "coletado"),
+            ("descarte", "recebido"),
             ("revenda", "concluido"),
             ("doacao", "aguardando_confirmacao"),
             ("doacao", "reservado"),

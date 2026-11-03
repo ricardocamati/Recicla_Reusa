@@ -23,10 +23,6 @@ TRANSICOES: dict[str, dict[str, set[str]]] = {
         "reservado": {"aguardando_confirmacao"},
         "aguardando_confirmacao": {"concluido"},
     },
-    "descarte": {
-        "disponivel": {"encaminhado"},
-        "encaminhado": {"coletado"},
-    },
     "revenda": {
         "disponivel": {"reservado"},
         "reservado": {"aguardando_confirmacao"},
@@ -34,7 +30,7 @@ TRANSICOES: dict[str, dict[str, set[str]]] = {
     },
 }
 
-STATUS_CONCLUIDOS = {"concluido", "coletado"}
+STATUS_CONCLUIDOS = {"concluido", "recebido"}
 
 
 class RepositorioDeItens(Protocol):
@@ -112,7 +108,10 @@ class ItemService:
 
     def criar(self, request: ItemCreateRequest, *, proprietario_id: str) -> ItemResponse:
         proprietario = self._obter_pessoa(proprietario_id)
-        status = "disponivel" if request.publicar else "rascunho"
+        if request.publicar:
+            status = "aguardando_ponto" if request.destino == "descarte" else "disponivel"
+        else:
+            status = "rascunho"
         item = ItemMapper.para_modelo(
             request,
             proprietario_id=proprietario_id,
@@ -131,11 +130,12 @@ class ItemService:
         if item.status != "rascunho":
             raise TransicaoInvalidaError(item.status, "disponivel")
         instante = self._relogio()
-        item.status = "disponivel"
+        # Descarte publicado aguarda um ponto; não entra no catálogo.
+        item.status = "aguardando_ponto" if item.destino == "descarte" else "disponivel"
         item.data_modificacao = instante
         ItemMapper.registrar_transicao(
             item,
-            novo_status="disponivel",
+            novo_status=item.status,
             responsavel_id=proprietario_id,
             instante=instante,
             observacao="Item publicado",
@@ -208,9 +208,9 @@ class ItemService:
         limite: int = 20,
     ) -> list[ItemResponse]:
         grupos = {
-            "ativos": ("rascunho", "disponivel"),
-            "em_andamento": ("reservado", "encaminhado", "em_avaliacao", "recondicionado"),
-            "encerrados": ("doado", "coletado", "vendido", "arquivado"),
+            "ativos": ("rascunho", "disponivel", "aguardando_ponto"),
+            "em_andamento": ("reservado", "aguardando_confirmacao", "entrega_prevista"),
+            "encerrados": ("concluido", "recebido", "arquivado"),
         }
         if grupo not in grupos:
             raise FluxoItemError(400, "Grupo inválido")
@@ -285,6 +285,11 @@ class ItemService:
 
         transicao = novo_status is not None and novo_status != status_anterior
         if transicao:
+            if item.destino == "descarte" and novo_status != status_anterior:
+                raise FluxoItemError(
+                    400,
+                    "Descarte é encaminhado em /api/encaminhamentos, não pelo PUT",
+                )
             self._validar_transicao(item.destino, status_anterior, novo_status)
         referencias = self._preparar_fluxo(
             item,
@@ -357,69 +362,28 @@ class ItemService:
         *,
         alvo: str | None,
     ) -> dict[str, str | None]:
-        """Valida as referências do fluxo e devolve o que deve ser gravado."""
-        if request.ponto_coleta_id is not None and item.destino != "descarte":
+        """Descarte é encaminhado por /api/encaminhamentos, não pelo PUT."""
+        if (
+            item.status == "entrega_prevista"
+            and request.categoria is not None
+            and request.categoria != item.categoria
+        ):
             raise FluxoItemError(
-                400, "ponto_coleta_id só se aplica a itens de descarte"
+                409,
+                "Categoria não muda com entrega prevista; cancele ou troque o ponto",
             )
-        if request.comprador_id is not None and item.destino != "revenda":
-            raise FluxoItemError(400, "comprador_id só se aplica a itens de revenda")
-
-        ponto = item.ponto_coleta_id
-        if item.destino == "descarte":
-            if item.ponto_coleta_id is not None:
-                if request.ponto_coleta_id not in (None, item.ponto_coleta_id):
-                    raise FluxoItemError(
-                        409, "Ponto de coleta já definido para este item"
-                    )
-            elif alvo == "encaminhado":
-                if request.ponto_coleta_id is None:
-                    raise FluxoItemError(
-                        400, "Encaminhamento exige ponto de coleta"
-                    )
-                # A categoria do próprio PUT é a que valerá após a gravação.
-                self._garantir_ponto(request.ponto_coleta_id, request.categoria)
-                ponto = request.ponto_coleta_id
-            elif alvo == "coletado":
-                raise FluxoItemError(
-                    409, "Item sem ponto de coleta não pode ser coletado"
-                )
-            elif request.ponto_coleta_id is not None:
-                raise FluxoItemError(
-                    400, "Ponto de coleta só pode ser definido no encaminhamento"
-                )
-
-        comprador = item.comprador_id
-        if item.destino == "revenda":
-            if item.comprador_id is not None:
-                if request.comprador_id not in (None, item.comprador_id):
-                    raise FluxoItemError(
-                        409, "Comprador já definido para este item"
-                    )
-            elif alvo == "vendido":
-                if request.comprador_id is None:
-                    raise FluxoItemError(400, "Conclusão da revenda exige comprador")
-                self._validar_comprador(request.comprador_id, item.proprietario_id)
-                comprador = request.comprador_id
-            elif request.comprador_id is not None:
-                raise FluxoItemError(
-                    400, "Comprador só pode ser informado na conclusão da revenda"
-                )
-
-        beneficiario = None
-        if alvo == "doado":
-            beneficiario = (
-                self._interesses.buscar_aceito_por_item(item.id or "")
-                if self._interesses is not None
-                else None
+        if request.ponto_coleta_id is not None:
+            raise FluxoItemError(
+                400, "ponto_coleta_id é definido em /api/encaminhamentos"
             )
-            if beneficiario is None:
-                raise FluxoItemError(409, "Doação exige interesse aceito")
-
+        if request.comprador_id is not None:
+            raise FluxoItemError(
+                400, "Venda não recebe comprador no PUT; a seleção vem do interesse"
+            )
         return {
-            "ponto_coleta_id": ponto,
-            "comprador_id": comprador,
-            "beneficiario_id": beneficiario,
+            "ponto_coleta_id": item.ponto_coleta_id,
+            "comprador_id": item.comprador_id,
+            "beneficiario_id": None,
         }
 
     def _garantir_ponto(self, ponto_id: str, categoria: str) -> None:

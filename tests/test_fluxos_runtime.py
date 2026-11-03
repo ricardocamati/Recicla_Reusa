@@ -306,10 +306,12 @@ def test_referencias_do_fluxo_bloqueiam_exclusao(ambiente):
     operador, _ = novo_operador(ambiente)
     ponto = criar_ponto(operador, "Ponto referenciado", ["notebook"])
     descarte = criar_item(dono, destino="descarte", valor=None)
-    assert dono.put(
-        f"/api/itens/{descarte['id']}",
-        json=corpo(descarte, status="encaminhado", ponto_coleta_id=ponto["id"]),
-    ).status_code == 200
+    assert descarte["status"] == "aguardando_ponto"
+    entrega = dono.post(
+        "/api/encaminhamentos",
+        json={"item_id": descarte["id"], "ponto_id": ponto["id"]},
+    )
+    assert entrega.status_code == 201, entrega.text
     excluir_ponto = operador.delete(f"/api/pontos-coleta/{ponto['id']}")
 
     assert excluir_ponto.status_code == 409, excluir_ponto.text

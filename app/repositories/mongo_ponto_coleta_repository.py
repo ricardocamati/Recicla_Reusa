@@ -85,6 +85,19 @@ class MongoPontoColetaRepository:
         resultado = self._colecao.replace_one(filtro, self._para_documento(ponto))
         return resultado.matched_count == 1
 
+    def definir_ativo(
+        self, ponto_id: str, *, responsavel_id: str, ativo: bool, instante: datetime
+    ) -> bool:
+        object_id = self._converter_id(ponto_id)
+        object_responsavel = self._converter_id(responsavel_id)
+        if object_id is None or object_responsavel is None:
+            return False
+        resultado = self._colecao.update_one(
+            {"_id": object_id, "responsavel_id": object_responsavel},
+            {"$set": {"ativo": ativo, "data_modificacao": self._normalizar_data(instante)}},
+        )
+        return resultado.matched_count == 1
+
     def excluir(self, ponto_id: str, *, responsavel_id: str) -> bool:
         object_id = self._converter_id(ponto_id)
         object_responsavel = self._converter_id(responsavel_id)
@@ -147,6 +160,7 @@ class MongoPontoColetaRepository:
         dados["id"] = str(dados.pop("_id"))
         dados["responsavel_id"] = str(dados["responsavel_id"])
         dados["endereco"] = Endereco(**dados["endereco"])
+        dados.setdefault("ativo", True)
         dados["data_adicao"] = MongoPontoColetaRepository._normalizar_data(dados["data_adicao"])
         dados["data_modificacao"] = MongoPontoColetaRepository._normalizar_data(
             dados["data_modificacao"]
