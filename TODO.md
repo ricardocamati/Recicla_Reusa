@@ -171,8 +171,8 @@ Referências: V21-RF-16, V21-RNF-07 · V21-CT-31 a V21-CT-34.
 
 Referências: V21-RF-12, V21-RF-13, V21-RF-15 · V21-CT-22, V21-CT-23, V21-CT-25 a V21-CT-28, V21-CT-30 · [matriz](artefatos/v2.1/matriz_rastreabilidade.md).
 
-- [ ] Dirigir cada aviso a quem precisa agir, com link interno e sem duplicação por evento.
-- [ ] Corrigir indicadores para separar ofertas, pendências e conclusões confirmadas.
-- [ ] Mostrar próximas ações por ator, estados vazios úteis, foco acessível e bloqueio de duplo envio.
-- [ ] Preservar filtros e página ao voltar do detalhe e oferecer reconciliação quando a resposta se perder.
-- [ ] Rodar as três jornadas em stack isolada, atualizar evidências, matriz e contratos.
+- [x] Dirigir cada aviso a quem precisa agir, com link interno e sem duplicação por evento.
+- [x] Corrigir indicadores para separar ofertas, pendências e conclusões confirmadas.
+- [x] Mostrar próximas ações por ator, estados vazios úteis, foco acessível e bloqueio de duplo envio.
+- [x] Preservar filtros e página ao voltar do detalhe e oferecer reconciliação quando a resposta se perder.
+- [x] Rodar as três jornadas em stack isolada, atualizar evidências, matriz e contratos.

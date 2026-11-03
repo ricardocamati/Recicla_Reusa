@@ -72,6 +72,11 @@ export function setMessage(element, text = "", kind = "") {
   if (!element) return;
   element.textContent = text;
   element.className = kind ? `form-message ${kind}` : "form-message";
+  if (kind === "error" && text) {
+    // Foco acessível: erro anunciado e alcançável por teclado.
+    element.setAttribute("tabindex", "-1");
+    element.focus();
+  }
 }
 
 export function setGlobalMessage(text = "", kind = "") {
@@ -104,7 +109,31 @@ export function handleError(error, target, { redirectOnUnauthorized = true } = {
     setMessage(target, error.message, "error");
     return;
   }
+  if (!(error instanceof ApiError)) {
+    // Falha de rede: a operação pode ter sido aplicada; peça reconciliação.
+    setMessage(
+      target,
+      "Não foi possível confirmar a operação. Recarregue a página para conferir o estado atual.",
+      "error",
+    );
+    return;
+  }
   setMessage(target, error.message || "Ocorreu um erro inesperado.", "error");
+}
+
+export function comBotaoOcupado(botao, acao) {
+  // Bloqueia duplo envio enquanto a requisição está em andamento.
+  return async (...argumentos) => {
+    if (!botao || botao.dataset.ocupado === "1") return undefined;
+    botao.dataset.ocupado = "1";
+    botao.disabled = true;
+    try {
+      return await acao(...argumentos);
+    } finally {
+      delete botao.dataset.ocupado;
+      botao.disabled = false;
+    }
+  };
 }
 
 export async function loadSession() {

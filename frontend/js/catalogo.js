@@ -99,9 +99,46 @@ function configureRoleView() {
   if (pointNote) pointNote.hidden = !isCollectionPoint;
 }
 
+function guardarFiltros() {
+  // Filtros no endereço: voltar do detalhe restaura a mesma busca.
+  const form = document.getElementById("catalog-form");
+  const dados = new FormData(form);
+  const params = new URLSearchParams();
+  ["texto", "categoria", "condicao", "destino", "preco_min", "preco_max"].forEach(
+    (campo) => {
+      const valor = String(dados.get(campo) || "").trim();
+      if (valor) params.set(campo, valor);
+    },
+  );
+  if (form.elements.incluir_reservados.checked) {
+    params.set("incluir_reservados", "true");
+  }
+  const consulta = params.toString();
+  window.history.replaceState(
+    null,
+    "",
+    consulta ? `?${consulta}` : window.location.pathname,
+  );
+}
+
+function restaurarFiltros() {
+  const params = new URLSearchParams(window.location.search);
+  const form = document.getElementById("catalog-form");
+  ["texto", "categoria", "condicao", "destino", "preco_min", "preco_max"].forEach(
+    (campo) => {
+      if (params.has(campo) && form.elements[campo]) {
+        form.elements[campo].value = params.get(campo);
+      }
+    },
+  );
+  form.elements.incluir_reservados.checked =
+    params.get("incluir_reservados") === "true";
+}
+
 function clearFilters() {
   const form = document.getElementById("catalog-form");
   form.reset();
+  window.history.replaceState(null, "", window.location.pathname);
   loadCatalog();
 }
 
@@ -110,8 +147,10 @@ async function initCatalog() {
   if (!usuario) return;
   setupAuthenticatedHeader(usuario);
   configureRoleView();
+  restaurarFiltros();
   document.getElementById("catalog-form").addEventListener("submit", (event) => {
     event.preventDefault();
+    guardarFiltros();
     loadCatalog();
   });
   document.getElementById("clear-filters").addEventListener("click", clearFilters);

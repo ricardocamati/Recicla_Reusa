@@ -7,7 +7,7 @@ from bson.errors import InvalidId
 from pymongo.collection import Collection
 from pymongo.client_session import ClientSession
 
-from app.models.notificacao import EventoNotificacao
+from app.models.notificacao import EventoNotificacao, link_do_tipo
 
 
 def _object_id(valor: str) -> ObjectId:
@@ -34,6 +34,7 @@ def montar_documento(
         "titulo": evento.titulo,
         "mensagem": evento.mensagem,
         "evento_id": evento.evento_id,
+        "link": evento.link or link_do_tipo(evento.tipo),
         "lida": False,
         "data_leitura": None,
         "data_adicao": momento,

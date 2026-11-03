@@ -32,6 +32,7 @@ class NotificacaoResponse(BaseModel):
     titulo: str
     mensagem: str
     evento_id: str
+    link: str | None = None
     lida: bool
     data_leitura: datetime | None = None
     data_adicao: datetime

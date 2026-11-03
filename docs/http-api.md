@@ -183,7 +183,7 @@ O Compose usa replica set de um nó para executar essas transações; consulte [
 | `GET` | `/api/notificacoes` | sessão | `lida`, `offset`, `limite` | `200` com a caixa do próprio usuário |
 | `PATCH` | `/api/notificacoes/{id}` | destinatário | `{"lida": true}` | `200` com a notificação lida |
 
-Os avisos são criados pelo servidor, nunca pelo cliente. Tipos: `interesse_aceito`, `interesse_recusado`, `interesse_cancelado`, `status_item_alterado`, `entrega_declarada` e `item_concluido`.
+Os avisos são criados pelo servidor, nunca pelo cliente. Tipos: `interesse_aceito`, `interesse_recusado`, `interesse_cancelado`, `status_item_alterado`, `entrega_declarada`, `entrega_prevista`, `item_concluido`, `item_recebido`, `item_nao_recebido` e `ponto_inativado`. Cada aviso traz `link` interno para a tela em que o destinatário age, e o índice único por evento, destinatário e item impede repetição.
 
 A emissão ocorre na **mesma transação** da mudança que a origina: a decisão de um interesse avisa o interessado (aceito/recusado) ou o proprietário (cancelado), e cada transição de status avisa quem possui interesse pendente ou aceito no item. O aceite de uma doação também avisa os demais interessados de que o item foi reservado, sem repetir o aviso para quem foi escolhido; o cancelamento do aceite avisa que o item voltou a ficar disponível. Quem não tem vínculo com o item não recebe aviso, e o proprietário não é notificado das próprias mudanças.
 
@@ -227,9 +227,9 @@ Escolher o ponto não grava vínculo até a confirmação do `POST`: a listagem 
 
 | Método | Caminho | Autenticação | Sucesso |
 |---|---|---|---|
-| `GET` | `/api/indicadores` | sessão | `200` com `doados`, `coletados`, `indicados`, `vendidos` e `total` |
+| `GET` | `/api/indicadores` | sessão | `200` com `ofertas_ativas`, `pendencias`, `doados`, `coletados`, `indicados`, `vendidos` e `total` |
 
-Somente itens concluídos entram nos totais: `concluido` em doação e revenda, `recebido` em descarte. `indicados` conta `destinacao_informada` separadamente e nunca entra em `total`, porque informar um lugar não comprova recebimento nem reciclagem. Itens disponíveis, reservados ou em andamento não são contados. Os números são da plataforma inteira, não de uma conta específica, e a consulta aceita qualquer sessão autenticada; sem sessão retorna `401`.
+`ofertas_ativas` conta itens `disponivel`; `pendencias` soma `reservado`, `aguardando_confirmacao`, `aguardando_ponto` e `entrega_prevista`. Nenhuma das duas entra em `total`, que reúne apenas conclusões confirmadas. Somente itens concluídos entram nos totais: `concluido` em doação e revenda, `recebido` em descarte. `indicados` conta `destinacao_informada` separadamente e nunca entra em `total`, porque informar um lugar não comprova recebimento nem reciclagem. Itens disponíveis, reservados ou em andamento não são contados. Os números são da plataforma inteira, não de uma conta específica, e a consulta aceita qualquer sessão autenticada; sem sessão retorna `401`.
 
 O snapshot da OpenAPI gerada do runtime e suas diferenças em relação a esta descrição estão em [openapi.md](openapi.md).
 

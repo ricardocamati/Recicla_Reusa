@@ -110,6 +110,7 @@ class MongoNotificacaoRepository:
             titulo=documento["titulo"],
             mensagem=documento["mensagem"],
             evento_id=documento["evento_id"],
+            link=documento.get("link"),
             lida=bool(documento.get("lida", False)),
             data_leitura=(
                 cls._data(documento["data_leitura"])

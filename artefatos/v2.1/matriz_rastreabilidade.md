@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade — v2.1
 
-**Situação da implementação: Etapas 9 a 14 concluídas.** V21-RF-01 (conta de pessoa), V21-RF-02 (catálogo de ofertas) e V21-RF-03 (cadastro por intenção) estão implementados e cobertos por testes; V21-RF-14 tem arquivamento básico, com avisos de interesses pendentes previstos para a Etapa 11. As demais linhas seguem planejadas.
+**Situação da implementação: Etapas 9 a 15 concluídas — v2.1 fechada no código.** V21-RF-01 (conta de pessoa), V21-RF-02 (catálogo de ofertas) e V21-RF-03 (cadastro por intenção) estão implementados e cobertos por testes; V21-RF-14 tem arquivamento básico, com avisos de interesses pendentes previstos para a Etapa 11. As demais linhas seguem planejadas.
 
 ## Requisitos funcionais
 
@@ -17,11 +17,11 @@
 | V21-RF-09 — Escolha guiada do ponto | V21-RN-11, V21-RN-12, V21-RN-20, V21-RN-21 | V21-CT-13, V21-CT-14, V21-CT-15 — **implementados** | Ponto escolhido entre os ativos que aceitam a categoria, com cidade na listagem; o vínculo só nasce no `POST /api/encaminhamentos`, nunca na seleção |
 | V21-RF-10 — Cancelar/trocar encaminhamento | V21-RN-12, V21-RN-13, V21-RN-15, V21-RN-20, V21-RN-22 | V21-CT-16, V21-CT-17, V21-CT-26, V21-CT-27 — **implementados** | `cancelar` devolve o item a `aguardando_ponto`; `trocar` encerra a tentativa como `cancelado` e cria outra, sem apagar histórico; categoria fica travada com entrega prevista |
 | V21-RF-11 — Operação do ponto | V21-RN-01, V21-RN-03, V21-RN-09, V21-RN-14, V21-RN-15, V21-RN-16, V21-RN-19, V21-RN-20, V21-RN-21, V21-RN-22 | V21-CT-18, V21-CT-19, V21-CT-20, V21-CT-21, V21-CT-29, V21-CT-30 — **implementados** | Fila `escopo=operador` com filtro por local e paginação; operador de outro ponto recebe `403`; `receber` conta uma vez e `nao_recebido` exige motivo; ponto inativo bloqueia novas entregas e avisa autores |
-| V21-RF-12 — Avisos acionáveis | V21-RN-18, V21-RN-20 | V21-CT-22, V21-CT-27 | `app/repositories/notificacao_eventos.py`, `frontend/js/notificacoes.js::loadNotificacoes` |
-| V21-RF-13 — Indicadores precisos | V21-RN-03, V21-RN-09, V21-RN-15, V21-RN-19, V21-RN-20 | V21-CT-23, V21-CT-30 | `frontend/js/home.js::carregarIndicadores`, `app/api/indicadores.py` |
+| V21-RF-12 — Avisos acionáveis | V21-RN-18, V21-RN-20 | V21-CT-22, V21-CT-27 — **implementados** | Cada aviso carrega `link` interno, o índice único por evento/destinatário/item evita repetição e a caixa mostra "Abrir" na tela em que o ator age |
+| V21-RF-13 — Indicadores precisos | V21-RN-03, V21-RN-09, V21-RN-15, V21-RN-19, V21-RN-20 | V21-CT-23, V21-CT-30 — **implementados** | `ofertas_ativas` e `pendencias` separadas das conclusões confirmadas; `indicados` fora de `total`; cada conclusão conta uma vez e previsão não conta |
 | V21-RF-14 — Arquivamento e histórico | V21-RN-04, V21-RN-17 | V21-CT-24 | `frontend/js/itens.js::deleteItem`, `app/repositories/mongo_item_repository.py`; novo arquivamento |
 | V21-RF-16 — Indicar lugar de descarte | V21-RN-11, V21-RN-23 | V21-CT-31, V21-CT-32, V21-CT-33, V21-CT-34 — **implementados** | `POST/DELETE /api/itens/{id}/destinacao` com tipo estruturado e textos livres; item termina em `destinacao_informada`, campo visível só ao autor, sem ponto criado e com contagem separada em `indicados` |
-| V21-RF-15 — Navegação e recuperação | V21-RN-01, V21-RN-03, V21-RN-04, V21-RN-11, V21-RN-16, V21-RN-20, V21-RN-21, V21-RN-22 | V21-CT-03, V21-CT-14, V21-CT-21, V21-CT-25, V21-CT-26, V21-CT-28, V21-CT-29 | `frontend/js/comum.js`, `frontend/js/api.js`, componentes das páginas |
+| V21-RF-15 — Navegação e recuperação | V21-RN-01, V21-RN-03, V21-RN-04, V21-RN-11, V21-RN-16, V21-RN-20, V21-RN-21, V21-RN-22 | V21-CT-03, V21-CT-14, V21-CT-21, V21-CT-25, V21-CT-26, V21-CT-28, V21-CT-29 — **implementados** | Filtros do catálogo preservados no endereço (`history.replaceState`), duplo envio bloqueado por botão, erros focam a mensagem e falha de rede pede recarregar em vez de afirmar sucesso |
 
 ## Requisitos não funcionais
 

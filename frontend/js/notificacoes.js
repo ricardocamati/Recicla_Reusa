@@ -34,6 +34,14 @@ function cartaoAviso(aviso) {
   article.append(createElement("p", "item-card-description", aviso.mensagem));
   article.append(createElement("small", "", formatarData(aviso.data_adicao)));
 
+  if (aviso.link) {
+    const abrir = createElement("a", "button button-ghost", "Abrir");
+    abrir.href = aviso.link;
+    const acoesLink = createElement("div", "item-actions");
+    acoesLink.append(abrir);
+    article.append(acoesLink);
+  }
+
   if (!aviso.lida) {
     const actions = createElement("div", "item-actions");
     const marcar = createElement("button", "button button-secondary", "Marcar como lida");

@@ -10,6 +10,7 @@ class EventoNotificacao:
     titulo: str
     mensagem: str
     evento_id: str
+    link: str | None = None
 
 
 def evento_de_status_item(
@@ -30,6 +31,26 @@ def evento_de_status_item(
     )
 
 
+LINK_POR_TIPO: dict[str, str] = {
+    "interesse_recebido": "/interesses.html",
+    "interesse_aceito": "/interesses.html",
+    "interesse_recusado": "/interesses.html",
+    "interesse_cancelado": "/interesses.html",
+    "entrega_declarada": "/interesses.html",
+    "item_concluido": "/interesses.html",
+    "status_item_alterado": "/interesses.html",
+    "entrega_prevista": "/pontos.html",
+    "item_recebido": "/itens.html?grupo=encerrados",
+    "item_nao_recebido": "/itens.html?grupo=ativos",
+    "ponto_inativado": "/itens.html?grupo=em_andamento",
+}
+
+
+def link_do_tipo(tipo: str) -> str | None:
+    """Destino interno do aviso, para o destinatário agir sem procurar a tela."""
+    return LINK_POR_TIPO.get(tipo)
+
+
 @dataclass(slots=True)
 class Notificacao:
     usuario_id: str
@@ -42,5 +63,6 @@ class Notificacao:
     data_adicao: datetime
     data_modificacao: datetime
     interesse_id: str | None = None
+    link: str | None = None
     data_leitura: datetime | None = None
     id: str | None = None

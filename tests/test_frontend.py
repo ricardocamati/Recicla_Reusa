@@ -246,6 +246,17 @@ def test_itens_oferece_acoes_do_fluxo_ao_proprietario() -> None:
     assert "/api/pontos-coleta" in itens
 
 
+def test_avisos_e_navegacao_oferecem_link_e_recuperacao() -> None:
+    comum = ler("js/comum.js")
+    assert "comBotaoOcupado" in comum
+    assert "Recarregue a página" in comum
+    notificacoes = ler("js/notificacoes.js")
+    assert "aviso.link" in notificacoes
+    catalogo = ler("js/catalogo.js")
+    assert "restaurarFiltros" in catalogo
+    assert "replaceState" in catalogo
+
+
 def test_itens_oferece_destinacao_informada() -> None:
     itens = ler("js/itens.js")
     for marca in (

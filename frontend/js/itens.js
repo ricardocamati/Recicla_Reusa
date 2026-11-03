@@ -1,4 +1,5 @@
 import {
+  comBotaoOcupado,
   createElement,
   createItemCard,
   handleError,
@@ -290,6 +291,9 @@ function painelFluxo(item) {
     );
     form.addEventListener("submit", async (evento) => {
       evento.preventDefault();
+      if (enviar.dataset.ocupado === "1") return;
+      enviar.dataset.ocupado = "1";
+      enviar.disabled = true;
       try {
         await requestApi(`/api/itens/${encodeURIComponent(item.id)}/destinacao`, {
           method: "POST",
@@ -304,6 +308,9 @@ function painelFluxo(item) {
         setMessage(message, "Destinação informada registrada; não é verificada.", "success");
       } catch (error) {
         handleError(error, message);
+      } finally {
+        delete enviar.dataset.ocupado;
+        enviar.disabled = false;
       }
     });
     painel.append(form);
@@ -488,6 +495,8 @@ async function loadIndicadores() {
     document.getElementById("indicador-doados").textContent = indicadores.doados;
     document.getElementById("indicador-coletados").textContent = indicadores.coletados;
     document.getElementById("indicador-indicados").textContent = indicadores.indicados ?? 0;
+    document.getElementById("indicador-ofertas").textContent = indicadores.ofertas_ativas ?? 0;
+    document.getElementById("indicador-pendencias").textContent = indicadores.pendencias ?? 0;
     document.getElementById("indicador-vendidos").textContent = indicadores.vendidos;
     document.getElementById("indicador-total").textContent = indicadores.total;
     setMessage(message);
@@ -514,7 +523,13 @@ async function initItems() {
     document.getElementById("not-donor").hidden = false;
     return;
   }
-  document.getElementById("item-form").addEventListener("submit", (evento) => saveItem(evento, true));
+  const formularioItem = document.getElementById("item-form");
+  formularioItem.addEventListener("submit", (evento) =>
+    comBotaoOcupado(
+      formularioItem.querySelector("button[type='submit']"),
+      (e) => saveItem(e, true),
+    )(evento),
+  );
   document.getElementById("item-destination").addEventListener("change", updateValueField);
   document.getElementById("cancel-item-edit").addEventListener("click", resetItemForm);
   document.getElementById("save-draft").addEventListener("click", (evento) => {

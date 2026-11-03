@@ -631,6 +631,16 @@
             "title": "Indicados",
             "type": "integer"
           },
+          "ofertas_ativas": {
+            "default": 0,
+            "title": "Ofertas Ativas",
+            "type": "integer"
+          },
+          "pendencias": {
+            "default": 0,
+            "title": "Pendencias",
+            "type": "integer"
+          },
           "total": {
             "title": "Total",
             "type": "integer"
@@ -1342,6 +1352,17 @@
           "lida": {
             "title": "Lida",
             "type": "boolean"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
           },
           "mensagem": {
             "title": "Mensagem",
