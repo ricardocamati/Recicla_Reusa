@@ -31,3 +31,21 @@ class TransicaoInvalidaError(Exception):
 class ConflitoEstadoError(Exception):
     def __init__(self) -> None:
         super().__init__("Item alterado por outra operação")
+
+
+class PontoNaoEncontradoError(Exception):
+    def __init__(self, ponto_id: str) -> None:
+        super().__init__(f"Ponto de coleta não encontrado: {ponto_id}")
+        self.ponto_id = ponto_id
+
+
+class PontoIncompativelError(Exception):
+    def __init__(self, ponto_id: str, categoria: str) -> None:
+        super().__init__(f"Ponto {ponto_id} não aceita a categoria {categoria}")
+        self.ponto_id = ponto_id
+        self.categoria = categoria
+
+
+class ReferenciaAtivaError(Exception):
+    def __init__(self) -> None:
+        super().__init__("Registro possui referências ativas")
