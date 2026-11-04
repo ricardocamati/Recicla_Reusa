@@ -18,7 +18,7 @@ def garantir_conta(cliente, esperado: dict, senha: str) -> dict:
         if esperado["tipo"] != "pessoa":
             raise DemonstracaoError("Conta operacional ausente ou senha inválida; provisionamento local necessário")
         criado = chamar(cliente, "POST", "/api/usuarios", codigos=(201,), json={
-            **{k: esperado[k] for k in ("nome", "email")}, "senha": senha, "endereco": ENDERECO,
+            **{k: esperado[k] for k in ("nome", "email")}, "senha": senha, "endereco": esperado.get("endereco", ENDERECO),
         })
         conferir_identidade(criado, esperado)
         chamar(cliente, "POST", "/api/auth/login", json={"email": esperado["email"], "senha": senha})
@@ -118,10 +118,10 @@ CENARIOS = (
 )
 
 
-def povoar(clientes: dict, perfis: dict) -> dict:
+def povoar(clientes: dict, perfis: dict, *, cenarios=CENARIOS, ponto_existente=None, dados_itens=None) -> dict:
     """Cria os cenários pela API e relê cada efeito; não apaga nem reinicia ciclos."""
     operador = clientes["operador"]
-    ponto = garantir_registro(
+    ponto = ponto_existente or garantir_registro(
         operador, "/api/pontos-coleta", listar_todos(operador, "/api/pontos-coleta", escopo="meus"),
         {"nome": "Ponto Escola — Demonstração"}, "responsavel_id", perfis["operador"]["id"],
         corpo={"nome": "Ponto Escola — Demonstração", "endereco": ENDERECO,
@@ -131,19 +131,21 @@ def povoar(clientes: dict, perfis: dict) -> dict:
     if not ponto.get("ativo"):
         raise DemonstracaoError("O ponto demo foi inativado; não será reativado automaticamente")
     registros = {}
-    for dono, titulo, destino, alvo, contraparte in CENARIOS:
+    for dono, titulo, destino, alvo, contraparte in cenarios:
         cliente = clientes[dono]
         titulo = "[Demo] " + titulo
+        detalhes = (dados_itens or {}).get(titulo, {})
+        descricao = detalhes.get("descricao", MARCA)
         existentes = []
         for grupo in ("ativos", "em_andamento", "encerrados"):
             existentes.extend(listar_todos(cliente, "/api/itens/meus", grupo=grupo))
         item = garantir_registro(
-            cliente, "/api/itens", existentes, {"titulo": titulo, "descricao": MARCA},
+            cliente, "/api/itens", existentes, {"titulo": titulo, "descricao": descricao},
             "proprietario_id", perfis[dono]["id"],
-            corpo={"titulo": titulo, "descricao": MARCA, "categoria": "notebook" if destino != "descarte" else "perifericos",
+            corpo={"titulo": titulo, "descricao": descricao, "categoria": "notebook" if destino != "descarte" else "perifericos",
                    "marca": "Marca fictícia", "modelo": "Modelo de demonstração", "condicao": "funcional" if destino != "descarte" else "sem_conserto",
                    "destino": destino, "valor": 350.0 if destino == "revenda" else None,
-                   "especificacoes": {"origem": "Demonstração", "memoria": "8 GB"}, "publicar": alvo != "rascunho"},
+                   "especificacoes": {"origem": "Demonstração", "memoria": "8 GB"}, "publicar": alvo != "rascunho", **detalhes},
         )
         item_id = item["id"]
         if item["destino"] != destino:
@@ -201,6 +203,81 @@ def povoar(clientes: dict, perfis: dict) -> dict:
         registros[titulo] = {"id": relido["id"], "status": relido["status"]}
     return {"itens": registros, "ponto_id": ponto["id"], "indicadores": chamar(clientes["ana"], "GET", "/api/indicadores")}
 
+
+CONTAS_EXTRAS = {
+    chave: {"nome": f"{nome} — Demonstração", "email": f"{chave}.demo@example.test", "tipo": "pessoa",
+            "endereco": {**ENDERECO, "cidade": cidade}}
+    for chave, nome, cidade in (
+        ("diego", "Diego", "Sarandi"), ("elisa", "Elisa", "Paiçandu"),
+        ("felipe", "Felipe", "Maringá"), ("gabriela", "Gabriela", "Sarandi"),
+    )
+}
+
+# Produto, categoria, marca fictícia, modelo, preço de referência e especificações.
+EQUIPAMENTOS = (
+    ("Notebook de 14 polegadas", "notebook", "EstudoTech", "N14", 890, {"memoria": "8 GB", "armazenamento": "SSD 256 GB"}),
+    ("Monitor de 24 polegadas", "monitor", "TelaViva", "M24", 280, {"resolucao": "1920x1080", "conexao": "HDMI"}),
+    ("Impressora multifuncional", "impressora", "PapelDigital", "P200", 190, {"tipo": "Jato de tinta", "funcoes": "Impressão e scanner"}),
+    ("Celular de 128 GB", "celular", "Conecta", "C128", 420, {"armazenamento": "128 GB", "tela": "6 polegadas"}),
+    ("Tablet de 10 polegadas", "tablet", "Leitura", "T10", 350, {"memoria": "4 GB", "uso": "Estudo e leitura"}),
+    ("Televisor de 32 polegadas", "televisao", "TelaViva", "TV32", 390, {"resolucao": "HD", "conexao": "HDMI e USB"}),
+    ("Caixas de som estéreo", "audio", "SomNovo", "S20", 85, {"alimentacao": "USB", "canais": "2.0"}),
+    ("Liquidificador doméstico", "eletrodomestico", "CasaCircular", "L500", 65, {"potencia": "500 W", "tensao": "127 V"}),
+    ("Kit teclado e mouse", "perifericos", "EstudoTech", "K200", 55, {"conexao": "USB", "layout": "ABNT2"}),
+    ("Computador compacto", "desktop", "EstudoTech", "D8", 680, {"memoria": "8 GB", "armazenamento": "SSD 240 GB"}),
+    ("Telefone sem fio", "telefonia", "Conecta", "F60", 75, {"base": "Uma base", "alimentacao": "Bateria recarregável"}),
+    ("Roteador doméstico", "informatica", "RedeEscola", "R300", 95, {"rede": "Wi-Fi", "portas": "4 portas LAN"}),
+)
+
+
+def povoar_ampliado(clientes: dict, perfis: dict) -> dict:
+    """Acrescenta 48 itens variados e dois locais sem modificar os 12 cenários-base."""
+    operador = clientes["operador"]
+    pontos = []
+    for nome, cidade, numero in (
+        ("Centro Comunitário — Demonstração", "Sarandi", "210"),
+        ("Cooperativa Circular — Demonstração", "Paiçandu", "320"),
+    ):
+        pontos.append(garantir_registro(
+            operador, "/api/pontos-coleta", listar_todos(operador, "/api/pontos-coleta", escopo="meus"),
+            {"nome": nome}, "responsavel_id", perfis["operador"]["id"],
+            corpo={"nome": nome, "endereco": {**ENDERECO, "cidade": cidade, "numero": numero},
+                   "categorias_aceitas": sorted({e[1] for e in EQUIPAMENTOS}),
+                   "horario_atendimento": "Local fictício: segunda a sábado, 09h às 18h"},
+        ))
+    pessoas = ("ana", "bruno", "carla", *CONTAS_EXTRAS)
+    ciclos = (
+        ("doacao", "reservado"), ("revenda", "aguardando_confirmacao"),
+        ("doacao", "concluido"), ("revenda", "concluido"),
+        ("descarte", "aguardando_ponto"), ("descarte", "entrega_prevista"),
+        ("descarte", "recebido"), ("descarte", "destinacao_informada"),
+    )
+    lotes = [[], []]
+    detalhes = {}
+    contextos = ("para estudos", "para escritório", "da oficina", "do laboratório")
+    for indice in range(48):
+        produto, categoria, marca, modelo, preco, especificacoes = EQUIPAMENTOS[indice % len(EQUIPAMENTOS)]
+        dono = pessoas[indice % len(pessoas)]
+        titulo = f"{produto} {contextos[indice // len(EQUIPAMENTOS)]}"
+        destino, alvo = (("doacao" if indice % 2 == 0 else "revenda"), "disponivel") if indice < 24 else ciclos[(indice - 24) % len(ciclos)]
+        contraparte = pessoas[(indice + 1) % len(pessoas)] if destino != "descarte" else None
+        lotes[indice % 2].append((dono, titulo, destino, alvo, contraparte))
+        detalhes["[Demo] " + titulo] = {
+            "categoria": categoria, "marca": marca, "modelo": modelo,
+            "valor": float(preco) if destino == "revenda" else None,
+            "condicao": "sem_conserto" if destino == "descarte" else ("funcional_com_defeito" if indice % 5 == 0 else "funcional"),
+            "descricao": f"{MARCA} {produto.capitalize()} {contextos[indice // len(EQUIPAMENTOS)]}. "
+                         + ("Equipamento destinado ao descarte; não funciona." if destino == "descarte" else "Acompanha os acessórios descritos nas especificações; dados inteiramente fictícios."),
+            "especificacoes": {**especificacoes, "origem": "Demonstração fictícia"},
+        }
+    registros = {}
+    for lote, ponto in zip(lotes, pontos):
+        resultado = povoar(clientes, perfis, cenarios=lote, ponto_existente=ponto, dados_itens=detalhes)
+        registros.update(resultado["itens"])
+    return {"itens": registros, "pontos_ids": [p["id"] for p in pontos],
+            "indicadores": chamar(clientes["ana"], "GET", "/api/indicadores")}
+
+
 def main(argumentos=None) -> int:
     import argparse
     import os
@@ -215,9 +292,11 @@ def main(argumentos=None) -> int:
     parser.add_argument("--aplicar", action="store_true", help="Cria dados; sem esta opção apenas descreve a carga")
     parser.add_argument("--api-url", default="http://127.0.0.1:8000")
     parser.add_argument("--origin", default="http://127.0.0.1:8080")
+    parser.add_argument("--ampliar", action="store_true", help="Acrescenta usuários, dois pontos e 48 itens variados")
     args = parser.parse_args(argumentos)
+    contas = {**CONTAS, **CONTAS_EXTRAS} if args.ampliar else CONTAS
     if not args.aplicar:
-        print(f"Plano: {len(CONTAS)} contas fictícias, {len(CENARIOS)} itens, um ponto e seus relacionamentos. Use --aplicar para gravar; nada é apagado.")
+        print(f"Plano: {len(contas)} contas fictícias, {len(CENARIOS) + (48 if args.ampliar else 0)} itens, {3 if args.ampliar else 1} ponto(s) e seus relacionamentos. Use --aplicar para gravar; nada é apagado.")
         return 0
     senha = os.environ.get("DEMO_SENHA", "")
     if len(senha) < 8:
@@ -231,7 +310,7 @@ def main(argumentos=None) -> int:
     settings = Settings()
     try:
         with ExitStack() as stack:
-            clientes = {k: stack.enter_context(httpx.Client(base_url=args.api_url, headers={"Origin": args.origin}, timeout=20)) for k in CONTAS}
+            clientes = {k: stack.enter_context(httpx.Client(base_url=args.api_url, headers={"Origin": args.origin}, timeout=20)) for k in contas}
             esquema = chamar(clientes["ana"], "GET", "/openapi.json")
             if "/api/encaminhamentos" not in esquema.get("paths", {}) or "/api/itens/{item_id}/destinacao" not in esquema["paths"]:
                 raise DemonstracaoError("Atualize o backend para a v2.1 antes de povoar")
@@ -249,13 +328,18 @@ def main(argumentos=None) -> int:
             elif r.status_code != 401:
                 raise DemonstracaoError("Não foi possível conferir a conta operacional")
             operador_id = provisionar_operador(settings, senha)
-            perfis = {k: garantir_conta(clientes[k], v, senha) for k, v in CONTAS.items()}
+            perfis = {k: garantir_conta(clientes[k], v, senha) for k, v in contas.items()}
             if perfis["operador"]["id"] != operador_id:
                 raise DemonstracaoError("API e banco não confirmaram o mesmo operador")
             resultado = povoar(clientes, perfis)
+            if args.ampliar:
+                ampliado = povoar_ampliado(clientes, perfis)
+                resultado["itens"].update(ampliado["itens"])
+                resultado["pontos_adicionais"] = ampliado["pontos_ids"]
+                resultado["indicadores"] = ampliado["indicadores"]
             print(json.dumps(resultado, ensure_ascii=False, indent=2))
             print("Demonstração confirmada. Contas:")
-            for conta in CONTAS.values():
+            for conta in contas.values():
                 print(f"  {conta['email']} ({conta['tipo']})")
             print("Senha: valor fornecido em DEMO_SENHA. Nenhuma senha existente foi redefinida.")
         return 0

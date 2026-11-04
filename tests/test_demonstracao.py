@@ -6,7 +6,8 @@ from uuid import uuid4
 from contextlib import ExitStack
 
 
-def test_povoamento_real_e_reexecucao_sem_duplicar(monkeypatch):
+@pytest.mark.parametrize("ampliar", [False, True])
+def test_povoamento_real_e_reexecucao_sem_duplicar(monkeypatch, ampliar):
     uri = os.environ.get("INTERESSES_TEST_MONGO_URI")
     if not uri:
         pytest.skip("defina INTERESSES_TEST_MONGO_URI para integração do povoamento")
@@ -44,6 +45,27 @@ def test_povoamento_real_e_reexecucao_sem_duplicar(monkeypatch):
                 depois = {n: list(banco[n].find().sort("_id")) for n in banco.list_collection_names()}
                 assert resultado == segundo
                 assert antes == depois
+                if ampliar:
+                    from scripts.povoar_demonstracao import CONTAS_EXTRAS, povoar_ampliado
+                    for chave, conta in CONTAS_EXTRAS.items():
+                        clientes[chave] = stack.enter_context(TestClient(app, headers={"Origin": "http://localhost:5500"}))
+                        perfis[chave] = garantir_conta(clientes[chave], conta, "SenhaDemo123!")
+                    expandido = povoar_ampliado(clientes, perfis)
+                    assert len(expandido["itens"]) == 48
+                    assert banco.itens.count_documents({}) == 60
+                    assert banco.usuarios.count_documents({}) == 8
+                    assert banco.pontos_coleta.count_documents({}) == 3
+                    assert banco.interesses.count_documents({}) == 41
+                    assert banco.encaminhamentos.count_documents({}) == 8
+                    assert len(banco.itens.distinct("categoria")) >= 10
+                    assert len(banco.usuarios.distinct("endereco.cidade")) >= 3
+                    assert expandido["indicadores"] == {"ofertas_ativas": 27, "pendencias": 16, "doados": 4, "vendidos": 4, "coletados": 4, "indicados": 4, "total": 12}
+                    for nome, documentos in antes.items():
+                        for documento in documentos:
+                            assert banco[nome].find_one({"_id": documento["_id"]}) == documento
+                    snapshot = {n: list(banco[n].find().sort("_id")) for n in banco.list_collection_names()}
+                    assert povoar_ampliado(clientes, perfis) == expandido
+                    assert snapshot == {n: list(banco[n].find().sort("_id")) for n in banco.list_collection_names()}
         finally:
             mongo.drop_database(banco_nome)
             assert banco_nome not in mongo.list_database_names()

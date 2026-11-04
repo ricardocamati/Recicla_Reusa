@@ -155,7 +155,7 @@ Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e 
 .venv/Scripts/python.exe -m pytest
 ```
 
-O comando padrão mede cobertura sobre `app`; a configuração está em `pyproject.toml`. A validação funcional da Etapa 15 aprovou **201 testes**, sem medição de cobertura naquela execução. Na validação posterior do script de demonstração, a suíte completa aprovou **215 testes**, incluindo integração real, e a medição configurada foi aprovada. Os dados locais da medição ficam em `.coverage`, ignorado pelo Git. Configuração e contagem de testes não substituem a execução; repita a medição se o código do marco de entrega mudar.
+O comando padrão mede cobertura sobre `app`; a configuração está em `pyproject.toml`. A validação funcional da Etapa 15 aprovou **201 testes**, sem medição de cobertura naquela execução. Na validação da carga ampliada de demonstração, a suíte completa aprovou **216 testes**, incluindo integração real, e a medição configurada foi aprovada. Os dados locais da medição ficam em `.coverage`, ignorado pelo Git. Configuração e contagem de testes não substituem a execução; repita a medição se o código do marco de entrega mudar.
 
 Os testes de runtime exigem `INTERESSES_TEST_MONGO_URI` apontando para MongoDB em replica set; sem a variável, esses cenários são ignorados. Configure uma instância de teste separada, nunca o banco de demonstração. Para rodar os testes com integração e medição, usando a URI de teste autorizada:
 
@@ -184,7 +184,7 @@ A validação já executada na Etapa 15 percorreu as três jornadas, conferiu re
 
 ## 12. Dados fictícios de demonstração
 
-O script [scripts/povoar_demonstracao.py](scripts/povoar_demonstracao.py) prepara quatro contas fictícias (Ana, Bruno, Carla e operador), um ponto e 12 itens em situações diferentes: rascunho, oferta disponível, reserva, entrega aguardando confirmação, conclusão, descarte aguardando ponto, entrega prevista, recebimento no ponto e destinação informada. As relações e transições são criadas pela API; apenas a conta operacional é provisionada localmente pelo serviço administrativo.
+O script [scripts/povoar_demonstracao.py](scripts/povoar_demonstracao.py) oferece uma carga básica de quatro contas e 12 itens e uma carga ampliada, com `--ampliar`, de **oito contas, 60 itens e três pontos de coleta**. A carga ampliada cobre 12 categorias em Maringá, Sarandi e Paiçandu, com marcas/modelos fictícios, descrições, especificações e preços variados. Há ofertas disponíveis, interesses pendentes, reservas, entregas aguardando confirmação, conclusões, descarte aguardando ponto, entregas previstas, recebimentos e destinações informadas. As relações e transições são criadas pela API; apenas a conta operacional é provisionada localmente pelo serviço administrativo.
 
 ```bash
 # Apenas descreve a carga; não conecta ao banco nem altera registros.
@@ -193,20 +193,12 @@ python scripts/povoar_demonstracao.py
 # Com a API v2.1 já apontando para o MESMO banco de demonstração:
 MONGO_URI="<uri local do replica set com directConnection=true>" \
 MONGO_DATABASE=recicla_reusa_demo_v21 DEMO_SENHA="<senha fictícia escolhida>" \
-python scripts/povoar_demonstracao.py --aplicar \
+python scripts/povoar_demonstracao.py --aplicar --ampliar \
   --api-url http://127.0.0.1:8000 --origin http://127.0.0.1:8080
 ```
 
-Instale as dependências de desenvolvimento para executar o script no host. A senha vem de `DEMO_SENHA`; não existe senha padrão no código. As contas são `ana.demo@example.test`, `bruno.demo@example.test`, `carla.demo@example.test` e `operador.demo@example.test`. O script confirma o login e o perfil antes de usar cada conta, percorre todas as páginas das listagens e relê os registros criados. A reexecução sobre a carga intacta não duplica dados. Não apaga banco, não redefine senhas e não reinicia ciclos já alterados manualmente; identidades ambíguas ou estados divergentes interrompem a carga, que pode permanecer parcial para inspeção.
+Instale as dependências de desenvolvimento para executar o script no host. A senha vem de `DEMO_SENHA`; não existe senha padrão no código. As contas básicas são `ana.demo@example.test`, `bruno.demo@example.test`, `carla.demo@example.test` e `operador.demo@example.test`; `--ampliar` acrescenta Diego, Elisa, Felipe e Gabriela com e-mails no formato `<nome>.demo@example.test`. A ampliação preserva os registros da carga básica e as contas existentes. O script confirma o login e o perfil antes de usar cada conta, percorre todas as páginas das listagens e relê os registros criados. A reexecução sobre a carga intacta não duplica dados. Não apaga banco, não redefine senhas e não reinicia ciclos já alterados manualmente; identidades ambíguas ou estados divergentes interrompem a carga, que pode permanecer parcial para inspeção.
 
 Para esta demonstração local, a aplicação está usando `recicla_reusa_demo_v21`, separado de `recicla_reusa`. Confirme a configuração efetiva antes de recriar os serviços: o Compose usa `MONGO_DATABASE` para escolher o banco. Não use `down -v` para alternar entre eles. O acesso local preparado fica em `artefatos/nao_versionados/acesso_demonstracao.json`, ignorado pelo Git; esse arquivo não faz parte do pacote versionado.
-
-## 13. Limites atuais
-
-Os indicadores somam a plataforma inteira, sem recorte por conta ou cidade, e essa escolha está documentada no contrato. A edição de ponto de coleta existe apenas na API: a tela cadastra e exclui, mas não sobrescreve complemento nem categorias de um ponto existente. As Etapas 9 a 15 têm implementação, mas isso não comprova todos os critérios detalhados do desenho original. O catálogo da interface busca até 100 registros e ainda não tem navegação por páginas; preserva filtros no endereço, não uma página selecionada. Não existe contrato genérico de `id_operacao` ou `versao_esperada`; a revisão da combinação e as verificações de estado não equivalem a versionamento geral. Diferenças estão explicitadas nos [contratos v2.1](artefatos/v2.1/contratos_http.md).
-
-Descarte não passa por reserva: o item publicado fica aguardando um ponto, o autor escolhe entre os pontos ativos que aceitam a categoria e a entrega vira uma tentativa com histórico. Cancelar ou trocar de ponto antes do recebimento preserva as tentativas anteriores; o operador do ponto confirma o recebimento ou registra o motivo de não ter recebido. Doação e venda seguem o mesmo ciclo: seleção, combinação aceita, declaração de entrega e confirmação de recebimento, que é o único evento que conta nos indicadores. O catálogo mostra só ofertas publicadas e disponíveis, o cadastro é guiado em três passos com rascunho e publicação, e as ofertas se organizam em Ativos, Em andamento e Encerrados com arquivamento sem apagar referências. Bancos criados na v2.0 são normalizados por `scripts/migrar_papeis_v2_1.py`, que simula por padrão e só altera com `--aplicar`. A autenticação usa sessão em memória, adequada ao escopo acadêmico e não a uma implantação com múltiplas instâncias.
-
-Para concluir o envio acadêmico, ainda é necessário medir a cobertura no marco final, identificar o commit entregue e vincular o vídeo da segunda entrega. Não é obrigatório criar tag ou release: o enunciado também aceita o commit informado pela equipe.
 
 > Projeto iniciado a partir do **template fornecido pelo professor Munif Gebara Júnior** e adaptado para Python conforme a proposta da AEP.
