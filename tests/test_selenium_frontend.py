@@ -92,6 +92,42 @@ class ServidorApi(BaseHTTPRequestHandler):
         self._responder(404, {"detail": "Não encontrado"})
 
 
+@pytest.mark.parametrize("tipo", ["pessoa", "ponto_coleta"])
+def test_selenium_perfil_preenche_resumo_e_atualiza_cidade(
+    navegador, servidor_frontend, servidor_api, monkeypatch, tipo,
+):
+    usuario = {**ServidorApi.usuario, "tipo": tipo, "endereco": dict(ServidorApi.usuario["endereco"])}
+    monkeypatch.setattr(ServidorApi, "usuario", usuario)
+
+    def atualizar(handler):
+        dados = json.loads(handler.rfile.read(int(handler.headers["Content-Length"])))
+        atualizado = {**usuario, **dados}
+        handler._responder(200, atualizado)
+
+    monkeypatch.setattr(ServidorApi, "do_PUT", atualizar, raising=False)
+    navegador.execute_cdp_cmd(
+        "Page.addScriptToEvaluateOnNewDocument",
+        {"source": f"window.RECICLA_API_BASE = {json.dumps(servidor_api)};"},
+    )
+    navegador.get(f"{servidor_frontend}/perfil.html")
+    espera = WebDriverWait(navegador, 5)
+    espera.until(lambda driver: driver.find_element(By.NAME, "nome").get_attribute("value") == usuario["nome"])
+    papel = "Pessoa" if tipo == "pessoa" else "Ponto de coleta"
+    assert navegador.find_element(By.ID, "account-role").text == papel
+    assert navegador.find_element(By.ID, "account-city").text == "Maringá"
+    for elemento in ("role-description", "account-tip"):
+        texto = navegador.find_element(By.ID, elemento).text
+        assert texto and "Carregando" not in texto and texto != "..."
+    cidade = navegador.find_element(By.NAME, "cidade")
+    cidade.clear()
+    cidade.send_keys("Sarandi")
+    salvar = navegador.find_element(By.CSS_SELECTOR, "#profile-form button[type='submit']")
+    navegador.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'})", salvar)
+    salvar.click()
+    espera.until(lambda driver: "sucesso" in driver.find_element(By.ID, "profile-message").text)
+    assert navegador.find_element(By.ID, "account-city").text == "Sarandi"
+
+
 @pytest.fixture()
 def servidor_frontend():
     handler = partial(ServidorFrontend, directory=str(FRONTEND))
