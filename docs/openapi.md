@@ -13,7 +13,7 @@ O teste falha quando o snapshot diverge do runtime, então qualquer mudança de 
 
 ## Cobertura
 
-O snapshot contém 15 rotas: usuários, sessão, itens, interesses, pontos de coleta, notificações, indicadores e saúde. Todas as rotas de negócio descritas em [http-api.md](http-api.md) aparecem na OpenAPI com os mesmos métodos.
+O snapshot reúne os caminhos de usuários, sessão, itens, interesses e combinação, pontos de coleta, encaminhamentos, destinação informada, notificações, indicadores e saúde. Todas as rotas de negócio descritas em [http-api.md](http-api.md) aparecem na OpenAPI com os mesmos métodos.
 
 ## Diferenças registradas
 

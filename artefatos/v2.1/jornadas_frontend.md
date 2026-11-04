@@ -1,6 +1,22 @@
 # Jornadas e funções de frontend — v2.1
 
-Proposta de experiência; páginas e comandos abaixo ainda não estão implementados. Os nomes visíveis devem traduzir conceitos de negócio, sem expor códigos internos. Ver [regras](regras_de_negocio.md).
+Experiência de referência da v2.1. As Etapas 9 a 15 implementaram as jornadas principais; os passos abaixo preservam o desenho aprovado, não um inventário de todos os controles existentes.
+
+## Interface entregue e limites
+
+- Páginas HTML em `frontend/`, catálogo, gestão de itens, interesses, pontos e avisos, com controles para reserva, combinação, entrega bilateral e indicação de lugar.
+- O catálogo carrega até 100 registros sem navegação por páginas. `history.replaceState` preserva filtros; não há página selecionada para restaurar.
+- Avisos abrem a tela correspondente, não um deep link garantido para cada item/tentativa.
+- O bloqueio de duplo envio existe em controles específicos, não foi aplicado uniformemente a todas as mutações. Erros focam a região de mensagens; isso não é foco automático no primeiro campo inválido.
+- Resposta de rede não confirmada orienta recarregar. Não há consulta por `id_operacao` ou reconciliação automática persistida.
+- Ponto inativo bloqueia novas previsões; entregas previstas anteriormente continuam concluíveis. Este é o comportamento executável, em divergência com o bloqueio de recebimento descrito no esboço original de J-04.
+
+Ver [contratos atuais](../../docs/http-api.md), [testes de frontend](../../tests/test_frontend.py), [Selenium](../../tests/test_selenium_frontend.py) e [jornadas executáveis](../../scripts/validar_jornadas_v2.py). Esses testes não constituem uma auditoria exaustiva de acessibilidade.
+
+## Desenho de experiência preservado
+
+Os nomes visíveis devem traduzir conceitos de negócio, sem expor códigos internos. Ver [regras](regras_de_negocio.md).
+
 
 ## Mapa de navegação
 

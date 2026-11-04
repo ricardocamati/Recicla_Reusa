@@ -79,7 +79,7 @@ Condições aceitas: `funcional`, `funcional_com_defeito`, `reparavel`, `sem_con
 
 `especificacoes` é um subdocumento livre de textos, porque categorias diferentes têm características diferentes. O cadastro grava o primeiro evento em `historico` com etapa `publicacao` (ou `cadastro`, no rascunho), status correspondente, data do servidor e o proprietário como responsável. Publicar e arquivar também registram evento.
 
-`GET /api/itens/meus` agrupa: `ativos` (rascunho, disponível e aguardando ponto), `em_andamento` (reservado, aguardando confirmação e entrega prevista) e `encerrados` (concluído, recebido e arquivado). Arquivar preserva item, histórico e referências; o item arquivado não pode ser excluído.
+`GET /api/itens/meus` agrupa: `ativos` (rascunho, disponível e aguardando ponto), `em_andamento` (reservado, aguardando confirmação e entrega prevista) e `encerrados` (concluído, recebido, destinação informada e arquivado). Arquivar preserva item, histórico e referências; o item arquivado não pode ser excluído.
 
 A listagem aceita `offset` (padrão `0`) e `limite` (padrão `20`, máximo `100`), sempre ordenada por `data_adicao` decrescente. O filtro `cidade` usa a cidade do proprietário e não expõe o endereço.
 
@@ -92,7 +92,7 @@ Transições permitidas, sem saltos entre fluxos:
 | `descarte` | `aguardando_ponto` → `entrega_prevista` → `recebido` |
 | `descarte` (alternativo) | `aguardando_ponto` → `destinacao_informada` → `aguardando_ponto` |
 
-Doação e venda só avançam pelo `PUT` até `reservado`; declarar entrega e confirmar recebimento têm endpoints próprios. Descarte não muda de status pelo `PUT`: o item publicado fica em `aguardando_ponto` e a entrega é combinada em `/api/encaminhamentos`. Transição inválida retorna `400`, item concluído não volta a outro fluxo e cada mudança acrescenta um evento a `historico`. O `PUT` substitui os campos descritivos; `ponto_coleta_id` e `comprador_id` não são aceitos no corpo — o ponto vem do encaminhamento e o comprador, do interesse selecionado.
+Reserva de doação e venda nasce da seleção de um interesse; o `PUT` comum não cria reserva com o módulo de interesses habilitado. Declarar entrega e confirmar recebimento têm endpoints próprios. Descarte não muda de status pelo `PUT`: o item publicado fica em `aguardando_ponto` e a entrega é combinada em `/api/encaminhamentos`. Transição inválida retorna `400`, item concluído não volta a outro fluxo e cada mudança acrescenta um evento a `historico`. O `PUT` substitui os campos descritivos; `ponto_coleta_id` e `comprador_id` não são aceitos no corpo — o ponto vem do encaminhamento e o comprador, do interesse selecionado.
 
 | Comando | Exigência |
 |---|---|
@@ -149,7 +149,7 @@ O servidor gera `data_adicao` no cadastro e mantém esse valor imutável. `data_
 | Método | Caminho | Autenticação | Entrada | Sucesso |
 |---|---|---|---|---|
 | `POST` | `/api/interesses` | pessoa | `item_id` | `201` com interesse pendente |
-| `GET` | `/api/interesses` | doador ou beneficiário | `escopo=meus` (padrão) ou `recebidos`, `item_id`, `status`, `offset`, `limite` | `200` com lista restrita à sessão |
+| `GET` | `/api/interesses` | pessoa | `escopo=meus` (padrão) ou `recebidos`, `item_id`, `status`, `offset`, `limite` | `200` com lista restrita à sessão |
 | `GET` | `/api/interesses/{id}` | participante | — | `200` com interesse |
 | `PUT` | `/api/interesses/{id}/combinacao` | selecionado ou proprietário | `local_texto`, `previsao` e `observacao` | `200` com nova revisão da combinação |
 | `POST` | `/api/interesses/{id}/combinacao/aceite` | contraparte de quem propôs | `revisao` | `200` com combinação aceita |
@@ -185,7 +185,9 @@ O Compose usa replica set de um nó para executar essas transações; consulte [
 
 Os avisos são criados pelo servidor, nunca pelo cliente. Tipos: `interesse_aceito`, `interesse_recusado`, `interesse_cancelado`, `status_item_alterado`, `entrega_declarada`, `entrega_prevista`, `item_concluido`, `item_recebido`, `item_nao_recebido` e `ponto_inativado`. Cada aviso traz `link` interno para a tela em que o destinatário age, e o índice único por evento, destinatário e item impede repetição.
 
-A emissão ocorre na **mesma transação** da mudança que a origina: a decisão de um interesse avisa o interessado (aceito/recusado) ou o proprietário (cancelado), e cada transição de status avisa quem possui interesse pendente ou aceito no item. O aceite de uma doação também avisa os demais interessados de que o item foi reservado, sem repetir o aviso para quem foi escolhido; o cancelamento do aceite avisa que o item voltou a ficar disponível. Quem não tem vínculo com o item não recebe aviso, e o proprietário não é notificado das próprias mudanças.
+Nas decisões transacionais de interesse e nas transições de entrega que emitem avisos, a gravação ocorre na mesma transação: a decisão de um interesse avisa o interessado (aceito/recusado) ou o proprietário (cancelado), e cada transição de status avisa quem possui interesse pendente ou aceito no item. O aceite de uma doação também avisa os demais interessados de que o item foi reservado, sem repetir o aviso para quem foi escolhido; o cancelamento do aceite avisa que o item voltou a ficar disponível. Quem não tem vínculo com o item não recebe aviso, e o proprietário não é notificado das próprias mudanças.
+
+O aviso de inativação de ponto é emitido em chamada separada após alterar a situação do ponto; não constitui a mesma unidade transacional. Links internos indicam a tela de ação, não necessariamente o registro individual. A emissão para cada evento previsto no desenho de produto deve ser conferida nos testes específicos.
 
 O índice único por `evento_id`, destinatário e item garante uma única notificação por evento; repetir a gravação não duplica. A listagem é ordenada por `data_adicao` decrescente, aceita `offset`/`limite` (padrão 20, máximo 100) e o filtro `lida`. Marcar leitura preserva `data_adicao`, registra `data_leitura` e atualiza `data_modificacao`. Notificação de outro usuário ou identificador inválido retorna `404`; sessão ausente `401`; parâmetro desconhecido `400`.
 
@@ -229,7 +231,7 @@ Escolher o ponto não grava vínculo até a confirmação do `POST`: a listagem 
 |---|---|---|---|
 | `GET` | `/api/indicadores` | sessão | `200` com `ofertas_ativas`, `pendencias`, `doados`, `coletados`, `indicados`, `vendidos` e `total` |
 
-`ofertas_ativas` conta itens `disponivel`; `pendencias` soma `reservado`, `aguardando_confirmacao`, `aguardando_ponto` e `entrega_prevista`. Nenhuma das duas entra em `total`, que reúne apenas conclusões confirmadas. Somente itens concluídos entram nos totais: `concluido` em doação e revenda, `recebido` em descarte. `indicados` conta `destinacao_informada` separadamente e nunca entra em `total`, porque informar um lugar não comprova recebimento nem reciclagem. Itens disponíveis, reservados ou em andamento não são contados. Os números são da plataforma inteira, não de uma conta específica, e a consulta aceita qualquer sessão autenticada; sem sessão retorna `401`.
+`ofertas_ativas` conta itens `disponivel`; `pendencias` soma `reservado`, `aguardando_confirmacao`, `aguardando_ponto` e `entrega_prevista`. Nenhuma das duas entra em `total`, que reúne apenas conclusões confirmadas. Somente itens concluídos entram nos totais: `concluido` em doação e revenda, `recebido` em descarte. `indicados` conta `destinacao_informada` separadamente e nunca entra em `total`, porque informar um lugar não comprova recebimento nem reciclagem. Itens disponíveis, reservados ou em andamento não entram nas conclusões nem em `total`; aparecem nos recortes de ofertas e pendências conforme o status. Os números são da plataforma inteira, não de uma conta específica, e a consulta aceita qualquer sessão autenticada; sem sessão retorna `401`.
 
 O snapshot da OpenAPI gerada do runtime e suas diferenças em relação a esta descrição estão em [openapi.md](openapi.md).
 

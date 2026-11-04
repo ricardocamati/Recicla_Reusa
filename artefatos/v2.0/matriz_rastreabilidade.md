@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade da versão 2.0
 
-As Etapas 1 a 7 estão integradas à `main` por PRs revisados e a Etapa 8 fecha a entrega com suíte completa, jornadas reais em Docker e auditoria temporal. As evidências abaixo apontam para o código e para [docs/verificacao-etapa8.md](../../docs/verificacao-etapa8.md).
+Registro histórico do marco v2.0, implementado nas Etapas 1 a 8 e fechado no commit `71e8dfa` (PR #18). As referências de código abaixo descrevem aquele marco; a revisão [v2.1](../v2.1/README.md) substitui parte dos fluxos. A execução atual está documentada no [README](../../README.md), nos testes e nos scripts versionados, sem relatórios de verificação separados.
 
 | Requisito/regra | Casos de teste | Evidência entregue |
 |---|---|---|
@@ -39,8 +39,8 @@ As Etapas 1 a 7 estão integradas à `main` por PRs revisados e a Etapa 8 fecha 
 | V2-RNF-01 a V2-RNF-03 | V2-CT-06 a V2-CT-30 | cinco coleções com referências e integridade |
 | V2-RNF-04 | todos os casos implementados | camadas `api`/`services`/`repositories` em `docs/architecture.md` |
 | V2-RNF-05, V2-RNF-06 | V2-CT-25 | **170 testes** aprovados, incluindo 24 contra MongoDB real em replica set |
-| V2-RNF-07 | — | `README.md`, `docs/http-api.md`, `docs/architecture.md` e verificações por etapa |
-| V2-RNF-08 | — | commits e PRs por etapa; tag `v2.0` após o merge do PR de fechamento |
+| V2-RNF-07 | — | `README.md`, `docs/http-api.md`, `docs/architecture.md` e comandos reproduzíveis |
+| V2-RNF-08 | — | commits e PRs por etapa; marco v2.0 em `71e8dfa` (PR #18), sem tag v2.0 |
 | V2-RNF-09 | V2-CT-08, V2-CT-22 | endereço privado fora do catálogo |
 | V2-RNF-10 | V2-CT-24, V2-CT-25 | `compose.yaml` isolado, jornadas em Docker e limpeza seletiva comprovada |
 
@@ -48,5 +48,5 @@ As Etapas 1 a 7 estão integradas à `main` por PRs revisados e a Etapa 8 fecha 
 
 - quadro de tarefas/metodologia: `TODO.md`;
 - URL do GitHub: <https://github.com/ricardocamati/Recicla_Reusa>;
-- identificação da versão 2.0: tag `v2.0`, criada após o merge do PR de fechamento;
-- demonstração da evolução em relação à versão 1.0: PRs #11 a #17 e `docs/verificacao-etapa8.md`.
+- identificação do marco v2.0: commit `71e8dfa` (PR #18); nenhuma tag v2.0 foi criada;
+- demonstração da evolução em relação à versão 1.0: PRs #11 a #18, testes versionados e `scripts/validar_jornadas_v2.py` no marco `71e8dfa`.

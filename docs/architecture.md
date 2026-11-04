@@ -2,131 +2,89 @@
 
 ## Visão geral
 
-O Recicla/Reusa usa uma arquitetura em camadas para separar protocolo HTTP, casos de uso, persistência e contratos públicos.
+O Recicla/Reusa é uma PoC local com frontend estático, API FastAPI e MongoDB em replica set. Este documento descreve o código após as Etapas 1 a 15; a primeira entrega permanece preservada na tag `v1.0`.
 
 ```text
-Frontend
-   |
-   v
-API FastAPI -> Request DTO -> Service -> Repository -> MongoDB
-                                         |
-MongoDB -> Model -> Service -> Mapper -> Response DTO -> JSON
+Navegador → frontend HTML/CSS/JavaScript
+         → API FastAPI → Service → Repository → MongoDB
+                         ↓           ↓
+                      Mapper ← Model
+                         ↓
+                   DTO de resposta
 ```
-
-O frontend permanece em uma pasta própria na raiz e conclui o escopo simples da v1.0. Ele usa HTML, CSS e JavaScript, sem etapa de build obrigatória, consumindo somente os contratos públicos da API.
-
-## Execução integrada com Docker Compose
-
-A execução reproduzível usa três serviços principais no mesmo Compose, com Mongo Express opcional:
-
-```text
-Navegador --HTTP--> frontend (Python http.server:80)
-Navegador --HTTP/CORS--> backend (Uvicorn:8000) -> mongo (MongoDB:27017)
-```
-
-O frontend é servido como conteúdo estático pelo Python `http.server`. A API é publicada na porta local `8000` para que o navegador possa enviar requisições com `credentials: "include"`; o backend acessa o MongoDB pelo hostname interno `mongo`. Healthchecks impedem que o frontend seja iniciado antes de a API e o banco estarem disponíveis. Mongo Express permanece como ferramenta opcional de inspeção local.
 
 ## Responsabilidades
 
-- **API (`app/api`)**: traduz HTTP em chamadas de casos de uso, valida DTOs e define respostas HTTP.
-- **Schemas (`app/schemas`)**: contratos Pydantic específicos para criação, atualização, login e resposta.
-- **Services (`app/services`)**: regras de negócio, autenticação, unicidade e coordenação dos casos de uso.
-- **Repositories (`app/repositories`)**: persistência e consultas MongoDB, incluindo o índice único de e-mail.
-- **Models (`app/models`)**: representação dos documentos persistidos, com os campos de endereço no nível raiz e auditoria temporal.
-- **Mappers (`app/mappers`)**: conversões explícitas entre contratos e modelos, sem expor `senha_hash`.
-- **Security (`app/security`)**: hash de senha com scrypt, sessões em memória e identificadores aleatórios.
-- **Exceptions**: falhas do domínio tratadas de forma centralizada pela API.
-- **Frontend (`frontend`)**: cliente web simples da v1.0, separado do backend.
+- **API (`app/api`)**: rotas, dependências de sessão, validação HTTP e tradução de erros.
+- **Schemas (`app/schemas`)**: contratos Pydantic de entrada e resposta; não são os documentos persistidos.
+- **Services (`app/services`)**: casos de uso, permissões, propriedade e regras de negócio.
+- **Repositories (`app/repositories`)**: consultas, índices, persistência e operações transacionais.
+- **Models (`app/models`)**: classes de domínio/persistência, incluindo subdocumentos de endereço, histórico e combinação.
+- **Mappers (`app/mappers`)**: projeção para os DTOs, sem expor hash ou endereço privado em consultas de terceiros.
+- **Security (`app/security`)**: scrypt e sessão em memória.
+- **Frontend (`frontend`)**: páginas HTML separadas e módulos JavaScript por responsabilidade; sem build obrigatório.
 
-Models de persistência não devem ser expostos diretamente como contratos HTTP.
+Serviços recebem repositórios por injeção. O wiring e a inicialização dos índices ficam em `app/main.py`; os testes usam doubles e MongoDB real conforme a camada.
 
-## Estado atual de usuários
+## Execução integrada
 
-O fluxo implementado é:
+O [Compose](../compose.yaml) reúne MongoDB, backend Uvicorn e frontend servido por `http.server`, com Mongo Express como ferramenta auxiliar. O MongoDB precisa de replica set para as transações dos fluxos. Inicialização e healthcheck ficam em [docker/mongo/](../docker/mongo/README.md).
 
-```text
-/api/usuarios e /api/auth
-        -> UsuarioService
-        -> MongoUsuarioRepository
-        -> usuarios
-```
+O backend usa o hostname `mongo` na rede Docker; o navegador usa a porta publicada da API. CORS e validação de `Origin`/`Referer` permitem apenas as origens configuradas nas mutações com cookie. Comandos, portas padrão e execução manual estão no [README](../README.md).
 
-Um documento persistido possui a seguinte forma lógica:
-
-```json
-{
-  "nome": "Maria Silva",
-  "email": "maria@example.com",
-  "tipo": "doador",
-  "logradouro": "Rua das Flores",
-  "numero": "10A",
-  "complemento": "Casa 2",
-  "cep": "87000000",
-  "cidade": "Maringá",
-  "senha_hash": "scrypt$...",
-  "data_adicao": "2026-09-07T12:00:00Z",
-  "data_modificacao": "2026-09-07T12:00:00Z"
-}
-```
-
-O `Usuario`, os DTOs JSON de entrada e saída e o documento MongoDB usam os cinco campos de endereço no nível raiz. Não existe a chave `endereco` no contrato v1.0 nem o subdocumento `usuarios.endereco`. O `_id` do MongoDB é convertido para `id` nos DTOs. `data_adicao` e `data_modificacao` são geradas pelo servidor em UTC. O índice `usuario_email_unico` impede duplicidade depois da normalização do e-mail.
-
-Listagens públicas usam DTOs resumidos. O perfil completo exige que a sessão corresponda ao usuário consultado; a autorização de alteração e exclusão também é validada no backend.
-
-## Estado atual de itens
-
-O fluxo implementado é:
+## Coleções e relações
 
 ```text
-/api/itens
-      -> ItemService
-      -> MongoItemRepository
-      -> itens
-           |
-           +--> proprietario_id -> usuarios
+usuarios ← proprietario_id ─ itens ← item_id ─ interesses → usuario_id → usuarios
+   ↑                         ↑
+responsavel_id            item_id
+   │                         │
+pontos_coleta ← ponto_id ─ encaminhamentos → autor_id → usuarios
+
+notificacoes → usuario_id, item_id e interesse_id opcional
 ```
 
-O item fica em coleção própria. O Service consulta o usuário relacionado para validar o proprietário e derivar somente sua cidade no DTO público; `endereco`, `senha_hash` e demais dados privados não são copiados nem expostos. O repositório cria índices para proprietário, categoria, condição, destino e status.
+- `usuarios`: conta `pessoa` ou `ponto_coleta`, endereço aninhado e hash da senha.
+- `itens`: proprietário, destino, condição, valor, status, especificações e histórico acumulativo.
+- `interesses`: uma relação por item/pessoa, tentativa, histórico, preço selecionado e combinação de entrega.
+- `pontos_coleta`: local físico, responsável, endereço público, categorias, horário e situação ativa/inativa.
+- `encaminhamentos`: tentativas de entrega, com item, autor, ponto, status, motivo e histórico.
+- `notificacoes`: destinatário, evento, item, interesse opcional, link interno e leitura.
 
-O cadastro obtém `proprietario_id` da sessão, inicia `status` como `disponivel` e gera as duas datas em UTC. Atualizações preservam o identificador, o proprietário e `data_adicao`; somente o proprietário pode alterar ou excluir o recurso.
+IDs relacionais são BSON ObjectId na persistência e strings no JSON. Datas são geradas pelo servidor em UTC; a persistência normaliza a precisão BSON. `data_adicao` é preservada nas atualizações. O [modelo atual](../artefatos/v2.1/modelo_dados.md) distingue essas estruturas do desenho original.
 
-## Segurança implementada
+## Identidade e privacidade
 
-O cadastro público aceita somente `doador` e `beneficiario`. A senha não é persistida em texto claro: o Service gera um hash scrypt com salt aleatório. O login cria uma sessão em memória e devolve apenas o cookie `recicla_sessao`, configurado como `HttpOnly`, `SameSite=Lax`, `Path=/` e com duração de 30 minutos.
+O cadastro público cria `pessoa`. A mesma pessoa publica e manifesta interesse em ofertas alheias; proprietário, interessado e comprador são relações, não perfis públicos diferentes. A conta `ponto_coleta` é provisionada localmente e opera seus próprios locais.
 
-As origens CORS são lidas de `CORS_ORIGINS`; credenciais são permitidas somente para essa lista. O frontend usa `credentials: "include"` sem tentar ler o cookie.
+A senha é persistida como hash scrypt. O login emite cookie de sessão `HttpOnly`/`SameSite=Lax`; o frontend envia `credentials: "include"`, sem ler o cookie. Sessões em memória não são uma solução para múltiplas instâncias.
 
-## Arquitetura-alvo
+Permissões são verificadas no backend. DTOs públicos não retornam hash nem endereço completo do proprietário. `destinacao_informada` é visível somente ao autor. Ocultar botões não constitui autorização.
 
-```text
-usuarios ----< itens ----< historico[]
-    |            |
-    |            +----< interesses
-    |
-    +-----------------> pontos_coleta
-```
+## Fluxos atuais
 
-Coleções planejadas:
-
-- `usuarios`: participantes da plataforma;
-- `itens`: eletrônicos, proprietário, destino e status;
-- `interesses`: manifestações de interesse em doação ou revenda;
-- `pontos_coleta`: locais para destinação formal.
-
-`itens.historico` será uma lista de subdocumentos contendo etapa, status, data, responsável e observação opcional.
-
-## Fluxos de negócio
-
-| Destino | Fluxo |
+| Caminho | Transições principais |
 |---|---|
-| Doação | disponível → reservado → doado |
-| Descarte | disponível → encaminhado → coletado |
-| Reaproveitamento/revenda | disponível → em avaliação → recondicionado → vendido |
+| Oferta de doação/venda | `rascunho → disponivel → reservado → aguardando_confirmacao → concluido` |
+| Liberação antes da entrega | `reservado → disponivel` |
+| Descarte em ponto | `aguardando_ponto → entrega_prevista → recebido` |
+| Cancelamento ou impossibilidade | `entrega_prevista → aguardando_ponto` |
+| Lugar indicado pelo autor | `aguardando_ponto → destinacao_informada → aguardando_ponto` (ao desfazer) |
 
-As regras de transição e as exigências de referência de cada etapa (ponto de coleta no encaminhamento, interesse aceito na doação e comprador na venda) ficam no Service, em um único mapa de transições. A duplicação é pequena e não justifica Strategy ou State neste escopo.
+Reserva nasce da seleção de interesse. A combinação tem revisão e aceite da contraparte; declarar entrega não conclui, e só o selecionado confirma o recebimento. No descarte, criar encaminhamento registra a previsão; só o operador do ponto confirma o recebimento. Indicação de outro lugar não cria ponto nem comprova recebimento.
 
-## Testabilidade
+Seleção, entrega bilateral e operações de encaminhamento executam suas escritas relacionadas em transações. Isso não deve ser generalizado para toda operação do sistema: a alteração de situação do ponto e o aviso de inativação, por exemplo, têm chamadas separadas no handler. O contrato atual não possui `id_operacao` nem versões genéricas de todos os agregados. Os limites de concorrência estão nos [contratos](../artefatos/v2.1/contratos_http.md).
 
-Services recebem o repositório por injeção de dependência e o relógio por injeção opcional. Isso permite testar datas, expiração de sessão e regras sem depender do relógio do sistema. Os testes do repositório usam `mongomock`; a aplicação utiliza PyMongo e MongoDB em execução normal.
+## Avisos e indicadores
 
-O frontend não tem lógica de autorização própria: o catálogo só oferece o botão de interesse quando o item é de outra pessoa, está disponível e não é descarte, e a tela de itens mostra apenas a próxima transição válida de cada fluxo, com seleção de ponto compatível ou de comprador quando a regra exige. O backend rejeita qualquer atalho. `scripts/validar_jornadas_v2.py` percorre doação, descarte e revenda pela interface, confere as referências gravadas, audita as datas em UTC e remove somente os documentos criados por ele.
+Avisos usam índice único por evento/destinatário/item, têm leitura idempotente e links internos para as telas de ação. O link não concede permissão sobre o destino.
+
+Indicadores são globais: ofertas ativas e pendências ficam separados das conclusões. `total` soma doações/vendas concluídas e recebimentos em pontos; `indicados` é separado e não comprova reciclagem ou recebimento.
+
+## Testabilidade e reprodução
+
+- [Testes](../tests/): serviços, API, repositórios, segurança, frontend, integração e equivalência OpenAPI.
+- [Jornadas](../scripts/validar_jornadas_v2.py): doação, descarte e revenda pela interface, referências persistidas, datas UTC e limpeza seletiva.
+- [README](../README.md): comandos para suíte, medição de cobertura e stack isolada.
+
+Os testes de runtime exigem uma URI de replica set de teste; sem ela, são ignorados. A validação funcional anterior não substitui medição de cobertura nem nova execução após mudanças de código. Evidências permanecem nos testes, comandos e histórico de PRs, sem relatórios de verificação separados.
