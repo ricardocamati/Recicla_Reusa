@@ -130,8 +130,8 @@ def test_selenium_perfil_preenche_resumo_e_atualiza_cidade(
 
 @pytest.fixture()
 def servidor_frontend():
-    handler = partial(ServidorFrontend, directory=str(FRONTEND))
-    servidor = ServidorThreading(("127.0.0.1", 0), handler)
+    from frontend.servidor import criar_servidor
+    servidor = criar_servidor("127.0.0.1", 0, FRONTEND)
     thread = threading.Thread(target=servidor.serve_forever, daemon=True)
     thread.start()
     try:
@@ -223,7 +223,7 @@ def test_selenium_menu_oferece_acesso_a_interesses(navegador, servidor_frontend,
     })
     navegador.get(f"{servidor_frontend}/{pagina}")
     WebDriverWait(navegador, 5).until(lambda d: d.find_element(By.ID, "session-chip").get_attribute("textContent") == "Pessoa")
-    links = navegador.find_elements(By.CSS_SELECTOR, ".header-actions a[href='./interesses.html']")
+    links = navegador.find_elements(By.CSS_SELECTOR, ".header-actions a[href^='./interesses.html']")
     assert len(links) == 1 and links[0].is_displayed()
 
 
@@ -316,3 +316,41 @@ def test_selenium_relacao_existente_na_segunda_pagina_nao_oferece_novo_interesse
         WebDriverWait(navegador, 10).until(
             lambda d: "Monitor para acompanhar" in d.find_element(By.ID, "meus-interesses-list").text
         )
+
+
+def test_selenium_atualizacao_supera_modulos_antigos_em_cache(navegador, tmp_path):
+    from frontend.servidor import criar_servidor
+
+    (tmp_path / "js").mkdir()
+    (tmp_path / "index.html").write_text('<script type="module" src="./js/main.js"></script>', encoding="utf-8")
+    (tmp_path / "js/main.js").write_text('import { texto } from "./comum.js"; document.body.dataset.versao = texto;', encoding="utf-8")
+    modulo = tmp_path / "js/comum.js"
+    modulo.write_text('export const texto = "antigo";', encoding="utf-8")
+
+    class CacheLegado(ServidorFrontend):
+        def end_headers(self):
+            self.send_header("Cache-Control", "max-age=31536000")
+            super().end_headers()
+
+    legado = ServidorThreading(("127.0.0.1", 0), partial(CacheLegado, directory=str(tmp_path)))
+    porta = legado.server_address[1]
+    thread = threading.Thread(target=legado.serve_forever, daemon=True)
+    thread.start()
+    url = f"http://127.0.0.1:{porta}"
+    try:
+        navegador.get(url + "/index.html")
+        WebDriverWait(navegador, 5).until(lambda d: d.find_element(By.TAG_NAME, "body").get_attribute("data-versao") == "antigo")
+    finally:
+        legado.shutdown(); legado.server_close(); thread.join(timeout=2)
+    modulo.write_text('export const texto = "Interesses atualizado";', encoding="utf-8")
+    atual = criar_servidor("127.0.0.1", porta, tmp_path)
+    thread = threading.Thread(target=atual.serve_forever, daemon=True)
+    thread.start()
+    try:
+        # URL de entrada nova supera HTML já retido pelo servidor antigo.
+        # Não limpar o cache: os módulos sem versão continuam no navegador.
+        navegador.get(url + "/index.html?atualizacao=nova")
+        WebDriverWait(navegador, 5).until(lambda d: d.find_element(By.TAG_NAME, "body").get_attribute("data-versao") == "Interesses atualizado")
+        assert "?v=" in navegador.find_element(By.CSS_SELECTOR, "script[type='module']").get_attribute("src")
+    finally:
+        atual.shutdown(); atual.server_close(); thread.join(timeout=2)

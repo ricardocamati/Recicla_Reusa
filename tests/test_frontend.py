@@ -171,7 +171,7 @@ def test_frontend_nao_exibe_referencias_institucionais() -> None:
     arquivos = sorted(
         caminho
         for caminho in FRONTEND.rglob("*")
-        if caminho.is_file()
+        if caminho.is_file() and caminho.suffix in {".html", ".css", ".js"}
     )
     frontend = "\n".join(
         caminho.read_text(encoding="utf-8")

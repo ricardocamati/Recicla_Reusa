@@ -142,10 +142,12 @@ Documentação interativa: <http://127.0.0.1:8000/docs>.
 Para servir o frontend sem etapa de build, em outro terminal execute:
 
 ```bash
-.venv/Scripts/python.exe -m http.server 5500 --bind 127.0.0.1 --directory frontend
+.venv/Scripts/python.exe frontend/servidor.py 5500 --bind 127.0.0.1 --directory frontend
 ```
 
 Depois abra <http://127.0.0.1:5500>. A origem `http://127.0.0.1:5500` já está incluída na configuração CORS de exemplo.
+
+O servidor estático acrescenta uma versão derivada do conteúdo às referências locais de páginas, estilos e módulos JavaScript, sem editar os arquivos-fonte, e envia `Cache-Control: no-store`. Isso evita misturar HTML e módulos de implantações diferentes. Uma aba que já estava aberta antes dessa proteção precisa navegar uma vez para uma URL nova da página, como `catalogo.html?atualizacao=atual`; o servidor não consegue substituir sozinho um documento já retido pelo navegador.
 
 Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e login/logout em `/api/auth`. Os contratos estão documentados em [docs/http-api.md](docs/http-api.md).
 

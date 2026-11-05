@@ -32,7 +32,7 @@ Serviços publicados:
 | Serviço | Endereço |
 |---|---|
 | Backend | `http://localhost:8000` |
-| Frontend Python `http.server` | `http://localhost:8080` |
+| Frontend estático Python | `http://localhost:8080` |
 | MongoDB | `localhost:27018` |
 | Mongo Express | `http://localhost:18081` |
 
@@ -80,12 +80,12 @@ Com uma stack Docker já iniciada, as evidências de execução podem ser reprod
 .venv/Scripts/python.exe scripts/smoke_api_docker.py --crud
 ```
 
-## Frontend da v1.0
+## Frontend atual
 
-No ambiente completo, o frontend é servido pelo Python `http.server` na porta `8080`. Para execução manual sem container, ele pode ser servido separadamente a partir de `frontend/`, por exemplo:
+No ambiente completo, o frontend usa `frontend/servidor.py` na porta `8080`, com referências versionadas e cabeçalhos contra cache obsoleto. Para execução manual sem container, ele pode ser servido separadamente a partir de `frontend/`, por exemplo:
 
 ```bash
-.venv/Scripts/python.exe -m http.server 5500 --directory frontend
+.venv/Scripts/python.exe frontend/servidor.py 5500 --directory frontend
 ```
 
 Endereço planejado: `http://127.0.0.1:5500/`. A origem deverá constar na configuração CORS do backend.

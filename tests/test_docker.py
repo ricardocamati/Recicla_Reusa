@@ -14,7 +14,8 @@ def test_execucao_docker_possui_imagens_do_backend_e_frontend() -> None:
 
     frontend_dockerfile = ler("frontend/Dockerfile")
     assert "FROM python:3.11-slim" in frontend_dockerfile
-    assert '"python", "-m", "http.server"' in frontend_dockerfile
+    assert '"python", "servidor.py"' in frontend_dockerfile
+    assert (RAIZ / "frontend" / "servidor.py").is_file()
     assert '"--directory", "/app"' in frontend_dockerfile
     assert '"--bind", "0.0.0.0"' in frontend_dockerfile
     assert not (RAIZ / "frontend" / "nginx.conf").exists()

@@ -28,7 +28,7 @@ Serviços recebem repositórios por injeção. O wiring e a inicialização dos 
 
 ## Execução integrada
 
-O [Compose](../compose.yaml) reúne MongoDB, backend Uvicorn e frontend servido por `http.server`, com Mongo Express como ferramenta auxiliar. O MongoDB precisa de replica set para as transações dos fluxos. Inicialização e healthcheck ficam em [docker/mongo/](../docker/mongo/README.md).
+O [Compose](../compose.yaml) reúne MongoDB, backend Uvicorn e frontend servido por [servidor.py](../frontend/servidor.py), baseado em `http.server`, com Mongo Express como ferramenta auxiliar. O servidor estático versiona referências de páginas, CSS e imports JavaScript por conteúdo e não permite armazenar respostas antigas no cache. O MongoDB precisa de replica set para as transações dos fluxos. Inicialização e healthcheck ficam em [docker/mongo/](../docker/mongo/README.md).
 
 O backend usa o hostname `mongo` na rede Docker; o navegador usa a porta publicada da API. CORS e validação de `Origin`/`Referer` permitem apenas as origens configuradas nas mutações com cookie. Comandos, portas padrão e execução manual estão no [README](../README.md).
 
