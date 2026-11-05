@@ -136,6 +136,17 @@ export function comBotaoOcupado(botao, acao) {
   };
 }
 
+export async function requestAllPages(path, filters = {}) {
+  const records = [];
+  let page;
+  do {
+    const params = new URLSearchParams({ ...filters, offset: String(records.length), limite: "100" });
+    page = await requestApi(`${path}?${params.toString()}`);
+    records.push(...page);
+  } while (page.length === 100);
+  return records;
+}
+
 export async function loadSession() {
   return requestApi("/api/usuarios/me");
 }
@@ -166,6 +177,17 @@ export function setupAuthenticatedHeader(usuario) {
   if (userName) userName.textContent = usuario.nome;
   if (roleBadge) roleBadge.textContent = labelFor("tipo", usuario.tipo);
   if (itemsLink) itemsLink.hidden = usuario.tipo === "ponto_coleta";
+
+  const navigation = document.querySelector(".header-actions");
+  if (navigation) {
+    let interestsLink = navigation.querySelector("a[href='./interesses.html']");
+    if (!interestsLink && usuario.tipo === "pessoa") {
+      interestsLink = createElement("a", "nav-link", "Interesses");
+      interestsLink.href = "./interesses.html";
+      navigation.insertBefore(interestsLink, navigation.querySelector("a[href='./perfil.html']"));
+    }
+    if (interestsLink) interestsLink.hidden = usuario.tipo !== "pessoa";
+  }
 
   const logoutButton = byId("logout-button");
   if (logoutButton && !logoutButton.dataset.bound) {

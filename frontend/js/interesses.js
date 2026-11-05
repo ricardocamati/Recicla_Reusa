@@ -5,6 +5,7 @@ import {
   labelForInteresse,
   renderEmptyState,
   requestApi,
+  requestAllPages,
   requireSession,
   setMessage,
   setupAuthenticatedHeader,
@@ -218,7 +219,7 @@ async function carregarMeus() {
   const message = byIdMeus();
   setMessage(message, "Carregando seus interesses...");
   try {
-    const interesses = await requestApi("/api/interesses?escopo=meus");
+    const interesses = await requestAllPages("/api/interesses", { escopo: "meus" });
     await Promise.all(interesses.map((interesse) => carregarItem(interesse.item_id)));
     renderLista("meus-interesses-list", interesses, {
       recebido: false,
@@ -236,7 +237,7 @@ async function carregarRecebidos() {
   const secao = document.getElementById("recebidos-section");
   const message = byIdRecebidos();
   try {
-    const interesses = await requestApi("/api/interesses?escopo=recebidos");
+    const interesses = await requestAllPages("/api/interesses", { escopo: "recebidos" });
     await Promise.all(interesses.map((interesse) => carregarItem(interesse.item_id)));
     secao.hidden = false;
     renderLista("recebidos-interesses-list", interesses, {

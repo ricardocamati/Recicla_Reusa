@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 import socketserver
 import threading
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from selenium import webdriver
@@ -215,3 +215,104 @@ def test_selenium_navega_nas_seis_telas_em_modo_escuro(
 
         texto = navegador.find_element(By.TAG_NAME, "body").text
         assert not re.search(r"poc|ods|consumo|acad[eê]mic|respons[aá]vel", texto, re.IGNORECASE)
+
+@pytest.mark.parametrize("pagina", ["catalogo.html", "itens.html", "perfil.html"])
+def test_selenium_menu_oferece_acesso_a_interesses(navegador, servidor_frontend, servidor_api, pagina):
+    navegador.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": f"window.RECICLA_API_BASE = {json.dumps(servidor_api)};",
+    })
+    navegador.get(f"{servidor_frontend}/{pagina}")
+    WebDriverWait(navegador, 5).until(lambda d: d.find_element(By.ID, "session-chip").get_attribute("textContent") == "Pessoa")
+    links = navegador.find_elements(By.CSS_SELECTOR, ".header-actions a[href='./interesses.html']")
+    assert len(links) == 1 and links[0].is_displayed()
+
+
+@pytest.fixture()
+def api_catalogo_com_relacoes(monkeypatch):
+    item = {"id": "item-catalogo", "titulo": "Monitor para acompanhar", "descricao": "Oferta de teste",
+            "destino": "doacao", "status": "disponivel", "proprietario_id": "outra-pessoa", "categoria": "monitor",
+            "condicao": "funcional", "valor": None, "cidade_proprietario": "Maringá"}
+    estado = {"item": item, "interesses": [], "posts": 0, "offsets": [], "post_status": 201}
+    original = ServidorApi.do_GET
+
+    def consultar(handler):
+        url = urlsplit(handler.path)
+        query = parse_qs(url.query)
+        if url.path in ("/api/itens", "/api/itens/item-catalogo"):
+            handler._responder(200, [item] if url.path == "/api/itens" else item)
+        elif url.path == "/api/interesses":
+            if query.get("escopo") == ["recebidos"]:
+                handler._responder(200, [])
+                return
+            offset = int(query.get("offset", [0])[0]); limite = int(query.get("limite", [20])[0])
+            estado["offsets"].append(offset)
+            handler._responder(200, estado["interesses"][offset:offset + limite])
+        else:
+            original(handler)
+
+    def criar(handler):
+        assert urlsplit(handler.path).path == "/api/interesses"
+        assert json.loads(handler.rfile.read(int(handler.headers["Content-Length"]))) == {"item_id": item["id"]}
+        estado["posts"] += 1
+        interesse = {"id": "interesse-1", "item_id": item["id"], "usuario_id": "selenium-user", "status": "pendente", "tentativa": 1}
+        estado["interesses"].append(interesse)
+        handler._responder(estado["post_status"], interesse if estado["post_status"] == 201 else {"detail": "Relação já existente"})
+
+    monkeypatch.setattr(ServidorApi, "do_GET", consultar)
+    monkeypatch.setattr(ServidorApi, "do_POST", criar, raising=False)
+    return estado
+
+
+def abrir_catalogo_teste(navegador, servidor_frontend, servidor_api):
+    navegador.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": f"window.RECICLA_API_BASE = {json.dumps(servidor_api)};",
+    })
+    navegador.get(f"{servidor_frontend}/catalogo.html")
+    WebDriverWait(navegador, 5).until(lambda d: d.find_elements(By.CSS_SELECTOR, "#catalog-list article"))
+
+
+@pytest.mark.parametrize("resposta_post", [201, 409])
+def test_selenium_interesse_registrado_vira_acompanhamento_e_persiste(
+    navegador, servidor_frontend, servidor_api, api_catalogo_com_relacoes, resposta_post,
+):
+    estado = api_catalogo_com_relacoes
+    estado["post_status"] = resposta_post
+    abrir_catalogo_teste(navegador, servidor_frontend, servidor_api)
+    botao = navegador.find_element(By.CSS_SELECTOR, "button[data-acao='interesse']")
+    navegador.execute_script("arguments[0].scrollIntoView({block:'center',behavior:'instant'})", botao)
+    botao.click()
+    espera = WebDriverWait(navegador, 5)
+    mensagem = "Interesse registrado" if resposta_post == 201 else "Seu interesse já está registrado"
+    espera.until(lambda d: mensagem in d.find_element(By.ID, "catalog-message").text)
+    assert not navegador.find_elements(By.CSS_SELECTOR, "button[data-acao='interesse']")
+    assert navegador.find_element(By.CSS_SELECTOR, "#catalog-list a[data-acao='acompanhar-interesse']").is_displayed()
+    navegador.refresh()
+    espera.until(lambda d: d.find_elements(By.CSS_SELECTOR, "#catalog-list a[data-acao='acompanhar-interesse']"))
+    assert not navegador.find_elements(By.CSS_SELECTOR, "button[data-acao='interesse']")
+    link = navegador.find_element(By.CSS_SELECTOR, "#catalog-list a[data-acao='acompanhar-interesse']")
+    navegador.execute_script("arguments[0].scrollIntoView({block:'center',behavior:'instant'})", link)
+    link.click()
+    espera.until(lambda d: "Monitor para acompanhar" in d.find_element(By.ID, "meus-interesses-list").text)
+    assert estado["posts"] == 1
+    assert urlsplit(navegador.current_url).path.endswith("/interesses.html")
+
+
+@pytest.mark.parametrize("status", ["pendente", "cancelado", "recusado"])
+def test_selenium_relacao_existente_na_segunda_pagina_nao_oferece_novo_interesse(
+    navegador, servidor_frontend, servidor_api, api_catalogo_com_relacoes, status,
+):
+    estado = api_catalogo_com_relacoes
+    estado["interesses"] = [{"id": f"outro-{i}", "item_id": f"outro-item-{i}", "status": "pendente"} for i in range(100)]
+    estado["interesses"].append({"id": "existente", "item_id": estado["item"]["id"], "status": status})
+    abrir_catalogo_teste(navegador, servidor_frontend, servidor_api)
+    assert not navegador.find_elements(By.CSS_SELECTOR, "button[data-acao='interesse']")
+    assert navegador.find_elements(By.CSS_SELECTOR, "#catalog-list a[data-acao='acompanhar-interesse']")
+    assert 100 in estado["offsets"]
+    assert estado["posts"] == 0
+    if status == "pendente":
+        link = navegador.find_element(By.CSS_SELECTOR, "#catalog-list a[data-acao='acompanhar-interesse']")
+        navegador.execute_script("arguments[0].scrollIntoView({block:'center',behavior:'instant'})", link)
+        link.click()
+        WebDriverWait(navegador, 10).until(
+            lambda d: "Monitor para acompanhar" in d.find_element(By.ID, "meus-interesses-list").text
+        )

@@ -110,7 +110,7 @@ def test_frontend_separa_javascript_por_responsabilidade() -> None:
         "perfil.js": ("/api/usuarios/", "profilePayloadFromForm"),
         "catalogo.js": ("/api/itens", "queryFromCatalogForm"),
         "itens.js": ("/api/itens", "itemPayloadFromForm", "/api/indicadores"),
-        "interesses.js": ("/api/interesses", "escopo=recebidos"),
+        "interesses.js": ("/api/interesses", "requestAllPages", 'escopo: "recebidos"'),
         "notificacoes.js": ("/api/notificacoes", "Marcar como lida"),
         "pontos.js": ("/api/pontos-coleta", "categorias_aceitas"),
     }
