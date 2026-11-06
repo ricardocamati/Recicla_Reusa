@@ -72,6 +72,11 @@ export function setMessage(element, text = "", kind = "") {
   if (!element) return;
   element.textContent = text;
   element.className = kind ? `form-message ${kind}` : "form-message";
+  if (kind === "error" && text) {
+    // Foco acessível: erro anunciado e alcançável por teclado.
+    element.setAttribute("tabindex", "-1");
+    element.focus();
+  }
 }
 
 export function setGlobalMessage(text = "", kind = "") {
@@ -104,7 +109,42 @@ export function handleError(error, target, { redirectOnUnauthorized = true } = {
     setMessage(target, error.message, "error");
     return;
   }
+  if (!(error instanceof ApiError)) {
+    // Falha de rede: a operação pode ter sido aplicada; peça reconciliação.
+    setMessage(
+      target,
+      "Não foi possível confirmar a operação. Recarregue a página para conferir o estado atual.",
+      "error",
+    );
+    return;
+  }
   setMessage(target, error.message || "Ocorreu um erro inesperado.", "error");
+}
+
+export function comBotaoOcupado(botao, acao) {
+  // Bloqueia duplo envio enquanto a requisição está em andamento.
+  return async (...argumentos) => {
+    if (!botao || botao.dataset.ocupado === "1") return undefined;
+    botao.dataset.ocupado = "1";
+    botao.disabled = true;
+    try {
+      return await acao(...argumentos);
+    } finally {
+      delete botao.dataset.ocupado;
+      botao.disabled = false;
+    }
+  };
+}
+
+export async function requestAllPages(path, filters = {}) {
+  const records = [];
+  let page;
+  do {
+    const params = new URLSearchParams({ ...filters, offset: String(records.length), limite: "100" });
+    page = await requestApi(`${path}?${params.toString()}`);
+    records.push(...page);
+  } while (page.length === 100);
+  return records;
 }
 
 export async function loadSession() {
@@ -124,11 +164,40 @@ export async function requireSession() {
   }
 }
 
+const NAVEGACAO_AUTENTICADA = [
+  { pagina: "catalogo.html", href: "./catalogo.html", texto: "Catálogo" },
+  { pagina: "itens.html", href: "./itens.html", texto: "Meus itens", pessoa: true, id: "items-link" },
+  { pagina: "interesses.html", href: "./interesses.html", texto: "Interesses", pessoa: true },
+  { pagina: "pontos.html", href: "./pontos.html", texto: "Pontos" },
+  { pagina: "notificacoes.html", href: "./notificacoes.html", texto: "Notificações" },
+  { pagina: "perfil.html", href: "./perfil.html", texto: "Meu perfil" },
+];
+
+function renderAuthenticatedNavigation(usuario) {
+  const navigation = document.querySelector(".header-actions");
+  if (!navigation) return;
+  // Todos os cabeçalhos usam a mesma ordem e as mesmas regras de visibilidade.
+  navigation.querySelectorAll("a.nav-link").forEach((link) => link.remove());
+  const links = document.createDocumentFragment();
+  for (const entrada of NAVEGACAO_AUTENTICADA) {
+    if (entrada.pessoa && usuario.tipo !== "pessoa") continue;
+    const link = createElement("a", "nav-link", entrada.texto);
+    link.href = entrada.href;
+    if (entrada.id) link.id = entrada.id;
+    if (window.location.pathname.endsWith(`/${entrada.pagina}`)) {
+      link.classList.add("active");
+      link.setAttribute("aria-current", "page");
+    }
+    links.append(link);
+  }
+  navigation.insertBefore(links, byId("session-chip") || byId("logout-button"));
+}
+
 export function setupAuthenticatedHeader(usuario) {
   const sessionChip = byId("session-chip");
   const userName = byId("user-name");
   const roleBadge = byId("role-badge");
-  const itemsLink = byId("items-link");
+  const description = byId("role-description");
 
   if (sessionChip) {
     sessionChip.hidden = false;
@@ -136,9 +205,11 @@ export function setupAuthenticatedHeader(usuario) {
   }
   if (userName) userName.textContent = usuario.nome;
   if (roleBadge) roleBadge.textContent = labelFor("tipo", usuario.tipo);
-  if (itemsLink) itemsLink.hidden = usuario.tipo === "ponto_coleta";
+  if (description) description.textContent = roleDescription(usuario.tipo);
+  renderAuthenticatedNavigation(usuario);
 
   const logoutButton = byId("logout-button");
+  if (logoutButton) logoutButton.hidden = false;
   if (logoutButton && !logoutButton.dataset.bound) {
     logoutButton.dataset.bound = "true";
     logoutButton.addEventListener("click", async () => {
@@ -223,7 +294,7 @@ export function roleDescription(tipo) {
     return "Ofereça eletrônicos ou encontre itens para reaproveitar, com a mesma conta.";
   }
   if (tipo === "ponto_coleta") {
-    return "Encontre itens destinados a descarte e acompanhe o catálogo.";
+    return "Gerencie seus pontos de coleta e acompanhe as entregas previstas e recebidas.";
   }
   return "Explore o catálogo e encontre eletrônicos para reaproveitar.";
 }

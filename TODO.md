@@ -56,7 +56,6 @@ Referências: V2-RF-06, V2-RF-07 · V2-CT-10, V2-CT-11, V2-CT-12.
 - [x] Reservar a doação de forma transacional ao aceitar, com efeito e histórico na mesma unidade.
 - [x] Cobrir com testes de API, repositório e concorrência.
 
-Validações: [API, MongoDB real e Docker](docs/verificacao-interesses.md).
 
 ## Etapa 5 — Fluxos de doação, descarte e revenda
 
@@ -68,7 +67,6 @@ Referências: V2-RF-11, V2-RF-12, V2-RF-13 · V2-CT-17 a V2-CT-21.
 - [x] Concluir doação, descarte e revenda uma única vez, gravando item e histórico na mesma unidade; os indicadores entram na Etapa 7.
 - [x] Testar transições inválidas, segunda conclusão e ausência de escrita parcial.
 
-Validações: [fluxos completos em API e MongoDB real](docs/verificacao-fluxos.md).
 
 ## Etapa 6 — Notificações
 
@@ -80,7 +78,6 @@ Referências: V2-RF-17 · V2-CT-26 a V2-CT-30.
 - [x] Não notificar quem não tem vínculo com o item nem duplicar aviso do mesmo evento.
 - [x] Testar emissão, privacidade, idempotência e rollback.
 
-Validações: [avisos em API e MongoDB real](docs/verificacao-notificacoes.md).
 
 ## Etapa 7 — Indicadores e frontend das novas telas
 
@@ -92,7 +89,6 @@ Referências: V2-RF-14, V2-RF-16 · V2-CT-23, V2-CT-24 · [docs/http-api.md](doc
 - [x] Regenerar a OpenAPI do runtime e confrontá-la com a especificação versionada, registrando diferenças.
 - [x] Cobrir as telas com Selenium e atualizar os contratos documentados.
 
-Validações: [indicadores, telas e OpenAPI](docs/verificacao-etapa7.md).
 
 ## Etapa 8 — Fechamento da v2.0
 
@@ -171,8 +167,8 @@ Referências: V21-RF-16, V21-RNF-07 · V21-CT-31 a V21-CT-34.
 
 Referências: V21-RF-12, V21-RF-13, V21-RF-15 · V21-CT-22, V21-CT-23, V21-CT-25 a V21-CT-28, V21-CT-30 · [matriz](artefatos/v2.1/matriz_rastreabilidade.md).
 
-- [ ] Dirigir cada aviso a quem precisa agir, com link interno e sem duplicação por evento.
-- [ ] Corrigir indicadores para separar ofertas, pendências e conclusões confirmadas.
-- [ ] Mostrar próximas ações por ator, estados vazios úteis, foco acessível e bloqueio de duplo envio.
-- [ ] Preservar filtros e página ao voltar do detalhe e oferecer reconciliação quando a resposta se perder.
-- [ ] Rodar as três jornadas em stack isolada, atualizar evidências, matriz e contratos.
+- [x] Dirigir cada aviso a quem precisa agir, com link interno e sem duplicação por evento.
+- [x] Corrigir indicadores para separar ofertas, pendências e conclusões confirmadas.
+- [x] Mostrar próximas ações por ator, estados vazios úteis, foco acessível e bloqueio de duplo envio.
+- [x] Preservar filtros e página ao voltar do detalhe e oferecer reconciliação quando a resposta se perder.
+- [x] Rodar as três jornadas em stack isolada, atualizar evidências, matriz e contratos.

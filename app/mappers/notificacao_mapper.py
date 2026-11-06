@@ -16,6 +16,7 @@ class NotificacaoMapper:
             titulo=notificacao.titulo,
             mensagem=notificacao.mensagem,
             evento_id=notificacao.evento_id,
+            link=notificacao.link,
             lida=notificacao.lida,
             data_leitura=notificacao.data_leitura,
             data_adicao=notificacao.data_adicao,

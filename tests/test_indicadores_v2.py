@@ -41,6 +41,8 @@ def test_contabiliza_somente_concluidos_por_modalidade() -> None:
     assert indicadores.coletados == 1
     assert indicadores.vendidos == 1
     assert indicadores.total == 4
+    assert indicadores.ofertas_ativas == 1
+    assert indicadores.pendencias == 2
 
 
 def test_base_sem_confirmacao_retorna_zero() -> None:

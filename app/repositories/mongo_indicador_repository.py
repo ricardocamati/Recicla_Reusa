@@ -28,3 +28,11 @@ class MongoIndicadorRepository:
             ]
             for documento in self._colecao_itens.aggregate(pipeline)
         }
+
+    def contar_por_situacao(self) -> dict[str, int]:
+        pipeline = [{"$group": {"_id": "$status", "total": {"$sum": 1}}}]
+        return {
+            documento["_id"]: documento["total"]
+            for documento in self._colecao_itens.aggregate(pipeline)
+            if documento.get("_id")
+        }

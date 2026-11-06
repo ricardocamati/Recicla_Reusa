@@ -1,6 +1,6 @@
 # Casos de teste — v2.1
 
-**Cenários escritos para a implementação futura; nenhum resultado de execução v2.1 está declarado aqui.** Não repetir prioridade/situação por cenário; situação da automação está centralizada na matriz.
+Cenários de aceitação da v2.1, preservados como critérios verificáveis. Há automação nesta versão, mas os cenários não estão todos comprovados integralmente: versões genéricas, chaves de operação e navegação paginada, por exemplo, não correspondem ao contrato atual. Evidências por família e limites estão centralizados na [matriz](matriz_rastreabilidade.md); não inferir aprovação de cada cenário a partir da contagem total de testes.
 
 ## Ambiente e dados
 
@@ -346,6 +346,6 @@ Pessoas A/B/C e operadores O1/O2 com locais próprios, registros sintéticos ide
 
 **Resultado esperado:** indicado e recebido aparecem em contagens distintas; desfazer remove a contagem de indicados; o recebimento confirmado aumenta apenas a contagem de recebidos; a soma de indicados nunca é apresentada como reciclagem.
 
-## Saída da futura implementação
+## Reprodução e critérios ainda não comprovados
 
 Executar a suíte completa, contratos, navegação e jornadas reais; registrar comandos, data e resultado real. Não estimar contagem de testes. Simultaneidade sem intercalação instrumentada não prova todas as ordens; documentar precisamente o que foi exercitado. Novos índices e coleção devem ser verificados no bootstrap real.

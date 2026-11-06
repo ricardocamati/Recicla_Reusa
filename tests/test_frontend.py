@@ -110,7 +110,7 @@ def test_frontend_separa_javascript_por_responsabilidade() -> None:
         "perfil.js": ("/api/usuarios/", "profilePayloadFromForm"),
         "catalogo.js": ("/api/itens", "queryFromCatalogForm"),
         "itens.js": ("/api/itens", "itemPayloadFromForm", "/api/indicadores"),
-        "interesses.js": ("/api/interesses", "escopo=recebidos"),
+        "interesses.js": ("/api/interesses", "requestAllPages", 'escopo: "recebidos"'),
         "notificacoes.js": ("/api/notificacoes", "Marcar como lida"),
         "pontos.js": ("/api/pontos-coleta", "categorias_aceitas"),
     }
@@ -171,7 +171,7 @@ def test_frontend_nao_exibe_referencias_institucionais() -> None:
     arquivos = sorted(
         caminho
         for caminho in FRONTEND.rglob("*")
-        if caminho.is_file()
+        if caminho.is_file() and caminho.suffix in {".html", ".css", ".js"}
     )
     frontend = "\n".join(
         caminho.read_text(encoding="utf-8")
@@ -244,6 +244,17 @@ def test_itens_oferece_acoes_do_fluxo_ao_proprietario() -> None:
     assert 'status: "vendido"' not in itens
     assert "ponto_coleta_id" in itens
     assert "/api/pontos-coleta" in itens
+
+
+def test_avisos_e_navegacao_oferecem_link_e_recuperacao() -> None:
+    comum = ler("js/comum.js")
+    assert "comBotaoOcupado" in comum
+    assert "Recarregue a página" in comum
+    notificacoes = ler("js/notificacoes.js")
+    assert "aviso.link" in notificacoes
+    catalogo = ler("js/catalogo.js")
+    assert "restaurarFiltros" in catalogo
+    assert "replaceState" in catalogo
 
 
 def test_itens_oferece_destinacao_informada() -> None:

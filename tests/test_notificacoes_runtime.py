@@ -204,6 +204,8 @@ def test_mudanca_de_status_e_conclusao_notificam_quem_tem_interesse(ambiente):
     assert {aviso["item_id"] for aviso in avisos} == {item["id"]}
     assert avisos[0]["tipo"] == "item_concluido"
     assert "concluído" in avisos[0]["mensagem"]
+    assert avisos[0]["link"] == "/interesses.html"
+    assert all(aviso["link"] for aviso in avisos)
 
 
 def test_listagem_e_leitura_sao_restritas_ao_destinatario(ambiente):

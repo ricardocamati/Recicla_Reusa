@@ -211,6 +211,8 @@ def test_indicadores_contam_apenas_apos_confirmacao(ambiente):
         "doados": 0,
         "coletados": 0,
         "indicados": 0,
+        "ofertas_ativas": 0,
+        "pendencias": 2,
         "vendidos": 0,
         "total": 0,
     }
@@ -223,6 +225,8 @@ def test_indicadores_contam_apenas_apos_confirmacao(ambiente):
         "doados": 1,
         "coletados": 0,
         "indicados": 0,
+        "ofertas_ativas": 0,
+        "pendencias": 1,
         "vendidos": 0,
         "total": 1,
     }

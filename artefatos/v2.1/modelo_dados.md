@@ -1,6 +1,29 @@
-# Modelo de dados proposto — v2.1
+# Modelo de dados — v2.1
 
-**Não criado no banco.** Coleções/campos abaixo expressam as decisões aceitas de modalidade por ciclo e de coleção própria de tentativas. A aplicação em execução é a v1.0; o modelo v2.0 também não existe no banco e será implementado na segunda entrega.
+## Estrutura implementada
+
+O código das Etapas 9 a 15 utiliza seis coleções. As classes estão em `app/models/`; os repositórios convertem IDs para BSON ObjectId e datas para UTC. O JSON retorna identificadores como strings.
+
+| Coleção | Campos e estruturas presentes |
+|---|---|
+| `usuarios` | `nome`, `email`, `tipo` (`pessoa`/`ponto_coleta`), `endereco` (`logradouro`, `numero`, `cep`, `cidade`, `complemento`), `senha_hash`, datas |
+| `itens` | `titulo`, `descricao`, `categoria`, `marca`, `modelo`, `condicao`, `destino`, `valor`, `status`, `proprietario_id`, `especificacoes`, `historico`, referências de ponto/beneficiário/comprador, `destinacao_informada` e datas |
+| `interesses` | `item_id`, `usuario_id`, `status`, `tentativa`, `motivo`, `preco_selecionado`, `resultado`, `combinacao`, `historico` e datas |
+| `pontos_coleta` | `nome`, `endereco`, `categorias_aceitas`, `horario_atendimento`, `responsavel_id`, `ativo` e datas |
+| `encaminhamentos` | `item_id`, `autor_id`, `ponto_id`, `status`, `motivo`, `historico` e datas |
+| `notificacoes` | `usuario_id`, `item_id`, `interesse_id` opcional, `tipo`, `titulo`, `mensagem`, `evento_id`, `link`, `lida`, `data_leitura` e datas |
+
+Histórico do item usa `etapa`, `status`, `data_evento`, `responsavel_id` e `observacao`. Históricos de interesse/encaminhamento usam `status`, `data_evento`, `ator_id` e `motivo`. A combinação contém local textual, previsão/observação opcionais, revisão, proponente/data e aceitante/data. Destinação informada contém tipo de local, textos opcionais e `informado_em`; a autoria é determinada pelo proprietário do item.
+
+A seleção é registrada internamente em `itens.interesse_aceito_id`, preservado pelo repositório e não exposto como campo do modelo de resposta. A tentativa ativa é consultada em `encaminhamentos`, com índice parcial único por item em `entrega_prevista`; não há campo implementado `encaminhamento_ativo_id`. A entrega bilateral fica registrada nos estados e históricos, não em um subdocumento `entrega` do item.
+
+Os nomes executáveis são `destino=revenda`, `status` e `valor` (número representado como float), não `modalidade=venda`, `situacao` e preço decimal. Não há campo genérico `versao`, ledger ou `id_operacao`. O índice de notificação é único por `evento_id`, `usuario_id`, `item_id`; `origem_tipo`/`origem_id` não são campos implementados.
+
+Fontes: [modelos](../../app/models/), [repositórios](../../app/repositories/), [contratos atuais](../../docs/http-api.md) e [OpenAPI](../../docs/openapi.json). Proteções e comportamento precisam ser verificados no código/testes; uma tabela de campos não prova atomicidade de todas as operações.
+
+## Desenho original preservado — não é o esquema executável
+
+As seções abaixo preservam o modelo originalmente aprovado, inclusive campos e garantias ainda não implementados. São referência de projeto, não instrução de migração nem comprovação de entrega. Diferenças permanecem explícitas para não reduzir silenciosamente os critérios ao que o código já faz.
 
 ## Princípios
 
