@@ -132,6 +132,9 @@ button:disabled {
 
 .header-actions {
   gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .session-chip,

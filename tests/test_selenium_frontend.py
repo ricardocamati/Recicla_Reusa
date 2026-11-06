@@ -354,3 +354,36 @@ def test_selenium_atualizacao_supera_modulos_antigos_em_cache(navegador, tmp_pat
         assert "?v=" in navegador.find_element(By.CSS_SELECTOR, "script[type='module']").get_attribute("src")
     finally:
         atual.shutdown(); atual.server_close(); thread.join(timeout=2)
+
+@pytest.mark.parametrize("tipo", ["pessoa", "ponto_coleta"])
+@pytest.mark.parametrize("largura", [1440, 1024, 768, 390, 320])
+def test_selenium_navegacao_consistente_e_contexto_carregado(
+    navegador, servidor_frontend, servidor_api, monkeypatch, tipo, largura,
+):
+    monkeypatch.setattr(ServidorApi, "usuario", {**ServidorApi.usuario, "tipo": tipo})
+    navegador.execute_cdp_cmd("Emulation.setDeviceMetricsOverride", {
+        "width": largura, "height": 1000, "deviceScaleFactor": 1, "mobile": False,
+    })
+    navegador.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": f"window.RECICLA_API_BASE = {json.dumps(servidor_api)};",
+    })
+    paginas = ("catalogo.html", "itens.html", "interesses.html", "pontos.html", "notificacoes.html", "perfil.html")
+    rotulos = ("Catálogo", "Meus itens", "Interesses", "Pontos", "Notificações", "Meu perfil")
+    esperados = list(zip(paginas, rotulos))
+    if tipo == "ponto_coleta":
+        esperados = [p for p in esperados if p[0] not in ("itens.html", "interesses.html")]
+    for pagina, _ in esperados:
+        navegador.get(f"{servidor_frontend}/{pagina}")
+        espera = WebDriverWait(navegador, 5)
+        espera.until(lambda d: d.find_element(By.ID, "session-chip").get_attribute("textContent") != "")
+        links = navegador.find_elements(By.CSS_SELECTOR, ".header-actions a.nav-link")
+        menu = [(urlsplit(a.get_attribute("href")).path.rsplit("/", 1)[-1], a.get_attribute("textContent")) for a in links if a.is_displayed()]
+        assert menu == esperados, (pagina, menu)
+        atual = navegador.find_elements(By.CSS_SELECTOR, ".header-actions a[aria-current='page']")
+        assert len(atual) == 1
+        assert urlsplit(atual[0].get_attribute("href")).path.endswith('/' + pagina)
+        assert "active" in atual[0].get_attribute("class").split()
+        assert navegador.find_element(By.ID, "logout-button").is_displayed()
+        for descricao in navegador.find_elements(By.ID, "role-description"):
+            assert descricao.text and "Carregando" not in descricao.text
+        assert navegador.execute_script("const n=document.querySelector('.header-actions'); return n.scrollWidth <= n.clientWidth + 1;")
