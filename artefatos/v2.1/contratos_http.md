@@ -1,6 +1,28 @@
-# Contratos HTTP propostos — v2.1
+# Contratos HTTP — v2.1
 
-**Não implementados.** Esta tabela define intenção de interface; tipos exatos, schemas completos e OpenAPI só serão fechados após aceite das decisões. Não existe OpenAPI publicada da v2.0 nesta reorganização, e nenhuma especificação planejada deve ser apresentada como descrição da aplicação. O contrato executável atual é o da v1.0.
+## Contrato executável
+
+As Etapas 9 a 15 têm implementação. Para integrar ou testar o checkout atual, use [docs/http-api.md](../../docs/http-api.md), os schemas em `app/schemas/` e a [OpenAPI gerada](../../docs/openapi.json). A tabela original preservada abaixo não representa todos os caminhos e campos efetivamente entregues.
+
+| Tema | Implementação atual / diferença |
+|---|---|
+| Campos do item | `destino` (`doacao`, `revenda`, `descarte`), `status`, `valor`; não `modalidade`, `situacao`, `preco` |
+| Listagem própria | `GET /api/itens/meus`, com `grupo`; não `escopo=meus` no catálogo |
+| Ciclo do item | Endpoints próprios `POST /{id}/publicar`, `/arquivar`, `/entrega`, `/recebimento`; não `/transicoes` genérico |
+| Indicação de lugar | `POST /api/itens/{id}/destinacao` e `DELETE` no mesmo caminho |
+| Histórico | Integra as respostas; não existe rota `/api/itens/{id}/historico` |
+| Comandos | Não aceitam `id_operacao`, `versao_esperada` ou `versao_item_esperada` genéricos |
+| Combinação | Proposta por `PUT /api/interesses/{id}/combinacao`; aceite por `POST /combinacao/aceite` com `revisao` |
+| Encaminhamentos | Criação com `item_id`/`ponto_id`; ações com `acao`, `motivo`, `novo_ponto_id`; listagem com `escopo=autor` ou `operador` |
+| Situação do ponto | `POST /api/pontos-coleta/{id}/situacao` com `ativo`; sem versão/chave genérica |
+| Indicadores | `ofertas_ativas`, `pendencias`, `doados`, `vendidos`, `coletados`, `indicados`, `total`; escopo global, não pendências pessoais |
+| Reenvio | Há caminhos específicos idempotentes e índice de eventos; isso não implementa recuperação genérica por chave com fingerprint de payload |
+
+Verificação de status no banco e revisão da combinação não detectam todo conflito entre edições no mesmo estado. Não declarar versionamento otimista genérico, rollback de qualquer comando ou idempotência persistida por chave como já entregues. Os testes de runtime exercitam subconjuntos específicos dessas garantias.
+
+## Contrato originalmente planejado — não usar como referência de chamada
+
+O conteúdo abaixo mantém as decisões e critérios originais, inclusive operações ainda não implementadas. A documentação de divergências não autoriza reduzir o escopo dos requisitos nem altera código/banco.
 
 ## Convenções
 

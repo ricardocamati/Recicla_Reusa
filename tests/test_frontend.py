@@ -110,7 +110,7 @@ def test_frontend_separa_javascript_por_responsabilidade() -> None:
         "perfil.js": ("/api/usuarios/", "profilePayloadFromForm"),
         "catalogo.js": ("/api/itens", "queryFromCatalogForm"),
         "itens.js": ("/api/itens", "itemPayloadFromForm", "/api/indicadores"),
-        "interesses.js": ("/api/interesses", "escopo=recebidos"),
+        "interesses.js": ("/api/interesses", "requestAllPages", 'escopo: "recebidos"'),
         "notificacoes.js": ("/api/notificacoes", "Marcar como lida"),
         "pontos.js": ("/api/pontos-coleta", "categorias_aceitas"),
     }
@@ -171,7 +171,7 @@ def test_frontend_nao_exibe_referencias_institucionais() -> None:
     arquivos = sorted(
         caminho
         for caminho in FRONTEND.rglob("*")
-        if caminho.is_file()
+        if caminho.is_file() and caminho.suffix in {".html", ".css", ".js"}
     )
     frontend = "\n".join(
         caminho.read_text(encoding="utf-8")

@@ -1,6 +1,6 @@
 # Requisitos — v2.1
 
-**Especificação proposta, não implementada.** As escolhas de produto aceitas já estão refletidas nestes requisitos e nas [regras de negócio](regras_de_negocio.md). Casos verificáveis em [casos_de_teste.md](casos_de_teste.md).
+Esta é a especificação de produto da v2.1, implementada por etapas. Os critérios abaixo não constituem resultado de teste nem comprovação integral de entrega. A [matriz](matriz_rastreabilidade.md) distingue código, evidências e limites; os [contratos](contratos_http.md) registram as diferenças entre o desenho aprovado e o executável. Casos verificáveis em [casos_de_teste.md](casos_de_teste.md).
 
 ## Objetivo e atores
 
@@ -138,4 +138,4 @@ A indicação de lugar pertence ao autor. Ela não é exposta no diretório, nã
 
 ## Fronteira
 
-A proposta é cumulativa, mas substitui explicitamente os perfis públicos, a obrigatoriedade de reparo da revenda e a conclusão unilateral como padrão. Nenhuma dessas mudanças já existe por causa deste documento. Exclusões: pagamentos, transporte, agendamento de capacidade, chat em tempo real, fotos/upload, certificação, procedimentos de segurança técnica e publicação pública. Ver decisões para as alternativas ainda em revisão.
+A revisão é cumulativa e substitui os perfis públicos, a obrigatoriedade de reparo da revenda e a conclusão unilateral como padrão. A implementação dessas mudanças é identificada na matriz; os requisitos mais amplos de versão, idempotência, avisos e navegação não se tornam comprovados por estarem escritos. Exclusões: pagamentos, transporte, agendamento de capacidade, chat em tempo real, fotos/upload, certificação, procedimentos de segurança técnica e publicação pública. As diferenças remanescentes estão documentadas nos contratos e jornadas desta pasta.

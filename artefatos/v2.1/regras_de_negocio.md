@@ -1,10 +1,10 @@
 # Regras de negócio — v2.1
 
-**Proposta.** Identificadores desta versão não substituem retroativamente as regras V2 da entrega anterior. Aplicam-se após implementação autorizada.
+Regras do desenho de produto v2.1. Os identificadores não substituem retroativamente o marco V2. A implementação das Etapas 9 a 15 atende parte desses critérios; campos, comandos e garantias ainda diferentes do desenho estão explicitados no [modelo](modelo_dados.md), nos [contratos](contratos_http.md) e na [matriz](matriz_rastreabilidade.md). Não usar esta especificação isoladamente como prova de implementação integral.
 
 ## V21-RN-01 — Atores e identidade
 
-Tipos propostos: pessoa e ponto_coleta. Dono, interessado e selecionado são relações. Identidade, destinatários, autor de evento e permissões são derivados da sessão e das referências persistidas, nunca escolhidos no payload. Operador não cadastra oferta como pessoa.
+Tipos implementados: `pessoa` e `ponto_coleta`. Dono, interessado e selecionado são relações. Identidade, destinatários, autor de evento e permissões são derivados da sessão e das referências persistidas, nunca escolhidos no payload. Operador não cadastra oferta como pessoa.
 
 ## V21-RN-02 — Modalidade e condição
 

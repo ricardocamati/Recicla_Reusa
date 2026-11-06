@@ -40,37 +40,26 @@ Cada destino terá seu próprio fluxo de status e um histórico rastreável. O s
 
 ### Estado atual do repositório
 
-As duas entregas estão concluídas no código: a v1.0 está publicada e a v2.0 foi implementada por etapas, com PRs revisados, suíte de 170 testes e jornadas reais em Docker registradas em [verificação da Etapa 8](docs/verificacao-etapa8.md). A v2.0 cobre usuários com endereço aninhado, itens com especificações e histórico, pontos de coleta, interesses e reserva, os fluxos de doação, descarte e revenda, notificações transacionais, indicadores e as telas correspondentes, com datas em UTC, sessão em cookie HttpOnly e autorização por identidade e propriedade.
+A primeira entrega está preservada na tag `v1.0`. A segunda entrega evoluiu nas Etapas 1 a 8 (marco v2.0, commit `71e8dfa`, PR #18) e recebeu a revisão de negócio e usabilidade v2.1 nas Etapas 9 a 15. Este checkout inclui o fechamento da Etapa 15 (`1f36c2b`, PR #25); publicação, revisão e merge são passos separados da implementação local. O marco final a informar na entrega deve ser o commit efetivamente integrado e validado.
 
-Itens referenciam o usuário por `proprietario_id` e não duplicam o endereço. O aceite de interesse em uma doação reserva o item e registra seu histórico na mesma transação MongoDB. A conclusão registra o beneficiário do interesse aceito, o ponto de coleta do descarte e o comprador da revenda. As notificações são emitidas na mesma transação da decisão de interesse e da mudança de status do item. A área autenticada reúne indicadores de itens concluídos e telas de interesses, pontos de coleta e notificações. Consulte as verificações de [interesses](docs/verificacao-interesses.md), [fluxos](docs/verificacao-fluxos.md), [notificações](docs/verificacao-notificacoes.md) e [indicadores e telas](docs/verificacao-etapa7.md), além do contrato [OpenAPI](docs/openapi.md).
+A aplicação permite cadastro de pessoa, publicação de ofertas de doação/venda, interesse, reserva reversível, combinação aceita e entrega bilateral. No descarte, o autor registra entrega prevista em um ponto compatível e o operador confirma recebimento, ou informa outro lugar sem verificação de terceiro. Autenticação usa sessão em cookie HttpOnly; permissões são verificadas no backend por identidade e propriedade.
 
 ### Modelo em uso
 
-A v2.0 usa cinco coleções: `usuarios`, `itens`, `interesses`, `pontos_coleta` e `notificacoes`. Cada item guarda o histórico acumulativo do ciclo de vida:
+São seis coleções: `usuarios`, `itens`, `interesses`, `pontos_coleta`, `encaminhamentos` e `notificacoes`. Usuários e pontos têm endereço aninhado; itens contêm `especificacoes` e `historico`; interesses contêm combinação de entrega e histórico. IDs BSON estabelecem os relacionamentos, sem copiar o endereço privado do proprietário para o item.
 
-```json
-{
-  "titulo": "Notebook usado",
-  "proprietario_id": "...",
-  "destino": "revenda",
-  "historico": [
-    {"etapa": "cadastro", "status": "disponivel", "data": "..."},
-    {"etapa": "avaliacao", "status": "reparavel", "data": "..."},
-    {"etapa": "reaproveitamento", "status": "recondicionado", "data": "..."}
-  ]
-}
-```
+No contrato executável, os campos são `destino` (`doacao`, `revenda`, `descarte`), `status` e `valor`. Doação/venda seguem `disponivel → reservado → aguardando_confirmacao → concluido`; descarte segue `aguardando_ponto → entrega_prevista → recebido`, com alternativa `destinacao_informada`. Rascunhos e arquivamento são tratados na gestão do autor.
 
-A v2.1 está documentada em [artefatos/v2.1/](artefatos/v2.1/) e avança por etapas no [TODO](TODO.md). A Etapa 9 já saiu do papel: o cadastro público agora cria apenas conta de pessoa, que oferece e demonstra interesse com a mesma sessão, enquanto o operador continua provisionado e restrito aos próprios pontos. As etapas seguintes da v2.1 ainda não têm código.
+A documentação da revisão está em [artefatos/v2.1/](artefatos/v2.1/README.md); o [modelo de dados](artefatos/v2.1/modelo_dados.md) distingue a estrutura implementada do desenho original. Contratos atuais: [HTTP](docs/http-api.md) e [OpenAPI](docs/openapi.md). O [TODO](TODO.md) registra as etapas e o histórico de tarefas, não substitui os testes nem comprova a entrega externa.
 
-## 6. Stack planejada
+## 6. Stack utilizada
 
 - Python 3.11+;
 - FastAPI e Uvicorn;
 - MongoDB e PyMongo;
 - Pydantic;
 - Pytest, pytest-cov, mongomock e Selenium;
-- HTML, CSS e JavaScript no frontend simples da v2.0, sem build;
+- HTML, CSS e JavaScript no frontend, sem build;
 - Docker Compose para o ambiente local.
 
 ## 7. Arquitetura
@@ -92,7 +81,7 @@ Os artefatos estão separados por entrega em [artefatos/v1.0/](artefatos/v1.0/) 
 app/            backend Python em camadas (api, services, repositories, models)
 frontend/       telas HTML e JavaScript modular, sem build
 tests/          suíte pytest, incluindo Selenium e integração com MongoDB
-docs/           arquitetura, decisões, contratos e verificações por etapa
+docs/           arquitetura, decisões e contratos HTTP/OpenAPI
 scripts/        geração da OpenAPI, smoke Docker e jornadas pela interface
 artefatos/      requisitos, regras, casos de teste e matriz por versão
 compose.yaml    MongoDB em replica set, backend FastAPI e frontend
@@ -153,10 +142,12 @@ Documentação interativa: <http://127.0.0.1:8000/docs>.
 Para servir o frontend sem etapa de build, em outro terminal execute:
 
 ```bash
-.venv/Scripts/python.exe -m http.server 5500 --bind 127.0.0.1 --directory frontend
+.venv/Scripts/python.exe frontend/servidor.py 5500 --bind 127.0.0.1 --directory frontend
 ```
 
 Depois abra <http://127.0.0.1:5500>. A origem `http://127.0.0.1:5500` já está incluída na configuração CORS de exemplo.
+
+O servidor estático acrescenta uma versão derivada do conteúdo às referências locais de páginas, estilos e módulos JavaScript, sem editar os arquivos-fonte, e envia `Cache-Control: no-store`. Isso evita misturar HTML e módulos de implantações diferentes. Uma aba que já estava aberta antes dessa proteção precisa navegar uma vez para uma URL nova da página, como `catalogo.html?atualizacao=atual`; o servidor não consegue substituir sozinho um documento já retido pelo navegador.
 
 Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e login/logout em `/api/auth`. Os contratos estão documentados em [docs/http-api.md](docs/http-api.md).
 
@@ -166,7 +157,16 @@ Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e 
 .venv/Scripts/python.exe -m pytest
 ```
 
-A suíte da v2.0 aprovou **170 testes**, sendo 24 contra MongoDB real em replica set, além do Selenium que percorre as nove telas do frontend. Os testes de runtime só rodam quando `INTERESSES_TEST_MONGO_URI` aponta para um replica set; sem a variável, são ignorados em vez de falharem. O snapshot `docs/openapi.json` é comparado com o documento gerado pelo runtime.
+O comando padrão mede cobertura sobre `app`; a configuração está em `pyproject.toml`. A validação funcional da Etapa 15 aprovou **201 testes**, sem medição de cobertura naquela execução. Na validação da carga ampliada de demonstração, a suíte completa aprovou **216 testes**, incluindo integração real, e a medição configurada foi aprovada. Os dados locais da medição ficam em `.coverage`, ignorado pelo Git. Configuração e contagem de testes não substituem a execução; repita a medição se o código do marco de entrega mudar.
+
+Os testes de runtime exigem `INTERESSES_TEST_MONGO_URI` apontando para MongoDB em replica set; sem a variável, esses cenários são ignorados. Configure uma instância de teste separada, nunca o banco de demonstração. Para rodar os testes com integração e medição, usando a URI de teste autorizada:
+
+```bash
+INTERESSES_TEST_MONGO_URI="<uri do replica set de teste com directConnection=true>" \
+python -m pytest
+```
+
+Testes relevantes estão em [tests/](tests/), incluindo [fluxos](tests/test_fluxos_runtime.py), [interesses](tests/test_interesses_runtime.py), [encaminhamentos](tests/test_encaminhamentos_runtime.py), [destinação informada](tests/test_destinacao_runtime.py), [notificações](tests/test_notificacoes_runtime.py) e [frontend](tests/test_selenium_frontend.py). O [teste OpenAPI](tests/test_openapi_runtime.py) compara o snapshot com o contrato gerado da aplicação. A evolução e os resultados registrados nas revisões estão nos commits e PRs de cada etapa; não há relatórios de verificação separados em `docs/`.
 
 Para reproduzir o fechamento em stack isolada:
 
@@ -182,12 +182,25 @@ JORNADAS_FRONTEND_URL=http://127.0.0.1:8109 JORNADAS_API_URL=http://127.0.0.1:80
 python scripts/validar_jornadas_v2.py
 ```
 
-O resultado da execução está em [docs/verificacao-etapa8.md](docs/verificacao-etapa8.md).
+A validação já executada na Etapa 15 percorreu as três jornadas, conferiu referências e datas nas seis coleções e fez limpeza seletiva. Para validar uma nova alteração, execute novamente os comandos; o resultado anterior não aprova automaticamente um checkout diferente.
 
-## 12. Limites atuais
+## 12. Dados fictícios de demonstração
 
-Os indicadores somam a plataforma inteira, sem recorte por conta ou cidade, e essa escolha está documentada no contrato. A edição de ponto de coleta existe apenas na API: a tela cadastra e exclui, mas não sobrescreve complemento nem categorias de um ponto existente. Da v2.1, estão implementados a conta única de pessoa (Etapa 9), o catálogo de ofertas com cadastro por intenção (Etapa 10), o interesse com reserva reversível (Etapa 11), a entrega bilateral com venda direta (Etapa 12) o descarte guiado com operação do ponto (Etapa 13) a indicação de lugar pelo autor (Etapa 14) e o fechamento de avisos, indicadores e navegação (Etapa 15). A v2.1 está implementada por completo.
+O script [scripts/povoar_demonstracao.py](scripts/povoar_demonstracao.py) oferece uma carga básica de quatro contas e 12 itens e uma carga ampliada, com `--ampliar`, de **oito contas, 60 itens e três pontos de coleta**. A carga ampliada cobre 12 categorias em Maringá, Sarandi e Paiçandu, com marcas/modelos fictícios, descrições, especificações e preços variados. Há ofertas disponíveis, interesses pendentes, reservas, entregas aguardando confirmação, conclusões, descarte aguardando ponto, entregas previstas, recebimentos e destinações informadas. As relações e transições são criadas pela API; apenas a conta operacional é provisionada localmente pelo serviço administrativo.
 
-Descarte não passa por reserva: o item publicado fica aguardando um ponto, o autor escolhe entre os pontos ativos que aceitam a categoria e a entrega vira uma tentativa com histórico. Cancelar ou trocar de ponto antes do recebimento preserva as tentativas anteriores; o operador do ponto confirma o recebimento ou registra o motivo de não ter recebido. Doação e venda seguem o mesmo ciclo: seleção, combinação aceita, declaração de entrega e confirmação de recebimento, que é o único evento que conta nos indicadores. O catálogo mostra só ofertas publicadas e disponíveis, o cadastro é guiado em três passos com rascunho e publicação, e as ofertas se organizam em Ativos, Em andamento e Encerrados com arquivamento sem apagar referências. Bancos criados na v2.0 são normalizados por `scripts/migrar_papeis_v2_1.py`, que simula por padrão e só altera com `--aplicar`. A autenticação usa sessão em memória, adequada ao escopo acadêmico e não a uma implantação com múltiplas instâncias.
+```bash
+# Apenas descreve a carga; não conecta ao banco nem altera registros.
+python scripts/povoar_demonstracao.py
+
+# Com a API v2.1 já apontando para o MESMO banco de demonstração:
+MONGO_URI="<uri local do replica set com directConnection=true>" \
+MONGO_DATABASE=recicla_reusa_demo_v21 DEMO_SENHA="<senha fictícia escolhida>" \
+python scripts/povoar_demonstracao.py --aplicar --ampliar \
+  --api-url http://127.0.0.1:8000 --origin http://127.0.0.1:8080
+```
+
+Instale as dependências de desenvolvimento para executar o script no host. A senha vem de `DEMO_SENHA`; não existe senha padrão no código. As contas básicas são `ana.demo@example.test`, `bruno.demo@example.test`, `carla.demo@example.test` e `operador.demo@example.test`; `--ampliar` acrescenta Diego, Elisa, Felipe e Gabriela com e-mails no formato `<nome>.demo@example.test`. A ampliação preserva os registros da carga básica e as contas existentes. O script confirma o login e o perfil antes de usar cada conta, percorre todas as páginas das listagens e relê os registros criados. A reexecução sobre a carga intacta não duplica dados. Não apaga banco, não redefine senhas e não reinicia ciclos já alterados manualmente; identidades ambíguas ou estados divergentes interrompem a carga, que pode permanecer parcial para inspeção.
+
+Para esta demonstração local, a aplicação está usando `recicla_reusa_demo_v21`, separado de `recicla_reusa`. Confirme a configuração efetiva antes de recriar os serviços: o Compose usa `MONGO_DATABASE` para escolher o banco. Não use `down -v` para alternar entre eles. O acesso local preparado fica em `artefatos/nao_versionados/acesso_demonstracao.json`, ignorado pelo Git; esse arquivo não faz parte do pacote versionado.
 
 > Projeto iniciado a partir do **template fornecido pelo professor Munif Gebara Júnior** e adaptado para Python conforme a proposta da AEP.
