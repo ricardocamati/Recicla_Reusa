@@ -152,6 +152,31 @@ def test_leitura_de_oferta_sem_referencias_de_participantes() -> None:
     assert relido.comprador_id is None
 
 
+def test_leitura_ignora_campos_do_fluxo_de_descarte_removido() -> None:
+    """Bancos anteriores guardam campos que o modelo não tem mais; ler não pode quebrar."""
+    colecao = mongomock.MongoClient(tz_aware=True).teste.itens
+    repositorio = MongoItemRepository(colecao)
+    documento = repositorio._para_documento(item())
+    documento["ponto_coleta_id"] = ObjectId()
+    documento["destinacao_informada"] = {"tipo_local": "ecoponto", "nome": "Antigo"}
+    identificador = colecao.insert_one(documento).inserted_id
+
+    relido = repositorio.buscar_por_id(str(identificador))
+
+    assert relido is not None
+    assert relido.destino == "doacao" and relido.status == "disponivel"
+    assert not hasattr(relido, "ponto_coleta_id")
+    # Regravar mantém o documento legível e não reintroduz o campo no modelo.
+    relido.descricao = "Descrição atualizada"
+    repositorio.atualizar(relido)
+    regravado = repositorio.buscar_por_id(str(identificador))
+    assert regravado.descricao == "Descrição atualizada"
+    assert not hasattr(regravado, "ponto_coleta_id")
+    assert not hasattr(regravado, "destinacao_informada")
+    # O documento antigo não é migrado nem apagado: os campos simplesmente não são lidos.
+    assert "ponto_coleta_id" in colecao.find_one({"_id": identificador})
+
+
 def test_leitura_ignora_selecao_interna_do_interesse():
     colecao = mongomock.MongoClient(tz_aware=True).teste.itens
     repo = MongoItemRepository(colecao)

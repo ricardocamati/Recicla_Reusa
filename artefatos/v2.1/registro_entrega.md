@@ -3,11 +3,11 @@
 ## Identificação
 
 - **Entrega:** segunda entrega da AEP 2026.2 — 6S.
-- **Marco final:** commit **`b277507`** — `Merge pull request #27 from ricardocamati/feat/onde-descartar`.
-- **Pull request:** [#27](https://github.com/ricardocamati/Recicla_Reusa/pull/27), base `main`, 7 commits, 76 arquivos.
+- **Marco final:** commit da `main` após o merge do PR #29 (correção de leitura de ofertas de bancos anteriores), que inclui o PR #27 (Etapas 16 a 20).
+- **Pull requests:** [#27](https://github.com/ricardocamati/Recicla_Reusa/pull/27) — 7 commits, 76 arquivos, Etapas 16 a 20; [#29](https://github.com/ricardocamati/Recicla_Reusa/pull/29) — 2 arquivos, leitura de ofertas legadas.
 - **Primeira entrega preservada:** tag `v1.0`.
 - **Tag ou release da segunda entrega:** não emitida por decisão da equipe; o enunciado aceita commit informado como identificação da versão.
-- **Suíte no marco final:** 309 testes coletados, 309 executados, 0 falhas, 0 ignorados, cobertura **91,55%** sobre `app`, com MongoDB real em replica set e Selenium.
+- **Suíte no marco final:** 310 testes coletados, 310 executados, 0 falhas, 0 ignorados, cobertura **91,56%** sobre `app`, com MongoDB real em replica set e Selenium.
 - **Vídeo de 3 a 5 minutos:** pendente; a URL ainda não foi informada.
 
 ## Escopo entregue
@@ -45,7 +45,7 @@ A v1.0 tinha duas coleções com CRUD, perfis `doador`/`beneficiario` e um fluxo
 |---|---|---|
 | Suíte e cobertura | `.venv/Scripts/python.exe -m pytest` | automatizada; exige `--cov-fail-under=70`, configurado em `pyproject.toml` |
 | Diretório público e gestão | `pytest tests/test_diretorio_publico.py tests/test_etapa18_api.py tests/test_etapa18_frontend.py` | automatizada, API e Chrome headless |
-| Avisos e indicadores | `pytest tests/test_notificacoes_runtime.py tests/test_etapa19_coerencia.py` | automatizada, replica set real |
+| Avisos e indicadores | Avisos, indicadores e leitura de ofertas legadas | `pytest tests/test_notificacoes_runtime.py tests/test_etapa19_coerencia.py tests/test_mongo_item_repository.py` | automatizada, replica set real |
 | Navegação e telas | `pytest tests/test_selenium_frontend.py tests/test_onde_descartar_selenium.py` | automatizada, Chrome headless |
 | Jornadas completas | `scripts/validar_jornadas_v2.py` na stack isolada | doação, venda e consulta anônima, com auditoria de datas e limpeza seletiva |
 | CRUD E2E na stack | `scripts/smoke_api_docker.py --crud` | mutação temporária com limpeza |

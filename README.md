@@ -40,7 +40,7 @@ Cada destino terá seu próprio fluxo de status e um histórico rastreável. O s
 
 ### Estado atual do repositório
 
-A primeira entrega está preservada na tag `v1.0`. A segunda entrega evoluiu nas Etapas 1 a 8 (marco v2.0, commit `71e8dfa`, PR #18) e recebeu a revisão de negócio e usabilidade v2.1 nas Etapas 9 a 20. O marco final da segunda entrega é o commit **`b277507`**, merge do PR #27 (Etapas 16 a 20) sobre a `main`, validado com a suíte completa. Registro completo em [artefatos/v2.1/registro_entrega.md](artefatos/v2.1/registro_entrega.md).
+A primeira entrega está preservada na tag `v1.0`. A segunda entrega evoluiu nas Etapas 1 a 8 (marco v2.0, commit `71e8dfa`, PR #18) e recebeu a revisão de negócio e usabilidade v2.1 nas Etapas 9 a 20. O marco final da segunda entrega é o commit da `main` resultante do merge do PR #27 (Etapas 16 a 20) e da correção de leitura de ofertas legadas do PR #29, validado com a suíte completa. Registro completo em [artefatos/v2.1/registro_entrega.md](artefatos/v2.1/registro_entrega.md).
 
 A aplicação permite cadastro de pessoa, publicação de ofertas de doação/venda, interesse, reserva reversível, combinação aceita e entrega bilateral. O descarte usa o diretório público de locais. O processo anterior por equipamento é removido, sem entregas previstas, recebimento, indicação de destinação ou aba histórica de descarte. Autenticação usa sessão em cookie HttpOnly; permissões são verificadas no backend por identidade e propriedade.
 
@@ -161,7 +161,7 @@ Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e 
 
 O comando padrão mede cobertura sobre `app` e exige o mínimo configurado em `pyproject.toml` (`--cov-fail-under=70`), de modo que a própria suíte falha se a cobertura ficar abaixo do exigido.
 
-No marco final da segunda entrega (`b277507`, PR #27), com MongoDB real em replica set e Selenium, a suíte completa foi executada em 09/11/2026: **309 testes coletados, 309 executados, 0 falhas e 0 ignorados**, com **91,55% de cobertura** sobre `app`. Medições anteriores (201 e 216 testes) pertencem a marcos antigos e não valem para este commit. O arquivo `.coverage` é local e ignorado pelo Git; a evidência reproduzível é o comando acima, reexecutado no marco informado.
+No marco final da segunda entrega, com MongoDB real em replica set e Selenium, a suíte completa foi executada em 09/11/2026: **310 testes coletados, 310 executados, 0 falhas e 0 ignorados**, com **91,56% de cobertura** sobre `app`. Medições anteriores (201, 216 e 309 testes) pertencem a marcos antigos e não valem para o commit desta entrega. O arquivo `.coverage` é local e ignorado pelo Git; a evidência reproduzível é o comando acima, reexecutado no marco informado. O commit exato do marco está em [artefatos/v2.1/registro_entrega.md](artefatos/v2.1/registro_entrega.md).
 
 Os testes de runtime exigem `INTERESSES_TEST_MONGO_URI` apontando para MongoDB em replica set; sem a variável, esses cenários são ignorados. Configure uma instância de teste separada, nunca o banco de demonstração. Para rodar os testes com integração e medição, usando a URI de teste autorizada:
 
