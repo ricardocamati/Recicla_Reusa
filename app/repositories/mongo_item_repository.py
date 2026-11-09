@@ -78,7 +78,11 @@ class MongoItemRepository:
         if faixa:
             consulta["valor"] = faixa
         if somente_catalogo:
-            consulta["destino"] = {"$ne": "descarte"}
+            consulta["destino"] = (
+                filtros.destino
+                if filtros.destino in ("doacao", "revenda")
+                else {"$in": ["doacao", "revenda"]}
+            )
             consulta["status"] = (
                 {"$in": ["disponivel", "reservado"]}
                 if filtros.incluir_reservados
@@ -104,19 +108,23 @@ class MongoItemRepository:
     def listar_por_proprietario(
         self,
         proprietario_id: str,
-        statuses: tuple[str, ...],
+        statuses: tuple[str, ...] | None,
         *,
+        destinos: tuple[str, ...] | None = None,
         offset: int = 0,
         limite: int = 20,
     ) -> list[Item]:
         object_id = self._converter_id(proprietario_id)
         if object_id is None:
             return []
+        filtro: dict[str, Any] = {"proprietario_id": object_id}
+        if statuses is not None:
+            filtro["status"] = {"$in": list(statuses)}
+        if destinos is not None:
+            filtro["destino"] = {"$in": list(destinos)}
         documentos = (
-            self._colecao.find(
-                {"proprietario_id": object_id, "status": {"$in": list(statuses)}}
-            )
-            .sort("data_adicao", -1)
+            self._colecao.find(filtro)
+            .sort([("data_adicao", -1), ("_id", -1)])
             .skip(offset)
             .limit(limite)
         )
@@ -430,7 +438,7 @@ class MongoItemRepository:
                 evento["responsavel_id"] = ObjectId(evento["responsavel_id"])
             except (InvalidId, TypeError) as erro:
                 raise ValueError("responsavel_id deve ser um ObjectId válido") from erro
-        for campo in ("ponto_coleta_id", "beneficiario_id", "comprador_id"):
+        for campo in ("beneficiario_id", "comprador_id"):
             if documento.get(campo) is not None:
                 try:
                     documento[campo] = ObjectId(documento[campo])
@@ -464,18 +472,7 @@ class MongoItemRepository:
         dados["data_adicao"] = MongoItemRepository._normalizar_data(dados["data_adicao"])
         dados["data_modificacao"] = MongoItemRepository._normalizar_data(dados["data_modificacao"])
         dados.setdefault("especificacoes", {})
-        indicada = dados.get("destinacao_informada")
-        if indicada:
-            from app.models.item import DestinacaoInformada
-
-            dados["destinacao_informada"] = DestinacaoInformada(
-                tipo_local=indicada["tipo_local"],
-                nome=indicada.get("nome"),
-                cidade=indicada.get("cidade"),
-                observacao=indicada.get("observacao"),
-                informado_em=MongoItemRepository._normalizar_data(indicada["informado_em"]),
-            )
-        for campo in ("ponto_coleta_id", "beneficiario_id", "comprador_id"):
+        for campo in ("beneficiario_id", "comprador_id"):
             valor = dados.get(campo)
             dados[campo] = str(valor) if valor is not None else None
         dados["historico"] = [

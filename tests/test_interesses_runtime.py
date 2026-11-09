@@ -159,19 +159,6 @@ def test_dois_aceites_reais_tem_um_vencedor_e_um_conflito(ambiente):
     assert len(persistido["historico"]) == 2
 
 
-def test_descarte_invalido_item_inexistente_e_preflight_patch(ambiente):
-    dono, _ = nova_conta(ambiente, "dono", "pessoa")
-    interessado, _ = nova_conta(ambiente, "interessado")
-    item = criar_item(dono, "descarte")
-    assert interessado.post("/api/interesses", json={"item_id": item["id"]}).status_code == 400
-    assert interessado.post("/api/interesses", json={"item_id": "f" * 24}).status_code == 404
-    resposta = interessado.options("/api/interesses/" + "f" * 24, headers={
-        "Origin": "http://localhost:5500", "Access-Control-Request-Method": "PATCH",
-    })
-    assert resposta.status_code == 200, resposta.text
-    assert "PATCH" in resposta.headers["access-control-allow-methods"]
-
-
 def test_recusa_e_venda_nao_antecipam_avaliacao(ambiente):
     dono, _ = nova_conta(ambiente, "dono", "pessoa")
     primeiro, _ = nova_conta(ambiente, "primeiro")

@@ -14,17 +14,6 @@ class EventoHistorico:
 
 
 @dataclass(slots=True)
-class DestinacaoInformada:
-    """Lugar de descarte declarado pelo autor, sem verificação externa."""
-
-    tipo_local: str
-    informado_em: datetime
-    nome: str | None = None
-    cidade: str | None = None
-    observacao: str | None = None
-
-
-@dataclass(slots=True)
 class Item:
     titulo: str
     descricao: str
@@ -40,8 +29,6 @@ class Item:
     historico: list[EventoHistorico]
     data_adicao: datetime
     data_modificacao: datetime
-    ponto_coleta_id: str | None = None
     beneficiario_id: str | None = None
     comprador_id: str | None = None
-    destinacao_informada: DestinacaoInformada | None = None
     id: str | None = None

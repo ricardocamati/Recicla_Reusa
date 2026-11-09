@@ -1,4 +1,6 @@
 import {
+  ROTULOS,
+  comBotaoOcupado,
   createElement,
   handleError,
   labelFor,
@@ -9,9 +11,31 @@ import {
   setupAuthenticatedHeader,
 } from "./comum.js";
 
+const PAGE_SIZE = 20;
 let usuario;
 let pontos = [];
-const meusPontos = new Set();
+let meusPontos = new Set();
+let offsetAtual = 0;
+
+function normalizarAtivo(valor) {
+  const texto = String(valor || "").trim().toLowerCase();
+  if (["", "todos", "all"].includes(texto)) return null;
+  if (["ativos", "ativo", "true", "1"].includes(texto)) return true;
+  if (["inativos", "inativo", "false", "0"].includes(texto)) return false;
+  return null;
+}
+
+
+function enderecoFormulario(ponto) {
+  const e = ponto.endereco || {};
+  return {
+    logradouro: e.logradouro || "",
+    numero: e.numero || "",
+    complemento: e.complemento || "",
+    cep: e.cep || "",
+    cidade: e.cidade || "",
+  };
+}
 
 function cartaoPonto(ponto) {
   const article = createElement("article", "item-card");
@@ -27,32 +51,26 @@ function cartaoPonto(ponto) {
     createElement(
       "p",
       "item-card-description",
-      [endereco.logradouro, endereco.numero, endereco.cidade, endereco.cep]
+      [endereco.logradouro, endereco.numero, endereco.complemento, endereco.cidade, endereco.cep]
         .filter(Boolean)
         .join(", "),
     ),
   );
   const meta = createElement("div", "item-meta");
   meta.append(
-    createElement("span", "", ponto.categorias_aceitas.map((c) => labelFor("categoria", c)).join(", ")),
+    createElement("span", "", (ponto.categorias_aceitas || []).map((c) => labelFor("categoria", c)).join(", ")),
     createElement("span", "", ponto.horario_atendimento),
   );
   article.append(meta);
 
   if (usuario.tipo === "ponto_coleta" && meusPontos.has(ponto.id)) {
     const actions = createElement("div", "item-actions");
-    const remover = createElement("button", "button button-ghost", "Excluir");
-    remover.type = "button";
-    remover.addEventListener("click", async () => {
-      const message = document.getElementById("pontos-message");
-      try {
-        await requestApi(`/api/pontos-coleta/${encodeURIComponent(ponto.id)}`, { method: "DELETE" });
-        setMessage(message, "Ponto excluído.", "success");
-        await carregarPontos();
-      } catch (error) {
-        handleError(error, message);
-      }
-    });
+    const editar = createElement("button", "button button-secondary", "Editar");
+    editar.type = "button";
+    editar.dataset.acao = "editar";
+    editar.dataset.pontoId = ponto.id;
+    editar.addEventListener("click", () => iniciarEdicaoPonto(ponto.id));
+
     const alternar = createElement(
       "button",
       "button button-secondary",
@@ -60,174 +78,177 @@ function cartaoPonto(ponto) {
     );
     alternar.type = "button";
     alternar.dataset.acao = "situacao";
-    alternar.addEventListener("click", async () => {
-      const message = document.getElementById("pontos-message");
-      try {
-        await requestApi(`/api/pontos-coleta/${encodeURIComponent(ponto.id)}/situacao`, {
-          method: "POST",
-          body: JSON.stringify({ ativo: ponto.ativo === false }),
-        });
-        await carregarPontos();
-        setMessage(
-          message,
-          ponto.ativo === false ? "Ponto reativado." : "Ponto desativado.",
-          "success",
-        );
-      } catch (error) {
-        handleError(error, message);
-      }
-    });
-    actions.append(alternar, remover);
+    alternar.dataset.pontoId = ponto.id;
+    alternar.addEventListener("click", comBotaoOcupado(alternar, () => alternarSituacao(ponto.id)));
+
+    const remover = createElement("button", "button button-ghost", "Excluir");
+    remover.type = "button";
+    remover.dataset.acao = "excluir";
+    remover.dataset.pontoId = ponto.id;
+    remover.addEventListener("click", comBotaoOcupado(remover, () => excluirPonto(ponto.id)));
+
+    actions.append(editar, alternar, remover);
     article.append(actions);
   }
   return article;
 }
+
 
 async function carregarPontos() {
   const message = document.getElementById("pontos-message");
   const lista = document.getElementById("pontos-list");
   const cidade = document.getElementById("filtro-ponto-cidade").value.trim();
   const categoria = document.getElementById("filtro-ponto-categoria").value;
+  const ativo = normalizarAtivo(document.getElementById("filtro-ponto-ativo").value);
+
   const parametros = new URLSearchParams();
+  parametros.set("escopo", "meus");
   if (cidade) parametros.set("cidade", cidade);
   if (categoria) parametros.set("categoria", categoria);
-  const consulta = parametros.toString() ? `?${parametros}` : "";
+  if (ativo !== null) parametros.set("ativo", String(ativo));
+  parametros.set("offset", String(offsetAtual));
+  parametros.set("limite", String(PAGE_SIZE + 1));
 
-  setMessage(message, "Carregando pontos...");
+  setMessage(message, "Carregando locais...");
   try {
-    if (usuario.tipo === "ponto_coleta") {
-      // O servidor restringe o escopo à conta da sessão.
-      const proprios = await requestApi("/api/pontos-coleta?escopo=meus");
-      meusPontos.clear();
-      proprios.forEach((ponto) => meusPontos.add(ponto.id));
-    }
-    pontos = await requestApi(`/api/pontos-coleta${consulta}`);
+    const resposta = await requestApi(`/api/pontos-coleta?${parametros.toString()}`);
+    pontos = resposta;
+    meusPontos = new Set(resposta.map((ponto) => ponto.id));
     lista.replaceChildren();
-    if (pontos.length === 0) {
-      renderEmptyState(lista, "Nenhum ponto encontrado", "Ajuste os filtros ou tente outra cidade.");
+    if (resposta.length === 0) {
+      renderEmptyState(lista, "Nenhum local encontrado", "Ajuste os filtros ou cadastre um novo local.");
     } else {
-      pontos.forEach((ponto) => lista.append(cartaoPonto(ponto)));
+      resposta.slice(0, PAGE_SIZE).forEach((ponto) => lista.append(cartaoPonto(ponto)));
     }
-    setMessage(message, `${pontos.length} ponto(s) de coleta.`, "success");
+    const pagina = Math.floor(offsetAtual / PAGE_SIZE) + 1;
+    document.getElementById("ponto-page").textContent = `Página ${pagina}`;
+    document.getElementById("ponto-previous").disabled = offsetAtual === 0;
+    document.getElementById("ponto-next").disabled = resposta.length <= PAGE_SIZE;
+    setMessage(message, `${Math.min(resposta.length, PAGE_SIZE)} local(is) de coleta.`, "success");
+    return { ok: true, vazio: resposta.length === 0 };
   } catch (error) {
     handleError(error, message);
     lista.replaceChildren();
+    pontos = [];
+    return { ok: false, vazio: false };
   }
 }
 
 function categoriasSelecionadas(form) {
-  return Array.from(form.elements.categorias_aceitas.selectedOptions).map(
-    (opcao) => opcao.value,
-  );
+  return Array.from(form.elements.categorias_aceitas.selectedOptions).map((opcao) => opcao.value);
 }
 
-async function salvarPonto(evento) {
-  evento.preventDefault();
-  const form = evento.currentTarget;
-  const message = document.getElementById("ponto-form-message");
-  setMessage(message);
+function payloadPonto(form) {
   const dados = new FormData(form);
-  const payload = {
+  return {
     nome: String(dados.get("nome") || "").trim(),
     endereco: {
       logradouro: String(dados.get("logradouro") || "").trim(),
       numero: String(dados.get("numero") || "").trim(),
-      complemento: null,
+      complemento: String(dados.get("complemento") || "").trim() || null,
       cep: String(dados.get("cep") || "").trim(),
       cidade: String(dados.get("cidade") || "").trim(),
     },
     categorias_aceitas: categoriasSelecionadas(form),
     horario_atendimento: String(dados.get("horario_atendimento") || "").trim(),
   };
+}
+
+function resetarFormularioPonto() {
+  const form = document.getElementById("ponto-form");
+  form.reset();
+  form.elements.ponto_id.value = "";
+  document.getElementById("ponto-admin-title").textContent = "Novo local";
+  document.getElementById("ponto-cancel-edit").hidden = true;
+  setMessage(document.getElementById("ponto-form-message"));
+}
+
+function iniciarEdicaoPonto(pontoId) {
+  const ponto = pontos.find((item) => item.id === pontoId);
+  if (!ponto) return;
+  const form = document.getElementById("ponto-form");
+  form.elements.ponto_id.value = ponto.id;
+  form.elements.nome.value = ponto.nome || "";
+  const endereco = enderecoFormulario(ponto);
+  form.elements.logradouro.value = endereco.logradouro;
+  form.elements.numero.value = endereco.numero;
+  form.elements.complemento.value = endereco.complemento;
+  form.elements.cep.value = endereco.cep;
+  form.elements.cidade.value = endereco.cidade;
+  Array.from(form.elements.categorias_aceitas.options).forEach((opcao) => {
+    opcao.selected = (ponto.categorias_aceitas || []).includes(opcao.value);
+  });
+  form.elements.horario_atendimento.value = ponto.horario_atendimento || "";
+  document.getElementById("ponto-admin-title").textContent = "Editar local";
+  document.getElementById("ponto-cancel-edit").hidden = false;
+}
+
+
+async function salvarPonto(evento) {
+  evento.preventDefault();
+  const form = evento.currentTarget;
+  const message = document.getElementById("ponto-form-message");
+  setMessage(message);
+  const pontoId = String(form.elements.ponto_id.value || "").trim();
+  const payload = payloadPonto(form);
   try {
-    await requestApi("/api/pontos-coleta", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    form.reset();
-    setMessage(message, "Ponto cadastrado.", "success");
+    const resposta = pontoId
+      ? await requestApi(`/api/pontos-coleta/${encodeURIComponent(pontoId)}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        })
+      : await requestApi("/api/pontos-coleta", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+    if (pontoId) {
+      const indice = pontos.findIndex((item) => item.id === pontoId);
+      if (indice >= 0) pontos[indice] = resposta;
+      meusPontos.add(resposta.id);
+    } else {
+      meusPontos.add(resposta.id);
+    }
+    resetarFormularioPonto();
+    setMessage(message, pontoId ? "Local atualizado." : "Local cadastrado.", "success");
     await carregarPontos();
   } catch (error) {
     handleError(error, message);
   }
 }
 
-const NOME_STATUS = {
-  entrega_prevista: "Entrega prevista",
-  recebido: "Recebido",
-  cancelado: "Cancelado",
-  nao_recebido: "Não recebido",
-};
-
-async function carregarFila() {
-  const lista = document.getElementById("fila-list");
-  const message = document.getElementById("fila-message");
-  if (!lista) return;
-  lista.replaceChildren();
+async function alternarSituacao(pontoId) {
+  const message = document.getElementById("pontos-message");
+  const ponto = pontos.find((item) => item.id === pontoId);
+  if (!ponto) return;
   try {
-    const previstas = await requestApi(
-      "/api/encaminhamentos?escopo=operador&status=entrega_prevista&limite=50",
-    );
-    if (!previstas.length) {
-      renderEmptyState(lista, "Nenhuma entrega prevista no momento.");
-      return;
+    const resposta = await requestApi(`/api/pontos-coleta/${encodeURIComponent(pontoId)}/situacao`, {
+      method: "POST",
+      body: JSON.stringify({ ativo: ponto.ativo === false }),
+    });
+    const indice = pontos.findIndex((item) => item.id === pontoId);
+    if (indice >= 0) pontos[indice] = resposta;
+    meusPontos.add(resposta.id);
+    const carga = await carregarPontos();
+    if (carga.ok) {
+      setMessage(message, resposta.ativo === false ? "Local desativado." : "Local ativado.", "success");
     }
-    for (const entrega of previstas) {
-      let titulo = entrega.item_id;
-      try {
-        const item = await requestApi(`/api/itens/${encodeURIComponent(entrega.item_id)}`);
-        titulo = item.titulo;
-      } catch {
-        /* item pode ter sido removido do catálogo */
-      }
-      const ponto = pontos.find((local) => local.id === entrega.ponto_id);
-      const article = createElement("article", "item-card");
-      article.dataset.encaminhamentoId = entrega.id;
-      article.append(
-        createElement("h3", "", titulo),
-        createElement(
-          "p",
-          "item-card-description",
-          `Entrega prevista em ${ponto ? ponto.nome : "ponto"} — ${NOME_STATUS[entrega.status]}`,
-        ),
-      );
-      const actions = createElement("div", "item-actions");
-      const receber = createElement("button", "button button-primary", "Confirmar recebimento");
-      receber.type = "button";
-      receber.dataset.acao = "receber";
-      receber.addEventListener("click", async () => {
-        try {
-          await requestApi(
-            `/api/encaminhamentos/${encodeURIComponent(entrega.id)}/acoes`,
-            { method: "POST", body: JSON.stringify({ acao: "receber" }) },
-          );
-          await carregarFila();
-          setMessage(message, "Recebimento confirmado.", "success");
-        } catch (error) {
-          handleError(error, message);
-        }
-      });
-      const falha = createElement("button", "button button-ghost", "Não recebido");
-      falha.type = "button";
-      falha.dataset.acao = "nao_recebido";
-      falha.addEventListener("click", async () => {
-        const motivo = window.prompt("Motivo do não recebimento:");
-        if (!motivo) return;
-        try {
-          await requestApi(
-            `/api/encaminhamentos/${encodeURIComponent(entrega.id)}/acoes`,
-            { method: "POST", body: JSON.stringify({ acao: "nao_recebido", motivo }) },
-          );
-          await carregarFila();
-          setMessage(message, "Falha registrada; o item voltou ao autor.", "success");
-        } catch (error) {
-          handleError(error, message);
-        }
-      });
-      actions.append(receber, falha);
-      article.append(actions);
-      lista.append(article);
+  } catch (error) {
+    handleError(error, message);
+  }
+}
+
+async function excluirPonto(pontoId) {
+  const message = document.getElementById("pontos-message");
+  setMessage(message);
+  try {
+    await requestApi(`/api/pontos-coleta/${encodeURIComponent(pontoId)}`, { method: "DELETE" });
+    let carga = await carregarPontos();
+    if (carga.vazio && offsetAtual >= PAGE_SIZE) {
+      offsetAtual = Math.max(0, offsetAtual - PAGE_SIZE);
+      carga = await carregarPontos();
     }
+    // carregarPontos() substitui a mensagem; o sucesso só aparece se a última carga funcionou.
+    if (carga.ok) setMessage(message, "Local excluído.", "success");
   } catch (error) {
     handleError(error, message);
   }
@@ -238,25 +259,51 @@ async function initPontos() {
   if (!usuario) return;
   setupAuthenticatedHeader(usuario);
 
+  const denied = document.getElementById("pontos-acesso-negado");
+  const gestao = document.getElementById("pontos-gestao");
+  const admin = document.getElementById("ponto-admin");
+
+  if (usuario.tipo !== "ponto_coleta") {
+    if (denied) denied.hidden = false;
+    setMessage(document.getElementById("pontos-message"), "Seu perfil não pode executar esta ação.", "error");
+    return;
+  }
+
+  // A edição deve preservar todas as categorias aceitas pelo contrato.
+  const filtroCategoria = document.getElementById("filtro-ponto-categoria");
+  const categoriasForm = document.querySelector("#ponto-form select[name='categorias_aceitas']");
+  filtroCategoria.replaceChildren(new Option("Todas", ""));
+  categoriasForm.replaceChildren();
+  for (const [valor, rotulo] of Object.entries(ROTULOS.categoria)) {
+    filtroCategoria.append(new Option(rotulo, valor));
+    categoriasForm.append(new Option(rotulo, valor));
+  }
+  if (gestao) gestao.hidden = false;
+  if (admin) admin.hidden = false;
+
   document.getElementById("pontos-filtros").addEventListener("submit", (evento) => {
     evento.preventDefault();
+    offsetAtual = 0;
     carregarPontos();
   });
 
-  const admin = document.getElementById("ponto-admin");
-  if (usuario.tipo === "ponto_coleta") {
-    admin.hidden = false;
-    document.getElementById("ponto-form").addEventListener("submit", salvarPonto);
-  }
+  const form = document.getElementById("ponto-form");
+  form.addEventListener("submit", comBotaoOcupado(
+    form.querySelector("button[type='submit']"),
+    salvarPonto,
+  ));
+  document.getElementById("ponto-cancel-edit").addEventListener("click", resetarFormularioPonto);
+
+  document.getElementById("ponto-previous").addEventListener("click", () => {
+    offsetAtual = Math.max(0, offsetAtual - PAGE_SIZE);
+    carregarPontos();
+  });
+  document.getElementById("ponto-next").addEventListener("click", () => {
+    offsetAtual += PAGE_SIZE;
+    carregarPontos();
+  });
 
   await carregarPontos();
-  if (usuario.tipo === "ponto_coleta") {
-    const fila = document.getElementById("fila-operador");
-    if (fila) {
-      fila.hidden = false;
-      await carregarFila();
-    }
-  }
 }
 
 document.addEventListener("DOMContentLoaded", initPontos);

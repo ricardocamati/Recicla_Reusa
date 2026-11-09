@@ -1,8 +1,8 @@
 # Jornadas e funções de frontend — v2.1
 
-Experiência de referência da v2.1. As Etapas 9 a 15 implementaram as jornadas principais; os passos abaixo preservam o desenho aprovado, não um inventário de todos os controles existentes.
+Experiência-alvo da revisão de descarte como diretório. A Etapa 16 entrega a base HTTP pública e preservação de registros. A Etapa 17 implementa J-03 em `frontend/onde-descartar.html`, com navegação, filtros/paginação, detalhe, cópia e estados próprios. A Etapa 18 retira os controles antigos e entrega a gestão de locais sem histórico de descarte, em validação integrada; não confundir a nova consulta com registro de entrega. Doação e venda preservam suas jornadas.
 
-## Interface entregue e limites
+## Interface de referência e diferenças para o alvo
 
 - Páginas HTML em `frontend/`, catálogo, gestão de itens, interesses, pontos e avisos, com controles para reserva, combinação, entrega bilateral e indicação de lugar.
 - O catálogo carrega até 100 registros sem navegação por páginas. `history.replaceState` preserva filtros; não há página selecionada para restaurar.
@@ -13,31 +13,27 @@ Experiência de referência da v2.1. As Etapas 9 a 15 implementaram as jornadas 
 
 Ver [contratos atuais](../../docs/http-api.md), [testes de frontend](../../tests/test_frontend.py), [Selenium](../../tests/test_selenium_frontend.py) e [jornadas executáveis](../../scripts/validar_jornadas_v2.py). Esses testes não constituem uma auditoria exaustiva de acessibilidade.
 
-## Desenho de experiência preservado
+## Experiência-alvo revisada
 
 Os nomes visíveis devem traduzir conceitos de negócio, sem expor códigos internos. Ver [regras](regras_de_negocio.md).
 
 
 ## Mapa de navegação
 
-| Pessoa | Operador |
-|---|---|
-| Início com Doar/Vender/Descartar/Explorar | Painel com entregas previstas e alertas |
-| Explorar ofertas | Meus locais (ativo/inativo) |
-| Meus itens: Ativos/Em andamento/Encerrados | Entregas previstas por local |
-| Minhas negociações: como anunciante/interessado | Recebimentos e tentativas encerradas |
-| Pontos de recebimento | Avisos |
-| Avisos e perfil | Perfil |
+| Visitante sem sessão | Pessoa autenticada | Operador autenticado |
+|---|---|---|
+| Início e “Onde descartar” | Catálogo de ofertas e “Onde descartar” | “Onde descartar” e Meus locais |
+| Filtros e detalhe de locais ativos | Meus itens e Interesses | Cadastro/edição e ativação/inativação dos próprios locais |
+| Copiar endereço; mapa opcional | Avisos e perfil | Perfil e gestão de locais, sem fila de descarte |
 
-Não usar troca de perfil para alguém conseguir receber doação. Ação principal é por contexto, não um menu com todas as transições técnicas.
+“Quero descartar” leva ao diretório sem passar por cadastro/login. As entradas “Quero doar” e “Quero vender” mantêm o fluxo autenticado de ofertas. O endereço da página pública deve poder ser aberto diretamente em uma sessão anônima. A consulta não recebe dados pessoais de quem procura o local.
 
 ## J-01 — Publicar e explorar
 
 1. Início oferece “Quero doar”, “Quero vender” e “Quero descartar”.
 2. Cadastro mostra identificação, categoria, condição e descrição; especificações em pares chave/valor compreensíveis, sem exigir JSON.
-3. Venda pede preço positivo; demais modalidades não pedem preço.
-4. Revisão mostra efeito: salvar rascunho de oferta ou publicar; descarte salva para escolher local.
-   Enquanto for rascunho, a pessoa pode corrigir a modalidade (doação, venda ou descarte) antes de publicar; depois de publicada, a correção exige arquivar e cadastrar nova intenção.
+3. Venda pede preço positivo; doação não pede preço. Descarte não é modalidade do formulário de item.
+4. Revisão mostra salvar rascunho ou publicar oferta. “Quero descartar” abre J-03, sem salvar equipamento. Enquanto rascunho, a pessoa pode corrigir entre doação e venda; depois de publicada, a mudança exige arquivar e cadastrar nova oferta.
 5. Meus itens distingue cadastro salvo, disponível, reservado e encerrado.
 6. Catálogo padrão mostra só doação/venda disponíveis. Busca, cidade, categoria e condição ficam visíveis; preço só filtra venda, com regra explícita de excluir doações quando faixa de preço for aplicada.
 7. Detalhe usa uma página própria ou painel navegável; voltar preserva filtros e página. Compartilhar link interno não dispensa sessão/permissão.
@@ -59,90 +55,69 @@ Cards: título, modalidade, condição, cidade, preço quando aplicável, dispon
 
 **Impasse:** se a outra parte não confirmar, exibir “Aguardando confirmação de recebimento”. Não liberar automaticamente para outra pessoa. Disputa formal é limitação explícita da PoC.
 
-## J-03 — O que faz “Encaminhar descarte”
+## J-03 — Onde descartar, sem cadastrar equipamento
 
-### Nome e efeito
+1. Visitante abre a entrada pública, sem cookie ou conta. Pessoa já autenticada usa a mesma consulta.
+2. A tela apresenta cidade e categoria do eletrônico como filtros opcionais. A cidade pode ser digitada; usar endereço do perfil só pode ser conveniência explícita para pessoa autenticada, nunca precondição ou localização automática.
+3. A busca mostra locais ativos que atendem a todos os filtros. Paginação é aplicada pela API e alcançável pela interface; trocar filtro volta à primeira página.
+4. Cada cartão mostra nome, endereço público, categorias aceitas e horário informado. Sem horário disponível, informar essa ausência, sem afirmar que o local está aberto agora.
+5. “Ver detalhes” abre informação do local; voltar mantém filtros/página. “Copiar endereço” dá feedback de cópia, não de descarte concluído; se não puder copiar, manter o endereço selecionável.
+6. Pode haver “Abrir endereço no mapa” como link opcional, montado com endereço público codificado. Abre somente por ação da pessoa; não carrega mapa embutido nem solicita posição, chave de serviço ou cadastro. A consulta continua útil sem esse recurso.
+7. Outro local é escolhido simplesmente consultando outro cartão. Não há confirmação final, entrega prevista, troca/cancelamento de tentativa ou recebimento pelo operador.
 
-Preferir “Escolher ponto de entrega” e, no resumo final, “Registrar entrega prevista”. Não significa chamar coleta domiciliar, transportar, reservar horário ou reciclar. Texto fixo: **“Você levará o equipamento ao local. O operador confirmará o recebimento quando ele for entregue.”**
+### Estados da consulta
 
-### Assistente
+- **Carregando:** mostrar andamento sem apagar filtros ou afirmar resultado vazio.
+- **Vazio:** “Nenhum local encontrado para estes filtros. Tente outra cidade ou categoria.” Oferecer limpar/alterar filtros; não oferecer cadastro de equipamento ou indicação privada como fallback.
+- **Erro:** explicar que a consulta não foi concluída e permitir tentar novamente; não mostrar “nenhum ponto” como se fosse um resultado confirmado.
+- **Local inativado após a listagem:** ao atualizar/abrir o detalhe, informar indisponibilidade e voltar à lista preservando filtros. O diretório não garante capacidade ou aceite de um atendimento físico.
 
-| Passo | Conteúdo | Gravação |
-|---|---|---|
-| 1. Equipamento | Título, categoria, condição; voltar para corrigir antes de vincular | Nenhuma |
-| 2. Destino | Três opções: ponto cadastrado, indicar outro lugar (tipo obrigatório; nome/cidade/observação opcionais) ou decidir depois; cidade editável, somente locais ativos e compatíveis, com paginação | Seleção local apenas |
-| 3. Revisão | Equipamento + destino escolhido + aviso de entrega presencial, quando houver ponto | Nenhuma até confirmar |
-| 4. Confirmação | Registrar previsão (ponto) ou informar destinação (lugar), com versão e chave de operação | Uma tentativa/vínculo ou uma indicação, atômicos |
+Lista, detalhe, filtros, cópia e mapa não criam documento de domínio, aviso ou indicador. Não usar “Recebemos seu equipamento”, “Entrega prevista”, “Reciclado” ou equivalente como resultado de navegação.
 
-Sem resultado: “Nenhum ponto compatível. Tente outra cidade, indique outro lugar ou escolha depois.” Não cadastrar vínculo incompleto. Fechar o assistente preserva cadastro do equipamento, não cria previsão.
+## J-04 — Operador mantém seus locais
 
-### Passo 2 alternativo — indicar outro lugar
+1. Operador entra com sessão e abre “Meus locais”. A gestão não é liberada junto com a leitura pública.
+2. Lista paginada contém somente locais próprios, incluindo inativos quando solicitado; a API restringe responsável antes da paginação.
+3. Cadastra ou edita nome, endereço público, categorias aceitas e horário. O responsável vem da sessão; dados privados da conta não são copiados para o diretório.
+4. Ativa/inativa local com efeito explicado: entrar/sair das consultas públicas subsequentes. Não aparece confirmação de recebimento, impossibilidade de descarte nem fila de equipamentos.
+5. Conflito ou falha mantém o formulário para reconciliação/recarga, sem anunciar sucesso indevido. Referências antigas não são removidas para permitir a edição.
 
-```text
-Como você vai descartar?
-
-( ) Levar a um ponto de coleta cadastrado      <- recomendado
-      [ locais ativos e compatíveis ]
-( ) Indicar outro lugar
-      Tipo: [ecoponto / cooperativa / comércio / outro]
-      Nome: [__________]  Cidade: [__________]
-      Observação: [__________]
-( ) Decidir depois
-```
-
-- a opção de indicar lugar aparece **sempre**, não só quando faltar ponto compatível;
-- o tipo de local é obrigatório; nome, cidade e observação são opcionais; não pedir localização nem validar endereço;
-- ao confirmar, o item sai como **destinação informada** e o card mostra o rótulo “Informado por você, não verificado”, com “Desfazer indicação” enquanto o item não estiver arquivado;
-- a indicação não é exibida a operadores nem no diretório de locais; nenhuma outra pessoa a confirma;
-- o indicador de destinações informadas é exibido separado de “equipamentos recebidos nos pontos”.
-
-Após sucesso: cartão com endereço, horário, “Copiar endereço”, “Ver encaminhamento”, “Trocar ponto” e “Cancelar encaminhamento”. Não usar “mais próximo” sem cálculo de distância. Não pedir data/hora para simular agendamento inexistente.
-
-### Troca e cancelamento
-
-- Troca reabre escolha compatível e mostra comparação antigo/novo antes de confirmar.
-- Se novo local ficar inativo durante a escolha, falha preserva a previsão anterior e oferece atualizar lista.
-- Cancelar exige confirmação do efeito: a pessoa precisará escolher local novamente.
-- Tentativas encerradas ficam legíveis com motivo e data; não há apagar histórico.
-- Após recebimento, substituir ações por “Ver recebimento”, sem editar o passado.
-
-## J-04 — Operação do ponto
-
-Painel distingue locais e mostra pendências do local selecionado. Lista paginada exibe equipamento, categoria, autor, registro e situação. Não carregar apenas os primeiros 100 itens globais e filtrar no navegador: API deve limitar aos locais do operador antes da paginação.
-
-- “Confirmar recebimento” abre resumo e pergunta se o equipamento foi entregue fisicamente.
-- “Não foi possível receber” exige motivo, informa que a pessoa poderá escolher outro local e não aumenta indicadores.
-- Local inativo apresenta aviso, não aceita novas previsões nem recebimento; previsões anteriores ficam acessíveis para troca/cancelamento.
-- Histórico de recebimentos é separado da fila atual; sucesso não deve simplesmente fazer o card sumir sem explicação.
+Não há aba histórica, campos ou chamadas de encaminhamento/destinação. As rotas antigas são removidas, não mantidas com `410`. Alterações/inativação de local não emitem avisos de descarte.
 
 ## J-05 — Avisos e indicadores
 
-Avisos apontam para item, negociação ou encaminhamento. Ao abrir registro encerrado, mostrar o que ocorreu e somente informações autorizadas. Não reconstruir ação antiga com base no texto do aviso.
+Avisos ativos de doação/venda apontam para item ou negociação. Consulta e gestão do diretório não disparam avisos de descarte; avisos de ofertas continuam privados. Ao abrir registro encerrado, mostrar o que ocorreu e somente informações autorizadas. Não reconstruir ação antiga com base no texto do aviso.
 
-Início da pessoa apresenta pendências antes dos indicadores: “Você precisa confirmar recebimento”, “Há interessados na sua oferta”. Operador vê entregas previstas e alertas de locais.
+Início da pessoa apresenta pendências antes dos indicadores: “Você precisa confirmar recebimento”, “Há interessados na sua oferta”. Operador vê a gestão dos locais, sem pendências de descarte decorrentes da nova consulta.
 
-Rótulos de resultado: “Doações recebidas”, “Vendas concluídas com recebimento confirmado” e “Equipamentos recebidos nos pontos”. Nunca “pagamentos confirmados” ou “reciclados” sem acompanhamento correspondente.
+Rótulos-alvo de resultado: “Doações recebidas” e “Vendas concluídas com recebimento confirmado”. Eventual quantidade de locais ativos é informação do diretório, separada de equipamentos. Não apresentar consulta, cópia de endereço ou mapa como entrega/reciclagem; não somar consultas ao total de ofertas concluídas.
 
 ## Padrões obrigatórios de usabilidade
 
-- Só esconder campo dependente depois de preservar seu significado; não manter preço oculto vazando para descarte.
+- Só esconder campo dependente depois de preservar seu significado; não manter preço de venda oculto vazando para doação; não pedir características do item na consulta de descarte.
 - Validar junto do campo e manter conteúdo em erro; mover foco para primeiro erro.
 - Durante envio bloquear repetição e mostrar andamento; ao falhar, restaurar ação quando seguro.
 - Em resposta perdida, consultar resultado pela chave de operação antes de repetir com chave nova.
 - `409`: explicar que registro mudou, oferecer recarga e preservar texto não enviado quando possível; não sobrescrever versão automaticamente.
 - Vazio, erro e carregamento são estados diferentes; erro não deve aparecer como “nenhum item”.
-- Paginar filtros, filas e seleções; manter ordenação estável e filtros ao voltar.
+- Paginar resultados de consultas e listas de gestão; manter ordenação estável, filtros e página ao voltar. A consulta pública não é uma fila de entregas.
 - Diálogo acessível por teclado, foco devolvido ao acionador, rótulos e região de mensagens legíveis; cabeçalho fixo não pode bloquear clique ou foco.
 - Testar largura pequena e jornada completa sem depender de tabela larga ou hover.
 
-## Esboço textual do cartão de descarte
+## Esboço textual do cartão de local
 
 ```text
-Monitor de 19 polegadas                        ENTREGA PREVISTA
-Ponto Centro • atendimento: segunda a sexta
-Endereço: endereço público do local
-Próximo passo: leve o equipamento ao ponto.
-[Copiar endereço] [Ver detalhes] [Trocar ponto] [Cancelar]
+Onde descartar
+Cidade: [____________]  Categoria: [Todas / tipo de eletrônico]
+[Buscar] [Limpar filtros]
+
+Ponto Centro
+Endereço público do local • Cidade
+Aceita: monitores, notebooks
+Atendimento: horário cadastrado / não informado
+[Ver detalhes] [Copiar endereço] [Abrir endereço no mapa — opcional]
+
+[Anterior] [Próxima]
 ```
 
-É um esboço, não conteúdo já criado na aplicação. Após recebimento, mostrar data e local confirmados, sem as ações de troca/cancelamento.
+Esboço de especificação, não tela já implementada. Não mostra equipamento do visitante, estado de entrega nem confirmação. Informação do diretório não é certificação de descarte realizado.

@@ -42,15 +42,16 @@ def chamar(cliente, metodo: str, caminho: str, *, codigos=(200,), **kwargs):
     return resposta.json() if resposta.content else None
 
 
-def garantir_registro(cliente, caminho, registros, identidade, campo_dono, dono_id, *, corpo=None):
+def garantir_registro(cliente, caminho, registros, identidade, campo_dono, dono_id, *, corpo=None, parametros_leitura=None):
     candidatos = [r for r in registros if all(r.get(k) == v for k, v in identidade.items())]
     if len(candidatos) > 1 or (candidatos and candidatos[0].get(campo_dono) != dono_id):
         raise DemonstracaoError("Registro de demonstração ambíguo ou pertencente a outra conta")
     if candidatos:
-        registro = chamar(cliente, "GET", f"{caminho}/{candidatos[0]['id']}")
+        registro_id = candidatos[0]["id"]
     else:
         criado = chamar(cliente, "POST", caminho, codigos=(201,), json=corpo or identidade)
-        registro = chamar(cliente, "GET", f"{caminho}/{criado['id']}")
+        registro_id = criado["id"]
+    registro = chamar(cliente, "GET", f"{caminho}/{registro_id}", params=parametros_leitura)
     if registro.get(campo_dono) != dono_id or not all(registro.get(k) == v for k, v in identidade.items()):
         raise DemonstracaoError("O registro relido não confirmou a identidade da demonstração")
     return registro
@@ -109,10 +110,6 @@ CENARIOS = (
     ("ana", "Teclado reservado", "doacao", "reservado", "bruno"),
     ("ana", "Celular entregue aguardando confirmação", "doacao", "aguardando_confirmacao", "bruno"),
     ("ana", "Tablet doado e recebido", "doacao", "concluido", "bruno"),
-    ("ana", "Impressora aguardando ponto", "descarte", "aguardando_ponto", None),
-    ("ana", "Televisor com entrega prevista", "descarte", "entrega_prevista", None),
-    ("ana", "Periféricos recebidos no ponto", "descarte", "recebido", None),
-    ("ana", "Monitor com destinação informada", "descarte", "destinacao_informada", None),
     ("carla", "Notebook de Carla para doação", "doacao", "disponivel", "ana"),
     ("bruno", "Notebook vendido para Ana", "revenda", "concluido", "ana"),
 )
@@ -123,7 +120,7 @@ def povoar(clientes: dict, perfis: dict, *, cenarios=CENARIOS, ponto_existente=N
     operador = clientes["operador"]
     ponto = ponto_existente or garantir_registro(
         operador, "/api/pontos-coleta", listar_todos(operador, "/api/pontos-coleta", escopo="meus"),
-        {"nome": "Ponto Escola — Demonstração"}, "responsavel_id", perfis["operador"]["id"],
+        {"nome": "Ponto Escola — Demonstração"}, "responsavel_id", perfis["operador"]["id"], parametros_leitura={"escopo": "meus"},
         corpo={"nome": "Ponto Escola — Demonstração", "endereco": ENDERECO,
                "categorias_aceitas": ["informatica", "notebook", "monitor", "impressora", "televisao", "perifericos"],
                "horario_atendimento": "Demonstração fictícia: segunda a sexta, 08h às 17h"},
@@ -142,8 +139,8 @@ def povoar(clientes: dict, perfis: dict, *, cenarios=CENARIOS, ponto_existente=N
         item = garantir_registro(
             cliente, "/api/itens", existentes, {"titulo": titulo, "descricao": descricao},
             "proprietario_id", perfis[dono]["id"],
-            corpo={"titulo": titulo, "descricao": descricao, "categoria": "notebook" if destino != "descarte" else "perifericos",
-                   "marca": "Marca fictícia", "modelo": "Modelo de demonstração", "condicao": "funcional" if destino != "descarte" else "sem_conserto",
+            corpo={"titulo": titulo, "descricao": descricao, "categoria": "notebook",
+                   "marca": "Marca fictícia", "modelo": "Modelo de demonstração", "condicao": "funcional",
                    "destino": destino, "valor": 350.0 if destino == "revenda" else None,
                    "especificacoes": {"origem": "Demonstração", "memoria": "8 GB"}, "publicar": alvo != "rascunho", **detalhes},
         )
@@ -180,23 +177,7 @@ def povoar(clientes: dict, perfis: dict, *, cenarios=CENARIOS, ponto_existente=N
                         item = chamar(cliente, "GET", f"/api/itens/{item_id}")
                 if alvo == "concluido" and item["status"] == "aguardando_confirmacao":
                     chamar(pessoa, "POST", f"/api/itens/{item_id}/recebimento")
-        elif alvo in ("entrega_prevista", "recebido"):
-            tentativas = listar_todos(cliente, "/api/encaminhamentos", item_id=item_id)
-            if not tentativas and item["status"] == "aguardando_ponto":
-                criada = chamar(cliente, "POST", "/api/encaminhamentos", codigos=(201,), json={"item_id": item_id, "ponto_id": ponto["id"]})
-                tentativas = [chamar(cliente, "GET", f"/api/encaminhamentos/{criada['id']}")]
-            if len(tentativas) != 1 or tentativas[0]["ponto_id"] != ponto["id"]:
-                raise DemonstracaoError("Tentativa demo alterada ou ambígua; nada será refeito")
-            tentativa = tentativas[0]
-            if alvo == "recebido" and tentativa["status"] == "entrega_prevista":
-                chamar(operador, "POST", f"/api/encaminhamentos/{tentativa['id']}/acoes", json={"acao": "receber"})
-                tentativa = chamar(operador, "GET", f"/api/encaminhamentos/{tentativa['id']}")
-                if tentativa["status"] != "recebido":
-                    raise DemonstracaoError("Recebimento no ponto não foi confirmado")
-        elif alvo == "destinacao_informada" and item["status"] == "aguardando_ponto":
-            chamar(cliente, "POST", f"/api/itens/{item_id}/destinacao", json={
-                "tipo_local": "ecoponto", "nome": "Ecoponto fictício do bairro", "cidade": "Maringá",
-                "observacao": "Exemplo informado pelo autor; sem verificação externa"})
+
         relido = chamar(cliente, "GET", f"/api/itens/{item_id}")
         if relido["status"] != alvo:
             raise DemonstracaoError(f"Cenário {titulo}: estado atual {relido['status']}; esperado {alvo}. Não houve reset.")
@@ -231,7 +212,7 @@ EQUIPAMENTOS = (
 
 
 def povoar_ampliado(clientes: dict, perfis: dict) -> dict:
-    """Acrescenta 48 itens variados e dois locais sem modificar os 12 cenários-base."""
+    """Acrescenta 48 ofertas variadas e dois locais sem modificar os cenários-base."""
     operador = clientes["operador"]
     pontos = []
     for nome, cidade, numero in (
@@ -240,7 +221,7 @@ def povoar_ampliado(clientes: dict, perfis: dict) -> dict:
     ):
         pontos.append(garantir_registro(
             operador, "/api/pontos-coleta", listar_todos(operador, "/api/pontos-coleta", escopo="meus"),
-            {"nome": nome}, "responsavel_id", perfis["operador"]["id"],
+            {"nome": nome}, "responsavel_id", perfis["operador"]["id"], parametros_leitura={"escopo": "meus"},
             corpo={"nome": nome, "endereco": {**ENDERECO, "cidade": cidade, "numero": numero},
                    "categorias_aceitas": sorted({e[1] for e in EQUIPAMENTOS}),
                    "horario_atendimento": "Local fictício: segunda a sábado, 09h às 18h"},
@@ -249,8 +230,6 @@ def povoar_ampliado(clientes: dict, perfis: dict) -> dict:
     ciclos = (
         ("doacao", "reservado"), ("revenda", "aguardando_confirmacao"),
         ("doacao", "concluido"), ("revenda", "concluido"),
-        ("descarte", "aguardando_ponto"), ("descarte", "entrega_prevista"),
-        ("descarte", "recebido"), ("descarte", "destinacao_informada"),
     )
     lotes = [[], []]
     detalhes = {}
@@ -260,14 +239,14 @@ def povoar_ampliado(clientes: dict, perfis: dict) -> dict:
         dono = pessoas[indice % len(pessoas)]
         titulo = f"{produto} {contextos[indice // len(EQUIPAMENTOS)]}"
         destino, alvo = (("doacao" if indice % 2 == 0 else "revenda"), "disponivel") if indice < 24 else ciclos[(indice - 24) % len(ciclos)]
-        contraparte = pessoas[(indice + 1) % len(pessoas)] if destino != "descarte" else None
+        contraparte = pessoas[(indice + 1) % len(pessoas)]
         lotes[indice % 2].append((dono, titulo, destino, alvo, contraparte))
         detalhes["[Demo] " + titulo] = {
             "categoria": categoria, "marca": marca, "modelo": modelo,
             "valor": float(preco) if destino == "revenda" else None,
-            "condicao": "sem_conserto" if destino == "descarte" else ("funcional_com_defeito" if indice % 5 == 0 else "funcional"),
+            "condicao": "funcional_com_defeito" if indice % 5 == 0 else "funcional",
             "descricao": f"{MARCA} {produto.capitalize()} {contextos[indice // len(EQUIPAMENTOS)]}. "
-                         + ("Equipamento destinado ao descarte; não funciona." if destino == "descarte" else "Acompanha os acessórios descritos nas especificações; dados inteiramente fictícios."),
+                         + "Acompanha os acessórios descritos nas especificações; dados inteiramente fictícios.",
             "especificacoes": {**especificacoes, "origem": "Demonstração fictícia"},
         }
     registros = {}
@@ -312,7 +291,7 @@ def main(argumentos=None) -> int:
         with ExitStack() as stack:
             clientes = {k: stack.enter_context(httpx.Client(base_url=args.api_url, headers={"Origin": args.origin}, timeout=20)) for k in contas}
             esquema = chamar(clientes["ana"], "GET", "/openapi.json")
-            if "/api/encaminhamentos" not in esquema.get("paths", {}) or "/api/itens/{item_id}/destinacao" not in esquema["paths"]:
+            if not {"/api/itens", "/api/interesses", "/api/pontos-coleta"}.issubset(esquema.get("paths", {})):
                 raise DemonstracaoError("Atualize o backend para a v2.1 antes de povoar")
             # Se o operador já autentica, comprovar o ID da API no banco antes de escrever.
             from pymongo import MongoClient

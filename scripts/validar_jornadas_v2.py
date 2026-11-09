@@ -15,8 +15,9 @@ from uuid import uuid4
 from bson import ObjectId
 from pymongo import MongoClient
 from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import StaleElementReferenceException, WebDriverException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
@@ -36,9 +37,6 @@ itens = banco[os.environ.get("MONGO_COLLECTION_ITENS", "itens")]
 pontos = banco[os.environ.get("MONGO_COLLECTION_PONTOS_COLETA", "pontos_coleta")]
 interesses = banco[os.environ.get("MONGO_COLLECTION_INTERESSES", "interesses")]
 avisos = banco[os.environ.get("MONGO_COLLECTION_NOTIFICACOES", "notificacoes")]
-encaminhamentos = banco[
-    os.environ.get("MONGO_COLLECTION_ENCAMINHAMENTOS", "encaminhamentos")
-]
 
 
 def preparar_operador() -> str:
@@ -123,18 +121,24 @@ class Navegador:
 
     def aguardar_sem_botao(self, lista: str, titulo: str, seletor: str) -> None:
         def sem_botao(driver) -> bool:
-            card = self._cartao(lista, titulo)
-            # Após a transição o item pode sair do grupo exibido.
-            return card is None or not card.find_elements(By.CSS_SELECTOR, seletor)
+            try:
+                card = self._cartao(lista, titulo)
+                # Após a transição o item pode sair do grupo exibido.
+                return card is None or not card.find_elements(By.CSS_SELECTOR, seletor)
+            except StaleElementReferenceException:
+                return False
 
         self.espera.until(sem_botao)
 
     def aguardar_sem_texto(self, lista: str, titulo: str, texto: str) -> None:
         def sem_texto(driver) -> bool:
-            card = self._cartao(lista, titulo)
-            return card is None or texto not in [
-                botao.text for botao in card.find_elements(By.TAG_NAME, "button")
-            ]
+            try:
+                card = self._cartao(lista, titulo)
+                return card is None or texto not in [
+                    botao.text for botao in card.find_elements(By.TAG_NAME, "button")
+                ]
+            except StaleElementReferenceException:
+                return False
 
         self.espera.until(sem_texto)
 
@@ -232,9 +236,9 @@ class Navegador:
     def avancar(self, titulo: str, status: str, referencia: tuple[str, str] | None = None) -> None:
         documento = itens.find_one({"titulo": titulo})
         situacao = documento.get("status") if documento else None
-        if situacao in {"concluido", "recebido", "arquivado"}:
+        if situacao in {"concluido", "arquivado"}:
             grupo = "encerrados"
-        elif situacao in {"reservado", "aguardando_confirmacao", "entrega_prevista"}:
+        elif situacao in {"reservado", "aguardando_confirmacao"}:
             grupo = "em_andamento"
         else:
             grupo = "ativos"
@@ -263,7 +267,7 @@ class Navegador:
             self.preencher(campo, valor, escopo="#ponto-form")
         self.selecionar("categorias_aceitas", categoria, escopo="#ponto-form")
         self.clicar(self.driver.find_element(By.CSS_SELECTOR, "#ponto-form button[type='submit']"))
-        self.espera.until(lambda d: "Ponto cadastrado" in d.find_element(By.ID, "ponto-form-message").text)
+        self.espera.until(lambda d: "Local cadastrado" in d.find_element(By.ID, "ponto-form-message").text)
 
     def propor_combinacao(self, lista: str, titulo: str, local: str = "Portaria da jornada") -> None:
         self.abrir("interesses.html", f"#{lista}")
@@ -311,41 +315,6 @@ class Navegador:
 
         self.espera.until(combinacao_aceita)
 
-    def indicar_destinacao(
-        self, titulo: str, tipo: str = "Ecoponto", nome: str = "Ecoponto Jornada"
-    ) -> None:
-        self.abrir("itens.html?grupo=ativos", "#my-items-list")
-        cartao = self.cartao("my-items-list", titulo)
-        formulario = cartao.find_element(By.CSS_SELECTOR, "form.destination-form")
-        Select(formulario.find_element(By.NAME, "tipo_local")).select_by_visible_text(tipo)
-        formulario.find_element(By.NAME, "nome").send_keys(nome)
-        self.clicar(formulario.find_element(By.CSS_SELECTOR, "button[type='submit']"))
-        self.espera.until(
-            lambda d: "não é verificada" in d.find_element(By.ID, "my-items-message").text
-        )
-        self.abrir("itens.html?grupo=encerrados", "#my-items-list")
-        assert "Informado por você" in self.cartao("my-items-list", titulo).text
-
-    def agendar_entrega(self, titulo: str, ponto_nome: str) -> None:
-        self.abrir("itens.html?grupo=ativos", "#my-items-list")
-        cartao = self.cartao("my-items-list", titulo)
-        seletor = Select(
-            cartao.find_element(By.CSS_SELECTOR, "select[data-papel='ponto']")
-        )
-        seletor.select_by_visible_text(ponto_nome)
-        self.clicar(cartao.find_element(By.CSS_SELECTOR, "button[data-acao='agendar']"))
-        self.espera.until(
-            lambda d: "Entrega prevista" in d.find_element(By.ID, "my-items-message").text
-        )
-
-    def confirmar_recebimento_no_ponto(self, titulo: str) -> None:
-        self.abrir("pontos.html", "#fila-list")
-        cartao = self.cartao("fila-list", titulo)
-        self.clicar(cartao.find_element(By.CSS_SELECTOR, "button[data-acao='receber']"))
-        self.espera.until(
-            lambda d: "Recebimento confirmado" in d.find_element(By.ID, "fila-message").text
-        )
-
     def declarar_entrega(self, titulo: str) -> None:
         self.abrir("itens.html?grupo=em_andamento", "#my-items-list")
         cartao = self.cartao("my-items-list", titulo)
@@ -374,6 +343,67 @@ class Navegador:
 
         self.espera.until(confirmado)
 
+    def ler_indicadores(self) -> dict[str, str]:
+        """Lê os indicadores expostos na tela de ofertas da sessão atual."""
+        self.abrir("itens.html", "#indicadores-title")
+        self.espera.until(lambda d: d.find_element(By.ID, "indicador-total").text != "")
+        return {
+            chave: self.driver.find_element(By.ID, f"indicador-{chave}").text
+            for chave in ("doados", "vendidos", "ofertas", "pendencias", "total", "locais")
+        }
+
+    def consultar_diretorio_anonimo(self, cidade: str, categoria: str, categoria_alheia: str) -> None:
+        """Terceira jornada: consulta pública sem conta, cookie ou cadastro de item."""
+        contagens_antes = contar_colecoes()
+        self.driver.delete_all_cookies()
+        self.abrir("onde-descartar.html", "#directory-list")
+        self.espera.until(lambda d: d.find_elements(By.CSS_SELECTOR, "#directory-list article"))
+
+        def filtrar(valor_cidade: str, valor_categoria: str) -> None:
+            campo = self.driver.find_element(By.ID, "directory-city")
+            campo.clear()
+            campo.send_keys(valor_cidade)
+            Select(self.driver.find_element(By.ID, "directory-category")).select_by_value(valor_categoria)
+            self.clicar(self.driver.find_element(By.CSS_SELECTOR, "#directory-filters button[type='submit']"))
+            self.espera.until(
+                lambda d: d.find_element(By.ID, "directory-list").get_attribute("aria-busy") == "false"
+            )
+            self.espera.until(lambda d: d.find_element(By.ID, "directory-message").text != "Carregando locais...")
+
+        # Controle negativo: categoria incompatível não pode devolver o local consultado.
+        filtrar(cidade, categoria_alheia)
+        assert not [
+            c for c in self.driver.find_elements(By.CSS_SELECTOR, "#directory-list article")
+            if cidade in c.text
+        ], "filtro de categoria ignorado"
+
+        filtrar(cidade, categoria)
+        cartao = self.espera.until(
+            lambda d: next(
+                (c for c in d.find_elements(By.CSS_SELECTOR, "#directory-list article")
+                 if cidade in c.text),
+                False,
+            )
+        )
+        assert "Rua" in cartao.text, cartao.text
+        assert "Notebook" in cartao.text or "notebook" in cartao.text.lower(), cartao.text
+        self.clicar(cartao.find_element(By.CSS_SELECTOR, ".directory-detail-link"))
+        detalhe = self.espera.until(
+            lambda d: d.find_element(By.ID, "directory-detail").is_displayed()
+            and "Rua" in d.find_element(By.ID, "directory-detail").text
+        )
+        assert detalhe
+        self.clicar(self.driver.find_element(By.ID, "directory-copy"))
+        self.espera.until(
+            lambda d: "copi" in d.find_element(By.ID, "directory-copy-message").text.lower()
+        )
+        self.clicar(self.driver.find_element(By.ID, "directory-back"))
+        self.espera.until(lambda d: d.find_elements(By.CSS_SELECTOR, "#directory-list article"))
+        assert not self.driver.get_cookies(), "consulta pública não deve criar sessão"
+        assert not self.driver.execute_script("return Object.keys(localStorage).length + Object.keys(sessionStorage).length"), "consulta não deve gravar storage"
+        # A navegação não pode escrever em nenhuma das cinco coleções.
+        assert contar_colecoes() == contagens_antes, "consulta pública alterou o banco"
+
     def avisos(self, titulo: str | None = None) -> str:
         self.abrir("notificacoes.html", "#notificacoes-list")
         self.espera.until(
@@ -383,6 +413,17 @@ class Navegador:
             By.CSS_SELECTOR, "#notificacoes-list article.item-card"
         )
         return " ".join(cartao.text for cartao in cartoes)
+
+
+def contar_colecoes() -> dict[str, int]:
+    """Contagem das cinco coleções para provar que consulta pública não escreve."""
+    return {
+        usuarios.name: usuarios.count_documents({}),
+        itens.name: itens.count_documents({}),
+        pontos.name: pontos.count_documents({}),
+        interesses.name: interesses.count_documents({}),
+        avisos.name: avisos.count_documents({}),
+    }
 
 
 def auditar_datas() -> dict[str, int]:
@@ -395,7 +436,6 @@ def auditar_datas() -> dict[str, int]:
         ("pontos_coleta", banco_utc[pontos.name]),
         ("interesses", banco_utc[interesses.name]),
         ("notificacoes", banco_utc[avisos.name]),
-        ("encaminhamentos", banco_utc[encaminhamentos.name]),
     ):
         documentos = list(colecao.find({}))
         assert documentos, f"{nome} sem documentos para auditar"
@@ -421,41 +461,51 @@ def limpar(prefixo: str = MARCA) -> None:
         documento["_id"]
         for documento in pontos.find({"nome": {"$regex": f"^{prefixo}"}}, {"_id": 1})
     ]
-    if ids_itens or ids_usuarios:
-        avisos.delete_many(
-            {"$or": [{"item_id": {"$in": ids_itens}}, {"usuario_id": {"$in": ids_usuarios}}]}
-        )
-    if ids_itens or ids_usuarios:
-        interesses.delete_many(
-            {"$or": [{"item_id": {"$in": ids_itens}}, {"usuario_id": {"$in": ids_usuarios}}]}
-        )
-    removidos_entregas = encaminhamentos.delete_many(
-        {"item_id": {"$in": ids_itens}}
-    ).deleted_count
+    vinculos = {
+        "$or": [{"item_id": {"$in": ids_itens}}, {"usuario_id": {"$in": ids_usuarios}}]
+    }
+    esperados_avisos = avisos.count_documents(vinculos)
+    esperados_interesses = interesses.count_documents(vinculos)
+    removidos_avisos = avisos.delete_many(vinculos).deleted_count
+    removidos_interesses = interesses.delete_many(vinculos).deleted_count
+    assert removidos_avisos == esperados_avisos, (removidos_avisos, esperados_avisos)
+    assert removidos_interesses == esperados_interesses, (removidos_interesses, esperados_interesses)
     removidos_itens = itens.delete_many({"_id": {"$in": ids_itens}}).deleted_count
     removidos_pontos = pontos.delete_many({"_id": {"$in": ids_pontos}}).deleted_count
     removidos_usuarios = usuarios.delete_many({"_id": {"$in": ids_usuarios}}).deleted_count
     assert removidos_itens == len(ids_itens), (removidos_itens, len(ids_itens))
     assert removidos_pontos == len(ids_pontos), (removidos_pontos, len(ids_pontos))
     assert removidos_usuarios == len(ids_usuarios), (removidos_usuarios, len(ids_usuarios))
+    # Órfãos ligados só à conta da jornada também contam como resíduo.
+    orfaos = {
+        "$or": [{"item_id": {"$in": ids_itens + [ObjectId()]}},
+                {"usuario_id": {"$in": ids_usuarios + [ObjectId()]}}]
+    }
     restantes = {
         "usuarios": usuarios.count_documents(filtro_usuarios),
         "itens": itens.count_documents(filtro_itens),
         "pontos": pontos.count_documents({"nome": {"$regex": f"^{prefixo}"}}),
-        "interesses": interesses.count_documents({"item_id": {"$in": ids_itens + [ObjectId()]}}),
-        "notificacoes": avisos.count_documents({"item_id": {"$in": ids_itens + [ObjectId()]}}),
+        "interesses": interesses.count_documents(orfaos),
+        "notificacoes": avisos.count_documents(orfaos),
     }
     assert restantes == {chave: 0 for chave in restantes}, restantes
     print(
         "limpeza=ok; removidos "
         f"usuarios={removidos_usuarios} itens={removidos_itens} "
-        f"pontos={removidos_pontos} entregas={removidos_entregas}"
+        f"pontos={removidos_pontos} interesses={removidos_interesses} "
+        f"notificacoes={removidos_avisos}"
     )
 
 
 def main() -> None:
     # Restos de execuções interrompidas são removidos pelo mesmo prefixo seletivo.
     limpar("jornada-")
+    # Nada fora do prefixo pode ser apagado: contagem de sentinela antes/depois.
+    fora_do_prefixo = {
+        "usuarios": usuarios.count_documents({"email": {"$not": {"$regex": "^jornada-"}}}),
+        "itens": itens.count_documents({"titulo": {"$not": {"$regex": "^jornada-"}}}),
+        "pontos": pontos.count_documents({"nome": {"$not": {"$regex": "^jornada-"}}}),
+    }
     for colecao, nome in (
         (usuarios, "usuarios"), (itens, "itens"), (pontos, "pontos"),
         (interesses, "interesses"), (avisos, "notificacoes"),
@@ -466,13 +516,16 @@ def main() -> None:
     doador_email = f"{MARCA}-doador@example.test"
     beneficiario_email = f"{MARCA}-beneficiario@example.test"
     titulo_doacao = f"{MARCA} Notebook doacao"
-    titulo_descarte = f"{MARCA} Monitor descarte"
-    titulo_indicado = f"{MARCA} Impressora indicada"
     titulo_revenda = f"{MARCA} Tablet revenda"
     nome_ponto = f"{MARCA} Ponto Central"
 
     navegador = Navegador()
     try:
+        # Preparação: operador cadastra o local consultado na terceira jornada.
+        navegador.entrar(operador_email)
+        navegador.criar_ponto(nome_ponto, "Notebook")
+        navegador.sair()
+
         # Jornada 1 — doação com entrega bilateral.
         navegador.cadastrar("Doadora Jornada", doador_email, "Doador")
         navegador.entrar(doador_email)
@@ -504,29 +557,11 @@ def main() -> None:
         navegador.sair()
         print("jornada_doacao=ok")
 
-        # Jornada 2 — descarte.
-        navegador.entrar(operador_email)
-        navegador.criar_ponto(nome_ponto, "Notebook")
-        navegador.sair()
+        # Jornada 3 — consulta anônima do diretório, sem item, conta ou escrita.
+        navegador.consultar_diretorio_anonimo("Maringá", "notebook", "monitor")
+        print("jornada_publica_onde_descartar=ok")
 
-        navegador.entrar(doador_email)
-        navegador.criar_item(titulo_descarte, "Descarte", "Notebook")
-        navegador.agendar_entrega(titulo_descarte, nome_ponto)
-        navegador.sair()
-
-        navegador.entrar(operador_email)
-        navegador.confirmar_recebimento_no_ponto(titulo_descarte)
-        navegador.sair()
-
-        navegador.entrar(doador_email)
-        navegador.abrir("itens.html?grupo=encerrados", "#my-items-list")
-        assert "Recebido" in navegador.cartao("my-items-list", titulo_descarte).text
-        navegador.criar_item(titulo_indicado, "Descarte", "Impressora")
-        navegador.indicar_destinacao(titulo_indicado)
-        navegador.sair()
-        print("jornada_descarte=ok")
-
-        # Jornada 3 — venda direta com entrega bilateral.
+        # Jornada 2 — venda direta com entrega bilateral.
         navegador.entrar(doador_email)
         navegador.criar_item(titulo_revenda, "Revenda", "Tablet", valor="120")
         navegador.sair()
@@ -555,18 +590,24 @@ def main() -> None:
     finally:
         navegador.fechar()
 
+    # Indicadores após as jornadas: somente ofertas confirmadas e locais cadastrais.
+    navegador = Navegador()
+    try:
+        navegador.entrar(doador_email)
+        indicadores = navegador.ler_indicadores()
+    finally:
+        navegador.fechar()
+    assert indicadores == {
+        "doados": "1", "vendidos": "1", "ofertas": "0",
+        "pendencias": "0", "total": "2", "locais": "1",
+    }, indicadores
+    print("indicadores=ok; " + " ".join(f"{k}={v}" for k, v in indicadores.items()))
+
     documento = itens.find_one({"titulo": titulo_doacao})
     assert documento["status"] == "concluido"
     selecionado = interesses.find_one({"item_id": documento["_id"]})
     assert selecionado["status"] == "encerrado" and selecionado["resultado"] == "concluido"
     assert selecionado["combinacao"]["aceito_por"] is not None
-    descarte = itens.find_one({"titulo": titulo_descarte})
-    assert descarte["status"] == "recebido" and descarte["ponto_coleta_id"] is not None
-    entrega = encaminhamentos.find_one({"item_id": descarte["_id"]})
-    assert entrega is not None and entrega["status"] == "recebido"
-    indicado = itens.find_one({"titulo": titulo_indicado})
-    assert indicado["status"] == "destinacao_informada"
-    assert indicado["destinacao_informada"]["tipo_local"] == "ecoponto"
     revenda = itens.find_one({"titulo": titulo_revenda})
     assert revenda["status"] == "concluido" and revenda["valor"] == 120.0
     assert avisos.count_documents({"item_id": documento["_id"]}) >= 1
@@ -576,6 +617,12 @@ def main() -> None:
     print("auditoria_datas=ok; " + " ".join(f"{k}={v}" for k, v in verificados.items()))
 
     limpar(MARCA)
+    assert {
+        "usuarios": usuarios.count_documents({"email": {"$not": {"$regex": "^jornada-"}}}),
+        "itens": itens.count_documents({"titulo": {"$not": {"$regex": "^jornada-"}}}),
+        "pontos": pontos.count_documents({"nome": {"$not": {"$regex": "^jornada-"}}}),
+    } == fora_do_prefixo, "limpeza tocou documentos fora do prefixo"
+    print("preservacao_fora_do_prefixo=ok")
 
 
 if __name__ == "__main__":

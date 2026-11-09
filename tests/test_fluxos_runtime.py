@@ -3,6 +3,7 @@ import os
 from types import SimpleNamespace
 from uuid import uuid4
 
+from datetime import UTC, datetime
 from bson import ObjectId
 
 import pytest
@@ -27,6 +28,7 @@ def ambiente(monkeypatch):
     monkeypatch.setenv("MONGO_COLLECTION_ITENS", "equipamentos_fluxo")
     monkeypatch.setenv("MONGO_COLLECTION_PONTOS_COLETA", "locais_fluxo")
     monkeypatch.setenv("MONGO_COLLECTION_INTERESSES", "solicitacoes_fluxo")
+    monkeypatch.setenv("MONGO_COLLECTION_NOTIFICACOES", "avisos_fluxo")
     app = criar_app()
     banco = cliente_mongo[nome]
     contexto = SimpleNamespace(
@@ -209,8 +211,7 @@ def test_indicadores_contam_apenas_apos_confirmacao(ambiente):
     antes = dono.get("/api/indicadores").json()
     assert antes == {
         "doados": 0,
-        "coletados": 0,
-        "indicados": 0,
+        "locais_ativos": 0,
         "ofertas_ativas": 0,
         "pendencias": 2,
         "vendidos": 0,
@@ -223,8 +224,7 @@ def test_indicadores_contam_apenas_apos_confirmacao(ambiente):
     depois = dono.get("/api/indicadores").json()
     assert depois == {
         "doados": 1,
-        "coletados": 0,
-        "indicados": 0,
+        "locais_ativos": 0,
         "ofertas_ativas": 0,
         "pendencias": 1,
         "vendidos": 0,
@@ -319,20 +319,6 @@ def test_referencias_do_fluxo_bloqueiam_exclusao(ambiente):
     assert excluir_proprietario.status_code == 409, excluir_proprietario.text
     assert ambiente.usuarios.count_documents({"_id": ObjectId(interessado_id)}) == 1
     assert ambiente.usuarios.count_documents({"_id": ObjectId(dono_id)}) == 1
-    operador, _ = novo_operador(ambiente)
-    ponto = criar_ponto(operador, "Ponto referenciado", ["notebook"])
-    descarte = criar_item(dono, destino="descarte", valor=None)
-    assert descarte["status"] == "aguardando_ponto"
-    entrega = dono.post(
-        "/api/encaminhamentos",
-        json={"item_id": descarte["id"], "ponto_id": ponto["id"]},
-    )
-    assert entrega.status_code == 201, entrega.text
-    excluir_ponto = operador.delete(f"/api/pontos-coleta/{ponto['id']}")
-
-    assert excluir_ponto.status_code == 409, excluir_ponto.text
-    assert ambiente.pontos.count_documents({"_id": ObjectId(ponto["id"])}) == 1
-
     sem_vinculo, sem_vinculo_id, _ = nova_conta(ambiente, "sem-vinculo")
     excluir_sem_vinculo = sem_vinculo.delete(f"/api/usuarios/{sem_vinculo_id}")
 

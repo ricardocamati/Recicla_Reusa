@@ -11,11 +11,10 @@ from app.exceptions import (
     UsuarioNaoEncontradoError,
 )
 from app.mappers.item_mapper import ItemMapper
-from app.models.item import DestinacaoInformada, Item
+from app.models.item import Item
 from app.models.notificacao import EventoNotificacao, evento_de_status_item
 from app.models.usuario import Usuario
 from app.schemas.item import (
-    DestinacaoInformadaRequest,
     FiltrosItem,
     ItemCreateRequest,
     ItemResponse,
@@ -36,7 +35,7 @@ TRANSICOES: dict[str, dict[str, set[str]]] = {
     },
 }
 
-STATUS_CONCLUIDOS = {"concluido", "recebido"}
+STATUS_CONCLUIDOS = {"concluido"}
 
 
 class RepositorioDeItens(Protocol):
@@ -53,8 +52,9 @@ class RepositorioDeItens(Protocol):
     def listar_por_proprietario(
         self,
         proprietario_id: str,
-        statuses: tuple[str, ...],
+        statuses: tuple[str, ...] | None,
         *,
+        destinos: tuple[str, ...] | None = None,
         offset: int = 0,
         limite: int = 20,
     ) -> list[Item]: ...
@@ -79,9 +79,6 @@ class RepositorioDeInteressesParaItens(Protocol):
     def buscar_aceito_por_item(self, item_id: str) -> str | None: ...
 
 
-class CompatibilidadeDePontos(Protocol):
-    def garantir_compatibilidade(self, ponto_id: str, categoria: str): ...
-
 
 class RepositorioDeUsuariosParaItens(Protocol):
     def buscar_por_id(self, usuario_id: str) -> Usuario | None: ...
@@ -98,7 +95,6 @@ class ItemService:
         relogio: Callable[[], datetime] | None = None,
         reservas_por_interesse: bool | None = None,
         interesses: RepositorioDeInteressesParaItens | None = None,
-        pontos: CompatibilidadeDePontos | None = None,
     ) -> None:
         self._repositorio = repositorio
         self._repositorio_usuarios = repositorio_usuarios
@@ -110,14 +106,10 @@ class ItemService:
             else reservas_por_interesse
         )
         self._interesses = interesses
-        self._pontos = pontos
 
     def criar(self, request: ItemCreateRequest, *, proprietario_id: str) -> ItemResponse:
         proprietario = self._obter_pessoa(proprietario_id)
-        if request.publicar:
-            status = "aguardando_ponto" if request.destino == "descarte" else "disponivel"
-        else:
-            status = "rascunho"
+        status = "disponivel" if request.publicar else "rascunho"
         item = ItemMapper.para_modelo(
             request,
             proprietario_id=proprietario_id,
@@ -128,7 +120,7 @@ class ItemService:
         return self._resposta(criado, proprietario)
 
     def publicar(self, item_id: str, *, proprietario_id: str) -> ItemResponse:
-        """Publica um rascunho; descarte também sai do rascunho, mas fora do catálogo."""
+        """Publica rascunhos de oferta."""
         item = self._buscar_item(item_id)
         proprietario = self._obter_pessoa(proprietario_id)
         if item.proprietario_id != proprietario_id:
@@ -136,8 +128,7 @@ class ItemService:
         if item.status != "rascunho":
             raise TransicaoInvalidaError(item.status, "disponivel")
         instante = self._relogio()
-        # Descarte publicado aguarda um ponto; não entra no catálogo.
-        item.status = "aguardando_ponto" if item.destino == "descarte" else "disponivel"
+        item.status = "disponivel"
         item.data_modificacao = instante
         ItemMapper.registrar_transicao(
             item,
@@ -156,6 +147,8 @@ class ItemService:
             raise ItemNaoAutorizadoError()
         if item.status == "arquivado":
             return self._resposta(item, proprietario)
+        if item.status not in ("rascunho", "disponivel"):
+            raise FluxoItemError(409, "Oferta com fluxo iniciado não pode ser arquivada")
         instante = self._relogio()
         anterior = item.status
         item.status = "arquivado"
@@ -176,8 +169,6 @@ class ItemService:
         offset: int = 0,
         limite: int = 20,
     ) -> list[ItemResponse]:
-        if filtros.destino == "descarte":
-            raise FluxoItemError(400, "Descarte não aparece no catálogo")
         tem_faixa = filtros.preco_min is not None or filtros.preco_max is not None
         if tem_faixa and filtros.destino not in (None, "revenda"):
             raise FluxoItemError(400, "Faixa de preço só se aplica a revenda")
@@ -214,20 +205,21 @@ class ItemService:
         limite: int = 20,
     ) -> list[ItemResponse]:
         grupos = {
-            "ativos": ("rascunho", "disponivel", "aguardando_ponto"),
-            "em_andamento": ("reservado", "aguardando_confirmacao", "entrega_prevista"),
-            "encerrados": (
-                "concluido",
-                "recebido",
-                "destinacao_informada",
-                "arquivado",
-            ),
+            "ativos": ("rascunho", "disponivel"),
+            "em_andamento": ("reservado", "aguardando_confirmacao"),
+            "encerrados": ("concluido", "arquivado"),
         }
         if grupo not in grupos:
             raise FluxoItemError(400, "Grupo inválido")
         self._obter_pessoa(proprietario_id)
+        statuses = grupos[grupo]
+        destinos = ("doacao", "revenda")
         itens = self._repositorio.listar_por_proprietario(
-            proprietario_id, grupos[grupo], offset=offset, limite=limite
+            proprietario_id,
+            statuses,
+            destinos=destinos,
+            offset=offset,
+            limite=limite,
         )
         proprietarios = self._buscar_proprietarios(itens)
         return [
@@ -247,6 +239,7 @@ class ItemService:
 
     def confirmar_recebimento(self, item_id: str, *, usuario_id: str) -> ItemResponse:
         self._obter_pessoa(usuario_id)
+        item = self._buscar_item(item_id)
         atualizado = self._repositorio.confirmar_recebimento(
             item_id, usuario_id, self._relogio()
         )
@@ -271,15 +264,12 @@ class ItemService:
         instante = self._relogio()
         status_anterior = item.status
         novo_status = request.status
-        if (self._reservas_por_interesse and item.destino != "descarte"
+        if (self._reservas_por_interesse
                 and novo_status == "reservado" and status_anterior != "reservado"):
             # A reserva é efeito do aceite, nunca de um PUT isolado.
             raise ConflitoEstadoError()
-        if item.status in STATUS_CONCLUIDOS:
-            if (novo_status is not None and novo_status != item.status) or (
-                request.destino != item.destino
-            ):
-                raise TransicaoInvalidaError(item.status, novo_status or request.destino)
+        if item.status in STATUS_CONCLUIDOS or item.status == "arquivado":
+            raise FluxoItemError(409, "Oferta encerrada não pode ser alterada")
         if novo_status in ("rascunho", "arquivado"):
             raise FluxoItemError(
                 400, "Publicação e arquivamento usam os comandos próprios do item"
@@ -296,11 +286,6 @@ class ItemService:
 
         transicao = novo_status is not None and novo_status != status_anterior
         if transicao:
-            if item.destino == "descarte" and novo_status != status_anterior:
-                raise FluxoItemError(
-                    400,
-                    "Descarte é encaminhado em /api/encaminhamentos, não pelo PUT",
-                )
             self._validar_transicao(item.destino, status_anterior, novo_status)
         referencias = self._preparar_fluxo(
             item,
@@ -309,7 +294,6 @@ class ItemService:
         )
 
         ItemMapper.atualizar_modelo(request, item, instante=instante)
-        item.ponto_coleta_id = referencias["ponto_coleta_id"]
         item.comprador_id = referencias["comprador_id"]
         if referencias["beneficiario_id"] is not None:
             item.beneficiario_id = referencias["beneficiario_id"]
@@ -352,9 +336,9 @@ class ItemService:
         self._obter_pessoa(proprietario_id)
         if item.proprietario_id != proprietario_id:
             raise ItemNaoAutorizadoError()
-        if item.status != "disponivel":
+        if item.status not in ("rascunho", "disponivel"):
             # Excluir apagaria o histórico do fluxo e a referência que protege
-            # beneficiário, comprador e ponto de coleta.
+            # beneficiário e comprador.
             raise FluxoItemError(
                 409, "Item com fluxo iniciado não pode ser excluído"
             )
@@ -373,43 +357,21 @@ class ItemService:
         *,
         alvo: str | None,
     ) -> dict[str, str | None]:
-        """Descarte é encaminhado por /api/encaminhamentos, não pelo PUT."""
-        if (
-            item.status == "entrega_prevista"
-            and request.categoria is not None
-            and request.categoria != item.categoria
-        ):
-            raise FluxoItemError(
-                409,
-                "Categoria não muda com entrega prevista; cancele ou troque o ponto",
-            )
-        if request.ponto_coleta_id is not None:
-            raise FluxoItemError(
-                400, "ponto_coleta_id é definido em /api/encaminhamentos"
-            )
+        """Referências dos participantes são derivadas do interesse."""
         if request.comprador_id is not None:
             raise FluxoItemError(
                 400, "Venda não recebe comprador no PUT; a seleção vem do interesse"
             )
         return {
-            "ponto_coleta_id": item.ponto_coleta_id,
             "comprador_id": item.comprador_id,
             "beneficiario_id": None,
         }
 
-    def _garantir_ponto(self, ponto_id: str, categoria: str) -> None:
-        if self._pontos is None:
-            raise FluxoItemError(400, "Ponto de coleta não pode ser validado")
-        self._pontos.garantir_compatibilidade(ponto_id, categoria)
-
-    def _validar_comprador(self, comprador_id: str, proprietario_id: str) -> None:
-        if comprador_id == proprietario_id:
-            raise FluxoItemError(400, "Comprador deve ser diferente do proprietário")
-        comprador = self._repositorio_usuarios.buscar_por_id(comprador_id)
-        if comprador is None:
-            raise UsuarioNaoEncontradoError(comprador_id)
-        if comprador.tipo != "pessoa":
-            raise FluxoItemError(400, "Comprador deve ser uma pessoa cadastrada")
+    def buscar_item_proprio(self, item_id: str, *, proprietario_id: str) -> Item:
+        item = self._buscar_item(item_id)
+        if item.proprietario_id != proprietario_id:
+            raise ItemNaoEncontradoError(item_id)
+        return item
 
     def _buscar_item(self, item_id: str) -> Item:
         item = self._repositorio.buscar_por_id(item_id)
@@ -425,64 +387,6 @@ class ItemService:
             raise ItemNaoAutorizadoError()
         return usuario
 
-    def informar_destinacao(
-        self,
-        item_id: str,
-        dados: DestinacaoInformadaRequest,
-        *,
-        proprietario_id: str,
-    ) -> ItemResponse:
-        item = self._buscar_item(item_id)
-        if item.proprietario_id != proprietario_id:
-            raise ItemNaoAutorizadoError()
-        if item.destino != "descarte":
-            raise FluxoItemError(400, "Destinação informada só se aplica a descarte")
-        if item.status == "destinacao_informada":
-            raise FluxoItemError(409, "Item já possui destinação informada")
-        if item.status != "aguardando_ponto":
-            raise FluxoItemError(
-                409, "Item precisa estar aguardando ponto para informar destinação"
-            )
-        instante = self._relogio()
-        item.destinacao_informada = DestinacaoInformada(
-            tipo_local=dados.tipo_local,
-            nome=dados.nome,
-            cidade=dados.cidade,
-            observacao=dados.observacao,
-            informado_em=instante,
-        )
-        ItemMapper.registrar_transicao(
-            item,
-            novo_status="destinacao_informada",
-            responsavel_id=proprietario_id,
-            instante=instante,
-            observacao=f"Destinação informada pelo autor ({dados.tipo_local})",
-        )
-        salvo = self._repositorio.atualizar(item, status_esperado="aguardando_ponto")
-        return self._resposta(salvo, usuario_id=proprietario_id)
-
-    def desfazer_destinacao(self, item_id: str, *, proprietario_id: str) -> ItemResponse:
-        item = self._buscar_item(item_id)
-        if item.proprietario_id != proprietario_id:
-            raise ItemNaoAutorizadoError()
-        if item.status == "arquivado":
-            raise FluxoItemError(409, "Item arquivado não aceita desfazer destinação")
-        if item.status != "destinacao_informada":
-            raise FluxoItemError(409, "Item não possui destinação informada ativa")
-        instante = self._relogio()
-        item.destinacao_informada = None
-        ItemMapper.registrar_transicao(
-            item,
-            novo_status="aguardando_ponto",
-            responsavel_id=proprietario_id,
-            instante=instante,
-            observacao="Destinação informada desfeita pelo autor",
-        )
-        salvo = self._repositorio.atualizar(
-            item, status_esperado="destinacao_informada"
-        )
-        return self._resposta(salvo, usuario_id=proprietario_id)
-
     def _resposta(
         self,
         item: Item,
@@ -497,9 +401,6 @@ class ItemService:
             item,
             cidade_proprietario=proprietario.endereco.cidade,
         )
-        if usuario_id is not None and usuario_id != item.proprietario_id:
-            # Indicação de lugar é privada do autor; operadores e terceiros não a veem.
-            resposta = resposta.model_copy(update={"destinacao_informada": None})
         return resposta
 
     def _buscar_proprietarios(self, itens: list[Item]) -> dict[str, Usuario]:

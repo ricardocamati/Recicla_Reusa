@@ -79,7 +79,6 @@ def payload_usuario(email: str) -> dict[str, Any]:
         "nome": "Smoke Docker",
         "email": email,
         "senha": "Smoke2026",
-        "tipo": "doador",
         "endereco": {
             "logradouro": "Rua de Evidência",
             "numero": "100",

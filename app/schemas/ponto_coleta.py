@@ -32,6 +32,16 @@ class PontoSituacaoRequest(BaseModel):
     ativo: bool
 
 
+class PontoColetaPublicResponse(BaseModel):
+    """Dados do local que podem ser consultados sem identidade do visitante."""
+
+    id: str
+    nome: str
+    endereco: EnderecoResponse
+    categorias_aceitas: list[str]
+    horario_atendimento: str
+
+
 class PontoColetaResponse(BaseModel):
     id: str
     nome: str

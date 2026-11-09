@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from app.exceptions import ItemNaoAutorizadoError, ItemNaoEncontradoError, UsuarioNaoEncontradoError
+from app.exceptions import FluxoItemError, ItemNaoAutorizadoError, ItemNaoEncontradoError, UsuarioNaoEncontradoError
 from app.models.item import Item
 from app.models.usuario import Endereco, Usuario
 from app.schemas.item import FiltrosItem, ItemCreateRequest, ItemUpdateRequest
@@ -46,15 +46,18 @@ class RepositorioItensFake:
     def listar_por_proprietario(
         self,
         proprietario_id: str,
-        statuses: tuple[str, ...],
+        statuses: tuple[str, ...] | None = None,
         *,
+        destinos: tuple[str, ...] | None = None,
         offset: int = 0,
         limite: int = 20,
     ) -> list[Item]:
         return [
             item
             for item in self.itens.values()
-            if item.proprietario_id == proprietario_id and item.status in statuses
+            if item.proprietario_id == proprietario_id
+            and (statuses is None or item.status in statuses)
+            and (destinos is None or item.destino in destinos)
         ][offset : offset + limite]
 
     def buscar_por_id(self, item_id: str) -> Item | None:
@@ -223,6 +226,46 @@ def test_atualizar_item_inexistente_gera_erro() -> None:
 
     with pytest.raises(ItemNaoEncontradoError):
         servico.atualizar("ausente", update_request(), proprietario_id="u1")
+
+
+def test_atualizar_oferta_concluida_nao_altera_metadados() -> None:
+    itens = RepositorioItensFake()
+    usuarios = RepositorioUsuariosFake([usuario_doador()])
+    servico = service(itens, usuarios, datetime.now)
+    criado = servico.criar(request(), proprietario_id="u1")
+    itens.itens[criado.id].status = "concluido"
+    original = replace(itens.itens[criado.id])
+
+    with pytest.raises(FluxoItemError) as erro:
+        servico.atualizar(criado.id, update_request(titulo="Alterado", condicao="reparavel"), proprietario_id="u1")
+
+    assert erro.value.status_code == 409
+    assert itens.itens[criado.id] == original
+
+
+def test_arquivamento_exige_oferta_sem_fluxo_iniciado() -> None:
+    itens = RepositorioItensFake()
+    usuarios = RepositorioUsuariosFake([usuario_doador()])
+    servico = service(itens, usuarios, datetime.now)
+    criado = servico.criar(request(), proprietario_id="u1")
+    itens.itens[criado.id].status = "reservado"
+
+    with pytest.raises(FluxoItemError) as erro:
+        servico.arquivar(criado.id, proprietario_id="u1")
+
+    assert erro.value.status_code == 409
+    assert itens.itens[criado.id].status == "reservado"
+
+
+def test_exclusao_de_rascunho_sem_referencias_e_aceita() -> None:
+    itens = RepositorioItensFake()
+    usuarios = RepositorioUsuariosFake([usuario_doador()])
+    servico = service(itens, usuarios, datetime.now)
+    criado = servico.criar(request(publicar=False), proprietario_id="u1")
+
+    servico.excluir(criado.id, proprietario_id="u1")
+
+    assert criado.id not in itens.itens
 
 
 def test_proprietario_diferente_nao_altera_ou_exclui_item() -> None:

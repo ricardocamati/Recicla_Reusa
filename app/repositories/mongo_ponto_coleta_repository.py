@@ -7,7 +7,6 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from pymongo.collection import Collection
 
-from app.exceptions import ReferenciaAtivaError
 from app.models.ponto_coleta import PontoColeta
 from app.models.usuario import Endereco
 
@@ -18,10 +17,8 @@ class MongoPontoColetaRepository:
         colecao: Collection[dict[str, Any]],
         *,
         criar_indices: bool = True,
-        colecao_itens: Collection[dict[str, Any]] | None = None,
     ) -> None:
         self._colecao = colecao
-        self._colecao_itens = colecao_itens
         if criar_indices:
             self.criar_indices()
 
@@ -46,10 +43,17 @@ class MongoPontoColetaRepository:
         cidade: str | None = None,
         categoria: str | None = None,
         responsavel_id: str | None = None,
+        ativo: bool | None = None,
         offset: int = 0,
         limite: int = 20,
     ) -> list[PontoColeta]:
         consulta: dict[str, Any] = {}
+        if ativo is True:
+            # Documentos anteriores ao campo ativo já eram lidos como ativos.
+            # Preservar essa compatibilidade sem gravar ou migrar o documento.
+            consulta["$or"] = [{"ativo": True}, {"ativo": {"$exists": False}}]
+        elif ativo is False:
+            consulta["ativo"] = False
         if cidade:
             consulta["endereco.cidade"] = {
                 "$regex": f"^{re.escape(cidade.strip())}$",
@@ -64,7 +68,7 @@ class MongoPontoColetaRepository:
             consulta["responsavel_id"] = object_id
         documentos = (
             self._colecao.find(consulta)
-            .sort("nome", 1)
+            .sort([("nome", 1), ("_id", 1)])
             .skip(offset)
             .limit(limite)
         )
@@ -103,9 +107,6 @@ class MongoPontoColetaRepository:
         object_responsavel = self._converter_id(responsavel_id)
         if object_id is None or object_responsavel is None:
             return False
-        if (self._colecao_itens is not None
-                and self._colecao_itens.count_documents({"ponto_coleta_id": object_id})):
-            raise ReferenciaAtivaError()
         resultado = self._colecao.delete_one(
             {"_id": object_id, "responsavel_id": object_responsavel}
         )
