@@ -40,7 +40,7 @@ Cada destino terá seu próprio fluxo de status e um histórico rastreável. O s
 
 ### Estado atual do repositório
 
-A primeira entrega está preservada na tag `v1.0`. A segunda entrega evoluiu nas Etapas 1 a 8 (marco v2.0, commit `71e8dfa`, PR #18) e recebeu a revisão de negócio e usabilidade v2.1 nas Etapas 9 a 20. O marco final da segunda entrega é o commit **`dfaf85d`** na `main` (merge do PR #29), que reúne as Etapas 16 a 20 (PR #27) e a correção de leitura de ofertas legadas, validado com a suíte completa. Registro completo em [artefatos/v2.1/registro_entrega.md](artefatos/v2.1/registro_entrega.md).
+A primeira entrega está preservada na tag `v1.0`. A segunda entrega evoluiu nas Etapas 1 a 8 (marco v2.0, commit `71e8dfa`, PR #18) e recebeu a revisão de negócio e usabilidade v2.1 nas Etapas 9 a 20. O marco final da segunda entrega é o commit da `main` resultante do merge do PR #27 (Etapas 16 a 20) e da correção de leitura de ofertas legadas do PR #29, validado com a suíte completa. Registro completo em [artefatos/v2.1/registro_entrega.md](artefatos/v2.1/registro_entrega.md).
 
 A aplicação permite cadastro de pessoa, publicação de ofertas de doação/venda, interesse, reserva reversível, combinação aceita e entrega bilateral. O descarte usa o diretório público de locais. O processo anterior por equipamento é removido, sem entregas previstas, recebimento, indicação de destinação ou aba histórica de descarte. Autenticação usa sessão em cookie HttpOnly; permissões são verificadas no backend por identidade e propriedade.
 

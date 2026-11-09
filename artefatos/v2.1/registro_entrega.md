@@ -3,7 +3,7 @@
 ## Identificação
 
 - **Entrega:** segunda entrega da AEP 2026.2 — 6S.
-- **Marco final:** commit **`dfaf85d`** — `Merge pull request #29 from ricardocamati/fix/leitura-item-legado`, na `main`. Inclui o PR #27 (Etapas 16 a 20), o PR #28 (identificação do marco) e o PR #29 (correção de leitura de ofertas legadas).
+- **Marco final:** commit da `main` após o merge do PR #29 (correção de leitura de ofertas de bancos anteriores), que inclui o PR #27 (Etapas 16 a 20).
 - **Pull requests:** [#27](https://github.com/ricardocamati/Recicla_Reusa/pull/27) — 7 commits, 76 arquivos, Etapas 16 a 20; [#29](https://github.com/ricardocamati/Recicla_Reusa/pull/29) — 2 arquivos, leitura de ofertas legadas.
 - **Primeira entrega preservada:** tag `v1.0`.
 - **Tag ou release da segunda entrega:** não emitida por decisão da equipe; o enunciado aceita commit informado como identificação da versão.
