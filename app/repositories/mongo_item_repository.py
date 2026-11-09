@@ -20,6 +20,11 @@ from app.models.notificacao import EventoNotificacao
 from app.repositories.notificacao_documento import montar_documento, registrar
 from app.schemas.item import FiltrosItem
 
+# Campos gravados pelo fluxo de descarte por item, removido do produto.
+# Bancos anteriores a essa retirada ainda os contêm; a leitura os ignora e a
+# gravação não os recria. Nenhum documento é apagado ou migrado.
+CAMPOS_DO_FLUXO_REMOVIDO = ("ponto_coleta_id", "destinacao_informada")
+
 
 class MongoItemRepository:
     def __init__(
@@ -467,6 +472,10 @@ class MongoItemRepository:
         dados = dict(documento)
         dados.pop("interesse_aceito_id", None)
         dados.pop("_lock_interesses", None)
+        # Campos do fluxo de descarte removido continuam existindo em bancos anteriores.
+        # Descartá-los na leitura mantém versões antigas legíveis sem reintroduzi-los no modelo.
+        for campo in CAMPOS_DO_FLUXO_REMOVIDO:
+            dados.pop(campo, None)
         dados["id"] = str(dados.pop("_id"))
         dados["proprietario_id"] = str(dados["proprietario_id"])
         dados["data_adicao"] = MongoItemRepository._normalizar_data(dados["data_adicao"])
