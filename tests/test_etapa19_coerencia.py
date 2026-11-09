@@ -44,6 +44,8 @@ def test_indicadores_ignoram_documentos_historicos_de_descarte(ambiente):
     _legado(banco, dono, status="disponivel")
     _legado(banco, dono, status="recebido")
     _legado(banco, dono, status="destinacao_informada")
+    # O caminho de doados/vendidos/total também não pode aceitar modalidade retirada.
+    _legado(banco, dono, status="concluido")
     conta = TestClient(ambiente.app, headers={"Origin": "http://localhost:5500"})
     ambiente.clientes.append(conta)
     email = f"pessoa-{uuid4().hex[:8]}@example.test"
@@ -77,6 +79,8 @@ def test_consulta_e_gestao_do_diretorio_nao_criam_avisos_nem_mudam_indicadores(a
     operador = TestClient(ambiente.app, headers={"Origin": "http://localhost:5500"})
     ambiente.clientes.append(operador)
     assert operador.post("/api/auth/login", json={"email": email, "senha": "Teste12345"}).status_code == 200
+    avisos_iniciais = list(banco[Settings().mongo_collection_notificacoes].find())
+    indicadores_iniciais = operador.get("/api/indicadores").json()
     criado = operador.post("/api/pontos-coleta", json={
         "nome": "Local do teste de avisos",
         "endereco": {"logradouro": "Rua Pública", "numero": "10", "cep": "87000000", "cidade": "Maringá"},
@@ -84,6 +88,10 @@ def test_consulta_e_gestao_do_diretorio_nao_criam_avisos_nem_mudam_indicadores(a
     })
     assert criado.status_code == 201, criado.text
     ponto_id = criado.json()["id"]
+    # Cadastrar o local é cadastral: cria aviso nenhum e não mexe em resultados.
+    assert list(banco[Settings().mongo_collection_notificacoes].find()) == avisos_iniciais
+    apos_cadastro = operador.get("/api/indicadores").json()
+    assert apos_cadastro == {**indicadores_iniciais, "locais_ativos": indicadores_iniciais["locais_ativos"] + 1}
 
     antes_avisos = list(banco[Settings().mongo_collection_notificacoes].find())
     antes_indicadores = operador.get("/api/indicadores").json()
