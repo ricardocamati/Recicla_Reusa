@@ -21,6 +21,7 @@ Não há dados do descarte por item a conservar. Portanto, sua retirada remove c
 | [Contratos HTTP](contratos_http.md) | Consultas propostas e diferenças do runtime |
 | [Casos de teste](casos_de_teste.md) | Critérios escritos, não resultados de execução |
 | [Matriz](matriz_rastreabilidade.md) | Rastreabilidade, código existente e implementação pendente |
+| [Registro da entrega](registro_entrega.md) | Marco final, escopo entregue, evidências reproduzíveis e limites |
 
 Requisitos delimitam escopo; regras definem comportamento; os demais artefatos devem corresponder a ambos. Para o programa existente, continuam valendo o [contrato atual](../../docs/http-api.md) e a [OpenAPI gerada](../../docs/openapi.md).
 

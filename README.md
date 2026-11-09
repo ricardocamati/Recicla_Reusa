@@ -40,7 +40,7 @@ Cada destino terá seu próprio fluxo de status e um histórico rastreável. O s
 
 ### Estado atual do repositório
 
-A primeira entrega está preservada na tag `v1.0`. A segunda entrega evoluiu nas Etapas 1 a 8 (marco v2.0, commit `71e8dfa`, PR #18) e recebeu a revisão de negócio e usabilidade v2.1 nas Etapas 9 a 15. Este checkout inclui o fechamento da Etapa 15 (`1f36c2b`, PR #25); publicação, revisão e merge são passos separados da implementação local. O marco final a informar na entrega deve ser o commit efetivamente integrado e validado.
+A primeira entrega está preservada na tag `v1.0`. A segunda entrega evoluiu nas Etapas 1 a 8 (marco v2.0, commit `71e8dfa`, PR #18) e recebeu a revisão de negócio e usabilidade v2.1 nas Etapas 9 a 20. O marco final da segunda entrega é o commit **`b277507`**, merge do PR #27 (Etapas 16 a 20) sobre a `main`, validado com a suíte completa. Registro completo em [artefatos/v2.1/registro_entrega.md](artefatos/v2.1/registro_entrega.md).
 
 A aplicação permite cadastro de pessoa, publicação de ofertas de doação/venda, interesse, reserva reversível, combinação aceita e entrega bilateral. O descarte usa o diretório público de locais. O processo anterior por equipamento é removido, sem entregas previstas, recebimento, indicação de destinação ou aba histórica de descarte. Autenticação usa sessão em cookie HttpOnly; permissões são verificadas no backend por identidade e propriedade.
 
@@ -159,7 +159,9 @@ Os endpoints de usuários estão em `/api/usuarios`, os itens em `/api/itens` e 
 .venv/Scripts/python.exe -m pytest
 ```
 
-O comando padrão mede cobertura sobre `app`; a configuração está em `pyproject.toml`. A validação funcional da Etapa 15 aprovou **201 testes**, sem medição de cobertura naquela execução. Na validação da carga ampliada de demonstração, a suíte completa aprovou **216 testes**, incluindo integração real, e a medição configurada foi aprovada. Os dados locais da medição ficam em `.coverage`, ignorado pelo Git. Configuração e contagem de testes não substituem a execução; repita a medição se o código do marco de entrega mudar.
+O comando padrão mede cobertura sobre `app` e exige o mínimo configurado em `pyproject.toml` (`--cov-fail-under=70`), de modo que a própria suíte falha se a cobertura ficar abaixo do exigido.
+
+No marco final da segunda entrega (`b277507`, PR #27), com MongoDB real em replica set e Selenium, a suíte completa foi executada em 09/11/2026: **309 testes coletados, 309 executados, 0 falhas e 0 ignorados**, com **91,55% de cobertura** sobre `app`. Medições anteriores (201 e 216 testes) pertencem a marcos antigos e não valem para este commit. O arquivo `.coverage` é local e ignorado pelo Git; a evidência reproduzível é o comando acima, reexecutado no marco informado.
 
 Os testes de runtime exigem `INTERESSES_TEST_MONGO_URI` apontando para MongoDB em replica set; sem a variável, esses cenários são ignorados. Configure uma instância de teste separada, nunca o banco de demonstração. Para rodar os testes com integração e medição, usando a URI de teste autorizada:
 
@@ -188,7 +190,7 @@ A Etapa 20 executou as três jornadas revisadas em stack e volume próprios, con
 
 ## 12. Dados fictícios de demonstração
 
-O script [scripts/povoar_demonstracao.py](scripts/povoar_demonstracao.py) mantém a carga básica e o modo aditivo `--ampliar`, com contas, ofertas variadas e locais fictícios em Maringá, Sarandi e Paiçandu. Na Etapa 18, o manifesto e as chamadas do processo antigo de descarte são removidos, sem migração ou limpeza de bancos. Cargas novas exercitam doação/venda e cadastro de locais; a renovação completa da demonstração pertence à Etapa 19. As relações de ofertas são criadas pela API; apenas a conta operacional é provisionada localmente pelo serviço administrativo.
+O script [scripts/povoar_demonstracao.py](scripts/povoar_demonstracao.py) mantém a carga básica e o modo aditivo `--ampliar`, com contas, ofertas variadas e locais fictícios em Maringá, Sarandi e Paiçandu. O manifesto e as chamadas do processo antigo de descarte foram removidos, sem migração ou limpeza de bancos: cenários de descarte não são criados nem avançados. Cargas novas exercitam doação/venda e cadastro de locais. As relações de ofertas são criadas pela API; apenas a conta operacional é provisionada localmente pelo serviço administrativo.
 
 ```bash
 # Apenas descreve a carga; não conecta ao banco nem altera registros.
