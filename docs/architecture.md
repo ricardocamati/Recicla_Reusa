@@ -2,97 +2,65 @@
 
 ## Visão geral
 
-O Recicla/Reusa é uma PoC local com frontend estático, API FastAPI e MongoDB em replica set. Este documento descreve o código após as Etapas 1 a 16; a primeira entrega permanece preservada na tag `v1.0`.
+PoC em Python/FastAPI e MongoDB, com frontend HTML/CSS e JavaScript modular sem build obrigatório. Doação e venda são ofertas com interesse, combinação de entrega e confirmação bilateral. Descarte é uma consulta pública de locais, independente de usuário ou equipamento.
 
-```text
-Navegador → frontend HTML/CSS/JavaScript
-         → API FastAPI → Service → Repository → MongoDB
-                         ↓           ↓
-                      Mapper ← Model
-                         ↓
-                   DTO de resposta
-```
+A Etapa 18 está em validação integrada. O fluxo antigo por equipamento é removido: não há encaminhamentos, destinação informada, aba histórica ou adaptadores de compatibilidade. A alteração de código não executa limpeza nem migração de bancos reais.
 
 ## Responsabilidades
 
-- **API (`app/api`)**: rotas, dependências de sessão, validação HTTP e tradução de erros.
-- **Schemas (`app/schemas`)**: contratos Pydantic de entrada e resposta; não são os documentos persistidos.
-- **Services (`app/services`)**: casos de uso, permissões, propriedade e regras de negócio.
-- **Repositories (`app/repositories`)**: consultas, índices, persistência e operações transacionais.
-- **Models (`app/models`)**: classes de domínio/persistência, incluindo subdocumentos de endereço, histórico e combinação.
-- **Mappers (`app/mappers`)**: projeção para os DTOs, sem expor hash ou endereço privado em consultas de terceiros.
-- **Security (`app/security`)**: scrypt e sessão em memória.
-- **Frontend (`frontend`)**: páginas HTML separadas e módulos JavaScript por responsabilidade; sem build obrigatório.
-
-Serviços recebem repositórios por injeção. O wiring e a inicialização dos índices ficam em `app/main.py`; os testes usam doubles e MongoDB real conforme a camada.
+- **API (`app/api`)**: transporte HTTP, autorização, validação e projeções de resposta.
+- **Schemas (`app/schemas`)**: campos aceitos e DTOs explícitos; itens usam somente doação/revenda.
+- **Services (`app/services`)**: regras de ofertas, interesses, conta, avisos e gestão de locais.
+- **Models/mappers**: domínio e conversão de subdocumentos de endereço, histórico de ofertas e combinação.
+- **Repositories (`app/repositories`)**: persistência, consultas filtradas, índices e guardas de integridade.
+- **Frontend (`frontend/`)**: páginas separadas e módulos por responsabilidade; toda autorização é repetida no servidor.
+- **Composição (`app/main.py`)**: dependências, sessões em memória, handlers, CORS e bootstrap explícito dos índices.
 
 ## Execução integrada
 
-O [Compose](../compose.yaml) reúne MongoDB, backend Uvicorn e frontend servido por [servidor.py](../frontend/servidor.py), baseado em `http.server`, com Mongo Express como ferramenta auxiliar. O servidor estático versiona referências de páginas, CSS e imports JavaScript por conteúdo e não permite armazenar respostas antigas no cache. O MongoDB precisa de replica set para as transações dos fluxos. Inicialização e healthcheck ficam em [docker/mongo/](../docker/mongo/README.md).
-
-O backend usa o hostname `mongo` na rede Docker; o navegador usa a porta publicada da API. CORS e validação de `Origin`/`Referer` permitem apenas as origens configuradas nas mutações com cookie. Comandos, portas padrão e execução manual estão no [README](../README.md).
+Docker Compose reúne MongoDB, API e frontend. A configuração e os comandos estão no [README](../README.md). Testes usam bases isoladas identificadas e replica set quando exigem transações. Nunca recriar o banco de demonstração para facilitar uma validação.
 
 ## Coleções e relações
 
-```text
-usuarios ← proprietario_id ─ itens ← item_id ─ interesses → usuario_id → usuarios
-   ↑                         ↑
-responsavel_id            item_id
-   │                         │
-pontos_coleta ← ponto_id ─ encaminhamentos → autor_id → usuarios
+O runtime revisado utiliza cinco coleções:
 
-notificacoes → usuario_id, item_id e interesse_id opcional
-```
+- `usuarios`: pessoa/operador, endereço e hash da senha.
+- `itens`: ofertas de doação/revenda, proprietário, condição, valor, status, especificações, histórico e referências dos participantes.
+- `interesses`: uma relação item/pessoa, tentativas, seleção, preço congelado, combinação revisada e histórico.
+- `pontos_coleta`: locais com responsável, endereço público, categorias, horário e situação ativa/inativa; não referenciam equipamentos.
+- `notificacoes`: destinatário, evento de oferta, item/interesse, leitura privada e datas.
 
-- `usuarios`: conta `pessoa` ou `ponto_coleta`, endereço aninhado e hash da senha.
-- `itens`: proprietário, destino, condição, valor, status, especificações e histórico acumulativo.
-- `interesses`: uma relação por item/pessoa, tentativa, histórico, preço selecionado e combinação de entrega.
-- `pontos_coleta`: local físico, responsável, endereço público, categorias, horário e situação ativa/inativa.
-- `encaminhamentos`: tentativas de entrega, com item, autor, ponto, status, motivo e histórico.
-- `notificacoes`: destinatário, evento, item, interesse opcional, link interno e leitura.
-
-IDs relacionais são BSON ObjectId na persistência e strings no JSON. Datas são geradas pelo servidor em UTC; a persistência normaliza a precisão BSON. `data_adicao` é preservada nas atualizações. O [modelo atual](../artefatos/v2.1/modelo_dados.md) distingue essas estruturas do desenho original.
+IDs persistidos são BSON ObjectId e expostos como strings. Datas são UTC com precisão de milissegundos; `data_adicao` é imutável e `data_modificacao` acompanha alterações. Não há coleção de visitas, intenção ou comprovante de descarte.
 
 ## Identidade e privacidade
 
-O cadastro público cria `pessoa`. A mesma pessoa publica e manifesta interesse em ofertas alheias; proprietário, interessado e comprador são relações, não perfis públicos diferentes. A conta `ponto_coleta` é provisionada localmente e opera seus próprios locais.
+Sessões em memória com cookie HttpOnly, senha com scrypt e sem JWT. O navegador envia `credentials: "include"`. Mutações validam origem, sessão e papel; propriedade/participação vem das relações persistidas. A preautorização de itens e gestão impede que JSON malformado antecipe a decisão de acesso. A sessão exige novo login após reinício do processo.
 
-A senha é persistida como hash scrypt. O login emite cookie de sessão `HttpOnly`/`SameSite=Lax`; o frontend envia `credentials: "include"`, sem ler o cookie. Sessões em memória não são uma solução para múltiplas instâncias.
+O catálogo de ofertas exige sessão e não publica endereço pessoal. A combinação é privada aos participantes autorizados. Leitura de notificações não transfere permissão sobre recursos.
 
-Permissões são verificadas no backend. DTOs públicos não retornam hash nem endereço completo do proprietário. `destinacao_informada` é visível somente ao autor. Ocultar botões não constitui autorização.
+## Diretório e gestão
 
-## Leitura pública e transição da Etapa 16
+Lista/detalhe de locais ativos são públicos. O DTO público permite apenas `id`, `nome`, `endereco`, `categorias_aceitas` e `horario_atendimento`. Cidade/categoria e visibilidade são filtradas no Mongo antes da paginação; nome/ID determinam ordem estável. Um local inativo não é recuperável pelo detalhe público.
 
-A lista e o detalhe de pontos ativos não exigem sessão e usam `PontoColetaPublicResponse`, com uma projeção explícita somente dos dados do local. Filtros cidade/categoria/ativo são aplicados no banco antes da paginação; ordem por nome e ID. `escopo=meus` seleciona a leitura de gestão, exige operador e limita os registros ao responsável antes de paginar. A presença de cookie por si só não amplia o DTO público.
+`escopo=meus` escolhe a gestão, não uma projeção pública ampliada por cookie. Só operador consulta/cria e só o responsável edita, altera situação ou exclui seus locais. Operador alheio recebe indisponibilidade sem vazamento; pessoa e visitante não obtêm fallback público dessa operação. A interface “Meus locais” permite paginação, categorias do contrato e edição de endereço completo, preserva o formulário no erro e bloqueia mutações repetidas enquanto pendentes.
 
-A consulta não escreve em nenhuma das seis coleções. Dados anteriores sem `ativo` mantêm a convenção já existente de ativo por padrão, sem migração. Itens de descarte, encaminhamentos, indicações e avisos anteriores conservam IDs, referências, datas e permissões originais. Nenhuma rotina percorre esses registros para convertê-los ou encerrá-los.
+A consulta pública “Onde descartar” mantém filtros/página na URL e distingue carregamento, vazio, erro e indisponibilidade do detalhe. Copiar endereço não equivale a registrar descarte. Nenhuma consulta, cópia ou alteração de local cria equipamento, transação de descarte ou aviso desse fluxo.
 
-A interface pública é etapa posterior. As rotas antigas de descarte e os indicadores anteriores permanecem operacionais até as Etapas 18 e 19; a Etapa 16 não conclui essa retirada nem muda os fluxos de doação/venda. O povoamento existente passou a reler os pontos em escopo de gestão para continuar verificando propriedade, sem trocar seus cenários nesta etapa.
+## Fluxos de ofertas
 
-## Fluxos atuais
+Rascunho → disponível → reservado → aguardando confirmação → concluído. Arquivamento próprio segue as restrições existentes. Selecionar interesse estabelece reserva; a contraparte aceita a revisão da combinação. Proprietário declara a entrega e somente o selecionado confirma o recebimento. Terceiros não concluem uma oferta.
 
-| Caminho | Transições principais |
-|---|---|
-| Oferta de doação/venda | `rascunho → disponivel → reservado → aguardando_confirmacao → concluido` |
-| Liberação antes da entrega | `reservado → disponivel` |
-| Descarte em ponto | `aguardando_ponto → entrega_prevista → recebido` |
-| Cancelamento ou impossibilidade | `entrega_prevista → aguardando_ponto` |
-| Lugar indicado pelo autor | `aguardando_ponto → destinacao_informada → aguardando_ponto` (ao desfazer) |
+Histórico, integridade de referências, controle de status e avisos das ofertas permanecem. Versões genéricas e ledger de `id_operacao` descritos no alvo v2.1 não são campos implementados; consultar as diferenças em [contratos](../artefatos/v2.1/contratos_http.md).
 
-Reserva nasce da seleção de interesse. A combinação tem revisão e aceite da contraparte; declarar entrega não conclui, e só o selecionado confirma o recebimento. No descarte, criar encaminhamento registra a previsão; só o operador do ponto confirma o recebimento. Indicação de outro lugar não cria ponto nem comprova recebimento.
+## Avisos, indicadores e demonstração
 
-Seleção, entrega bilateral e operações de encaminhamento executam suas escritas relacionadas em transações. Isso não deve ser generalizado para toda operação do sistema: a alteração de situação do ponto e o aviso de inativação, por exemplo, têm chamadas separadas no handler. O contrato atual não possui `id_operacao` nem versões genéricas de todos os agregados. Os limites de concorrência estão nos [contratos](../artefatos/v2.1/contratos_http.md).
-
-## Avisos e indicadores
-
-Avisos usam índice único por evento/destinatário/item, têm leitura idempotente e links internos para as telas de ação. O link não concede permissão sobre o destino.
-
-Indicadores são globais: ofertas ativas e pendências ficam separados das conclusões. `total` soma doações/vendas concluídas e recebimentos em pontos; `indicados` é separado e não comprova reciclagem ou recebimento.
+Avisos e resultados pertencem às ofertas, nunca à navegação no diretório. A remoção das dependências do processo antigo faz parte da Etapa 18; a revisão geral de produto/indicadores e enriquecimento da demonstração continua na Etapa 19. O seeder usa somente ofertas e cadastro de locais, com reexecução aditiva e sem aplicar mudanças automaticamente à demonstração real.
 
 ## Testabilidade e reprodução
 
-- [Testes](../tests/): serviços, API, repositórios, segurança, frontend, integração e equivalência OpenAPI.
-- [Jornadas](../scripts/validar_jornadas_v2.py): doação, descarte e revenda pela interface, referências persistidas, datas UTC e limpeza seletiva.
-- [README](../README.md): comandos para suíte, medição de cobertura e stack isolada.
+- `tests/`: testes unitários, transporte, MongoDB e Selenium.
+- [Contrato HTTP](http-api.md) e [OpenAPI](openapi.md): documentação do executável e snapshot gerado.
+- [Casos e matriz](../artefatos/v2.1/matriz_rastreabilidade.md): distinguem evidência atual e trabalho futuro.
+- [Verificador de jornadas](../scripts/validar_jornadas_v2.py): a jornada pública completa no verificador será ajustada na Etapa 20; o processo antigo não é evidência atual.
 
-Os testes de runtime exigem uma URI de replica set de teste; sem ela, são ignorados. A validação funcional anterior não substitui medição de cobertura nem nova execução após mudanças de código. Evidências permanecem nos testes, comandos e histórico de PRs, sem relatórios de verificação separados.
+Integrações sem URI de teste são ignoradas e não contam como aprovadas. Relatórios locais ficam em diretório ignorado, sem novos documentos de verificação em `docs/`.

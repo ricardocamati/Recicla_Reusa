@@ -38,7 +38,7 @@ def test_browser_anonimo_filtra_pagina_abre_detalhe_sem_mudar_mongo(
     colecao.insert_many([documento(i, False) for i in range(105)] + [documento(i) for i in range(24)])
     colecao.insert_one({**documento(99), "ativo": False})
     antes = snapshot(banco)
-    assert len(antes) == 6
+    assert len(antes) == 5
     pedidos = []
     cors = CORSMiddleware(ambiente.app, allow_origins=[servidor_frontend],
                           allow_credentials=True, allow_methods=["GET"], allow_headers=["*"])

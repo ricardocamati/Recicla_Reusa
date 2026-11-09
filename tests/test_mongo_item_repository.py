@@ -33,6 +33,38 @@ def item(item_id: str | None = None) -> Item:
     )
 
 
+def test_catalogo_mongo_nao_deixa_modalidade_fora_da_allowlist_escapar():
+    colecao = mongomock.MongoClient(tz_aware=True).teste.itens
+    repo = MongoItemRepository(colecao)
+    repo.criar(item())
+    colecao.insert_one({
+        "_id": ObjectId(),
+        "titulo": "Documento antigo de descarte",
+        "descricao": "sem fluxo novo",
+        "categoria": "informatica",
+        "marca": "Dell",
+        "modelo": "Inspiron",
+        "condicao": "funcional",
+        "destino": "descarte",
+        "status": "disponivel",
+        "proprietario_id": ObjectId(PROPRIETARIO_ID),
+        "data_adicao": datetime(2026, 1, 1, tzinfo=UTC),
+        "data_modificacao": datetime(2026, 1, 1, tzinfo=UTC),
+    })
+    # model_construct simula um chamador interno que contorne a validação do schema.
+    filtros = FiltrosItem.model_construct(destino="descarte")
+    encontrados = repo.listar(filtros, somente_catalogo=True)
+    assert {registro.destino for registro in encontrados} == {"doacao"}
+
+
+def test_catalogo_mongo_preserva_filtro_explicito_de_modalidade():
+    repo = MongoItemRepository(mongomock.MongoClient(tz_aware=True).teste.itens)
+    repo.criar(item())
+    venda = repo.criar(replace(item(), destino="revenda", valor=100))
+    encontrados = repo.listar(FiltrosItem(destino="revenda"), somente_catalogo=True)
+    assert [registro.id for registro in encontrados] == [venda.id]
+
+
 def test_repositorio_persiste_filtra_atualiza_e_exclui_item() -> None:
     colecao = mongomock.MongoClient(tz_aware=True).recicla_reusa.itens
     repositorio = MongoItemRepository(colecao)
@@ -91,34 +123,24 @@ def test_repositorio_normaliza_datas_na_precisao_do_mongodb() -> None:
 def test_repositorio_persiste_referencias_do_fluxo() -> None:
     colecao = mongomock.MongoClient(tz_aware=True).teste.itens
     repositorio = MongoItemRepository(colecao)
-    ponto_id = ObjectId()
     comprador_id = ObjectId()
-    criado = repositorio.criar(
-        replace(item(), destino="descarte", ponto_coleta_id=str(ponto_id))
-    )
-
+    criado = repositorio.criar(replace(item(), destino="revenda", valor=100, status="reservado", comprador_id=str(comprador_id)))
     recuperado = repositorio.buscar_por_id(criado.id or "")
-
     assert recuperado is not None
-    assert recuperado.ponto_coleta_id == str(ponto_id)
-    assert recuperado.comprador_id is None
+    assert recuperado.comprador_id == str(comprador_id)
     documento = colecao.find_one({"_id": ObjectId(criado.id)})
-    assert documento["ponto_coleta_id"] == ponto_id
-
-    criado.destino = "revenda"
-    criado.ponto_coleta_id = None
-    criado.comprador_id = str(comprador_id)
+    assert documento["comprador_id"] == comprador_id
+    criado.descricao = "Descrição atualizada"
     repositorio.atualizar(criado)
     relido = repositorio.buscar_por_id(criado.id or "")
     assert relido.comprador_id == str(comprador_id)
-    assert relido.ponto_coleta_id is None
+    assert relido.descricao == "Descrição atualizada"
 
 
-def test_leitura_de_documento_antigo_sem_campos_de_fluxo() -> None:
+def test_leitura_de_oferta_sem_referencias_de_participantes() -> None:
     colecao = mongomock.MongoClient(tz_aware=True).teste.itens
     repositorio = MongoItemRepository(colecao)
     documento = repositorio._para_documento(item())
-    assert documento.pop("ponto_coleta_id") is None
     assert documento.pop("beneficiario_id") is None
     assert documento.pop("comprador_id") is None
     identificador = colecao.insert_one(documento).inserted_id
@@ -126,7 +148,6 @@ def test_leitura_de_documento_antigo_sem_campos_de_fluxo() -> None:
     relido = repositorio.buscar_por_id(str(identificador))
 
     assert relido is not None
-    assert relido.ponto_coleta_id is None
     assert relido.beneficiario_id is None
     assert relido.comprador_id is None
 

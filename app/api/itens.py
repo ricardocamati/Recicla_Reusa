@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
+from fastapi.routing import APIRoute
+from starlette.concurrency import run_in_threadpool
+
 from app.schemas.item import (
-    DestinacaoInformadaRequest,
     CategoriaItem,
     CondicaoItem,
     DestinoItem,
@@ -19,7 +21,26 @@ def criar_router_itens(
     servico: ItemService,
     sessoes: ArmazenamentoDeSessoes,
 ) -> APIRouter:
-    router = APIRouter(prefix="/api/itens", tags=["itens"])
+    class RotaAutenticada(APIRoute):
+        def get_route_handler(self):
+            handler = super().get_route_handler()
+
+            async def protegido(request: Request):
+                # O corpo só é analisado depois da sessão/papel/propriedade.
+                sessao = sessao_obrigatoria(request)
+                if request.method != "GET" or request.url.path.endswith("/meus"):
+                    exigir_pessoa(sessao)
+                item_id = request.path_params.get("item_id")
+                if item_id and request.method != "GET":
+                    if not request.url.path.endswith("/recebimento"):
+                        item = await run_in_threadpool(servico.buscar_por_id, item_id, sessao.usuario_id)
+                        if item.proprietario_id != sessao.usuario_id:
+                            raise HTTPException(status_code=403, detail="Ação não permitida")
+                return await handler(request)
+
+            return protegido
+
+    router = APIRouter(prefix="/api/itens", tags=["itens"], route_class=RotaAutenticada)
 
     def sessao_obrigatoria(request: Request) -> Sessao:
         sessao = sessoes.buscar(request.cookies.get(SESSION_COOKIE_NAME))
@@ -96,24 +117,6 @@ def criar_router_itens(
         sessao = sessao_obrigatoria(request)
         exigir_pessoa(sessao)
         return servico.publicar(item_id, proprietario_id=sessao.usuario_id)
-
-    @router.post("/{item_id}/destinacao", response_model=ItemResponse)
-    def informar_destinacao(
-        item_id: str,
-        dados: DestinacaoInformadaRequest,
-        request: Request,
-    ) -> ItemResponse:
-        sessao = sessao_obrigatoria(request)
-        exigir_pessoa(sessao)
-        return servico.informar_destinacao(
-            item_id, dados, proprietario_id=sessao.usuario_id
-        )
-
-    @router.delete("/{item_id}/destinacao", response_model=ItemResponse)
-    def desfazer_destinacao(item_id: str, request: Request) -> ItemResponse:
-        sessao = sessao_obrigatoria(request)
-        exigir_pessoa(sessao)
-        return servico.desfazer_destinacao(item_id, proprietario_id=sessao.usuario_id)
 
     @router.post("/{item_id}/arquivar", response_model=ItemResponse)
     def arquivar(item_id: str, request: Request) -> ItemResponse:

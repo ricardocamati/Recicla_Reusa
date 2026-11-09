@@ -2,6 +2,9 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 
+from fastapi.routing import APIRoute
+from starlette.concurrency import run_in_threadpool
+
 from app.schemas.item import CategoriaItem
 from app.schemas.ponto_coleta import (
     PontoColetaCreateRequest,
@@ -17,9 +20,24 @@ from app.services.ponto_coleta_service import PontoColetaService
 def criar_router_pontos_coleta(
     servico: PontoColetaService,
     sessoes: ArmazenamentoDeSessoes,
-    servico_encaminhamentos=None,
 ) -> APIRouter:
-    router = APIRouter(prefix="/api/pontos-coleta", tags=["pontos-coleta"])
+    class RotaDeGestao(APIRoute):
+        def get_route_handler(self):
+            handler = super().get_route_handler()
+
+            async def protegido(request: Request):
+                if request.method != "GET":
+                    sessao = sessao_obrigatoria(request)
+                    exigir_operador(sessao)
+                    ponto_id = request.path_params.get("ponto_id")
+                    if ponto_id:
+                        await run_in_threadpool(servico.buscar_proprio, ponto_id,
+                                                responsavel_id=sessao.usuario_id)
+                return await handler(request)
+
+            return protegido
+
+    router = APIRouter(prefix="/api/pontos-coleta", tags=["pontos-coleta"], route_class=RotaDeGestao)
 
     def sessao_obrigatoria(request: Request) -> Sessao:
         sessao = sessoes.buscar(request.cookies.get(SESSION_COOKIE_NAME))
@@ -132,8 +150,6 @@ def criar_router_pontos_coleta(
         resposta = servico.definir_ativo(
             ponto_id, dados.ativo, responsavel_id=sessao.usuario_id
         )
-        if not dados.ativo and servico_encaminhamentos is not None:
-            servico_encaminhamentos.avisar_ponto_inativado(ponto_id)
         return resposta
 
     @router.delete("/{ponto_id}", status_code=status.HTTP_204_NO_CONTENT)

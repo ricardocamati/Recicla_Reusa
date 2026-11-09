@@ -1,6 +1,6 @@
 # Recicla/Reusa — Plataforma de Doação, Descarte e Reaproveitamento de Eletrônicos
 
-PoC acadêmica que pretende oferecer um fluxo único e rastreável para eletrônicos usados, direcionando cada equipamento para **doação**, **descarte formal** ou **reaproveitamento/revenda**.
+PoC acadêmica para ofertas de **doação e venda/reaproveitamento** de eletrônicos e consulta pública de **locais de descarte**, sem exigir cadastro de equipamento para consultar o diretório.
 
 ## 1. Problema
 
@@ -42,19 +42,19 @@ Cada destino terá seu próprio fluxo de status e um histórico rastreável. O s
 
 A primeira entrega está preservada na tag `v1.0`. A segunda entrega evoluiu nas Etapas 1 a 8 (marco v2.0, commit `71e8dfa`, PR #18) e recebeu a revisão de negócio e usabilidade v2.1 nas Etapas 9 a 15. Este checkout inclui o fechamento da Etapa 15 (`1f36c2b`, PR #25); publicação, revisão e merge são passos separados da implementação local. O marco final a informar na entrega deve ser o commit efetivamente integrado e validado.
 
-A aplicação permite cadastro de pessoa, publicação de ofertas de doação/venda, interesse, reserva reversível, combinação aceita e entrega bilateral. No descarte, o autor registra entrega prevista em um ponto compatível e o operador confirma recebimento, ou informa outro lugar sem verificação de terceiro. Autenticação usa sessão em cookie HttpOnly; permissões são verificadas no backend por identidade e propriedade.
+A aplicação permite cadastro de pessoa, publicação de ofertas de doação/venda, interesse, reserva reversível, combinação aceita e entrega bilateral. O descarte usa o diretório público de locais. O processo anterior por equipamento é removido, sem entregas previstas, recebimento, indicação de destinação ou aba histórica de descarte. Autenticação usa sessão em cookie HttpOnly; permissões são verificadas no backend por identidade e propriedade.
 
 ### Modelo em uso
 
-São seis coleções: `usuarios`, `itens`, `interesses`, `pontos_coleta`, `encaminhamentos` e `notificacoes`. Usuários e pontos têm endereço aninhado; itens contêm `especificacoes` e `historico`; interesses contêm combinação de entrega e histórico. IDs BSON estabelecem os relacionamentos, sem copiar o endereço privado do proprietário para o item.
+São cinco coleções: `usuarios`, `itens`, `interesses`, `pontos_coleta` e `notificacoes`. Usuários e pontos têm endereço aninhado; itens contêm `especificacoes` e `historico`; interesses contêm combinação de entrega e histórico. IDs BSON estabelecem os relacionamentos, sem copiar o endereço privado do proprietário para o item.
 
-No contrato executável, os campos são `destino` (`doacao`, `revenda`, `descarte`), `status` e `valor`. Doação/venda seguem `disponivel → reservado → aguardando_confirmacao → concluido`; descarte segue `aguardando_ponto → entrega_prevista → recebido`, com alternativa `destinacao_informada`. Rascunhos e arquivamento são tratados na gestão do autor.
+No contrato executável, novos itens e edições de ofertas usam `destino` (`doacao` ou `revenda`), `status` e `valor`. Doação/venda seguem `disponivel → reservado → aguardando_confirmacao → concluido`, com rascunhos e arquivamento na gestão do autor. Escrita e leitura de itens usam somente doação/revenda; estados e campos exclusivos do descarte são removidos.
 
 A documentação da revisão está em [artefatos/v2.1/](artefatos/v2.1/README.md); o [modelo de dados](artefatos/v2.1/modelo_dados.md) distingue a estrutura implementada do desenho original. Contratos atuais: [HTTP](docs/http-api.md) e [OpenAPI](docs/openapi.md). O [TODO](TODO.md) registra as etapas e o histórico de tarefas, não substitui os testes nem comprova a entrega externa.
 
 ## 6. Stack utilizada
 
-A Etapa 16 acrescenta leitura pública de locais ativos em `GET /api/pontos-coleta` e `GET /api/pontos-coleta/{id}`, sem login nem cadastro de equipamento. As respostas expõem somente dados do local; a gestão continua autenticada com `escopo=meus`. A Etapa 17 acrescenta a tela pública [Onde descartar](frontend/onde-descartar.html), com filtros, paginação, detalhe e cópia de endereço, acessível pela página inicial e pela navegação autenticada. Ela não cria registros de descarte. A retirada dos comandos antigos, a gestão revisada e os indicadores continuam para as etapas seguintes. Detalhes e política de preservação em [docs/http-api.md](docs/http-api.md) e nos [artefatos v2.1](artefatos/v2.1/README.md).
+A Etapa 16 acrescenta leitura pública de locais ativos em `GET /api/pontos-coleta` e `GET /api/pontos-coleta/{id}`, sem login nem cadastro de equipamento. As respostas expõem somente dados do local; a gestão continua autenticada com `escopo=meus`. A Etapa 17 acrescenta a tela pública [Onde descartar](frontend/onde-descartar.html), com filtros, paginação, detalhe e cópia de endereço, acessível pela página inicial e pela navegação autenticada. Ela não cria registros de descarte. A Etapa 18 implementa “Meus locais” para operadores, a remoção do fluxo antigo, sem histórico de descarte ou adaptadores, ainda em validação integrada neste checkout. A revisão de indicadores continua na Etapa 19. Detalhes e política de preservação em [docs/http-api.md](docs/http-api.md) e nos [artefatos v2.1](artefatos/v2.1/README.md).
 
 - Python 3.11+;
 - FastAPI e Uvicorn;
@@ -168,7 +168,7 @@ INTERESSES_TEST_MONGO_URI="<uri do replica set de teste com directConnection=tru
 python -m pytest
 ```
 
-Testes relevantes estão em [tests/](tests/), incluindo [fluxos](tests/test_fluxos_runtime.py), [interesses](tests/test_interesses_runtime.py), [encaminhamentos](tests/test_encaminhamentos_runtime.py), [destinação informada](tests/test_destinacao_runtime.py), [notificações](tests/test_notificacoes_runtime.py) e [frontend](tests/test_selenium_frontend.py). O [teste OpenAPI](tests/test_openapi_runtime.py) compara o snapshot com o contrato gerado da aplicação. A evolução e os resultados registrados nas revisões estão nos commits e PRs de cada etapa; não há relatórios de verificação separados em `docs/`.
+Testes relevantes estão em [tests/](tests/), incluindo [fluxos](tests/test_fluxos_runtime.py), [interesses](tests/test_interesses_runtime.py), [diretório](tests/test_etapa18_api.py), [notificações](tests/test_notificacoes_runtime.py) e [frontend](tests/test_selenium_frontend.py). O [teste OpenAPI](tests/test_openapi_runtime.py) compara o snapshot com o contrato gerado da aplicação. A evolução e os resultados registrados nas revisões estão nos commits e PRs de cada etapa; não há relatórios de verificação separados em `docs/`.
 
 Para reproduzir o fechamento em stack isolada:
 
@@ -184,11 +184,11 @@ JORNADAS_FRONTEND_URL=http://127.0.0.1:8109 JORNADAS_API_URL=http://127.0.0.1:80
 python scripts/validar_jornadas_v2.py
 ```
 
-A validação já executada na Etapa 15 percorreu as três jornadas, conferiu referências e datas nas seis coleções e fez limpeza seletiva. Para validar uma nova alteração, execute novamente os comandos; o resultado anterior não aprova automaticamente um checkout diferente.
+A validação executada na Etapa 15 percorreu as três jornadas então existentes e conferiu referências e datas; o fluxo de descarte por item foi retirado depois. Para validar uma alteração, execute novamente os comandos; o resultado anterior não aprova automaticamente um checkout diferente.
 
 ## 12. Dados fictícios de demonstração
 
-O script [scripts/povoar_demonstracao.py](scripts/povoar_demonstracao.py) oferece uma carga básica de quatro contas e 12 itens e uma carga ampliada, com `--ampliar`, de **oito contas, 60 itens e três pontos de coleta**. A carga ampliada cobre 12 categorias em Maringá, Sarandi e Paiçandu, com marcas/modelos fictícios, descrições, especificações e preços variados. Há ofertas disponíveis, interesses pendentes, reservas, entregas aguardando confirmação, conclusões, descarte aguardando ponto, entregas previstas, recebimentos e destinações informadas. As relações e transições são criadas pela API; apenas a conta operacional é provisionada localmente pelo serviço administrativo.
+O script [scripts/povoar_demonstracao.py](scripts/povoar_demonstracao.py) mantém a carga básica e o modo aditivo `--ampliar`, com contas, ofertas variadas e locais fictícios em Maringá, Sarandi e Paiçandu. Na Etapa 18, o manifesto e as chamadas do processo antigo de descarte são removidos, sem migração ou limpeza de bancos. Cargas novas exercitam doação/venda e cadastro de locais; a renovação completa da demonstração pertence à Etapa 19. As relações de ofertas são criadas pela API; apenas a conta operacional é provisionada localmente pelo serviço administrativo.
 
 ```bash
 # Apenas descreve a carga; não conecta ao banco nem altera registros.

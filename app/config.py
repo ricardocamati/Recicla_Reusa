@@ -14,7 +14,6 @@ class Settings(BaseSettings):
     mongo_collection_itens: str = "itens"
     mongo_collection_pontos_coleta: str = "pontos_coleta"
     mongo_collection_interesses: str = "interesses"
-    mongo_collection_encaminhamentos: str = "encaminhamentos"
     mongo_collection_notificacoes: str = "notificacoes"
     cors_origins: str = "http://localhost:5500,http://127.0.0.1:5500"
     secure_cookies: bool = False

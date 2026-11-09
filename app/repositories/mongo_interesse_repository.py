@@ -324,8 +324,6 @@ class MongoInteresseRepository:
     def _reservar_item(self, session, doc, item, interesse_oid, actor_oid, instante) -> None:
         if item.get("status") != "disponivel" or item.get("interesse_aceito_id") is not None:
             raise InteresseError(409, "Item não está disponível")
-        if item.get("destino") == "descarte":
-            raise InteresseError(400, "Este item não aceita interesses")
         update = self._colecao_itens.update_one(
             {"_id": doc["item_id"], "status": "disponivel", "interesse_aceito_id": None},
             {
@@ -469,8 +467,6 @@ class MongoInteresseRepository:
             raise InteresseError(404, "Item não encontrado")
         if str(item.get("proprietario_id")) == usuario_id:
             raise InteresseError(400, "Não é permitido demonstrar interesse no próprio item")
-        if item.get("destino") == "descarte":
-            raise InteresseError(400, "Itens destinados a descarte não aceitam interesses")
         if item.get("status") != "disponivel":
             raise InteresseError(409, "Item não está disponível")
         if item.get("interesse_aceito_id") is not None:

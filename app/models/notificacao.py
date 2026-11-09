@@ -39,10 +39,6 @@ LINK_POR_TIPO: dict[str, str] = {
     "entrega_declarada": "/interesses.html",
     "item_concluido": "/interesses.html",
     "status_item_alterado": "/interesses.html",
-    "entrega_prevista": "/pontos.html",
-    "item_recebido": "/itens.html?grupo=encerrados",
-    "item_nao_recebido": "/itens.html?grupo=ativos",
-    "ponto_inativado": "/itens.html?grupo=em_andamento",
 }
 
 

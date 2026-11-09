@@ -60,8 +60,6 @@ O e-mail é normalizado para minúsculas. O CEP aceita a forma com hífen na ent
 | `POST` | `/api/itens/{id}/publicar` | pessoa proprietária | — | `200` com item publicado |
 | `POST` | `/api/itens/{id}/entrega` | pessoa proprietária | — | `200` com item `aguardando_confirmacao` |
 | `POST` | `/api/itens/{id}/recebimento` | pessoa selecionada | — | `200` com item `concluido` |
-| `POST` | `/api/itens/{id}/destinacao` | pessoa proprietária | `tipo_local`, `nome`, `cidade`, `observacao` | `200` com item em `destinacao_informada` |
-| `DELETE` | `/api/itens/{id}/destinacao` | pessoa proprietária | — | `200` com item de volta a `aguardando_ponto` |
 | `POST` | `/api/itens/{id}/arquivar` | pessoa proprietária | — | `200` com item arquivado |
 | `DELETE` | `/api/itens/{id}` | pessoa proprietária | — | `204` sem corpo |
 
@@ -75,13 +73,13 @@ O catálogo devolve apenas itens `disponivel` de doação ou revenda. Descarte, 
 
 Categorias aceitas: `informatica`, `notebook`, `desktop`, `telefonia`, `celular`, `tablet`, `televisao`, `audio`, `eletrodomestico`, `perifericos`, `monitor`, `impressora` e `outro`. Também são aceitas entradas com maiúsculas, espaços, hífen e acentos equivalentes, devolvidas no formato canônico em minúsculas.
 
-Condições aceitas: `funcional`, `funcional_com_defeito`, `reparavel`, `sem_conserto` e `recondicionado` — condição física independente da modalidade. Destinos aceitos: `doacao`, `descarte` e `revenda`. O item nasce `rascunho` quando `publicar=false`; publicado, fica `disponivel` em doação e revenda e `aguardando_ponto` em descarte. `revenda` exige `valor` maior que zero; doação e descarte não aceitam preço.
+Condições aceitas: `funcional`, `funcional_com_defeito`, `reparavel`, `sem_conserto` e `recondicionado` — condição física independente da modalidade. Novos cadastros e edições de ofertas aceitam `doacao` e `revenda`; `descarte` retorna `400` sem gravar. O item nasce `rascunho` quando `publicar=false`; publicado, fica `disponivel`. `revenda` exige `valor` informado e não negativo; doação não aceita preço. A leitura também aceita somente ofertas.
 
 `especificacoes` é um subdocumento livre de textos, porque categorias diferentes têm características diferentes. O cadastro grava o primeiro evento em `historico` com etapa `publicacao` (ou `cadastro`, no rascunho), status correspondente, data do servidor e o proprietário como responsável. Publicar e arquivar também registram evento.
 
-`GET /api/itens/meus` agrupa: `ativos` (rascunho, disponível e aguardando ponto), `em_andamento` (reservado, aguardando confirmação e entrega prevista) e `encerrados` (concluído, recebido, destinação informada e arquivado). Arquivar preserva item, histórico e referências; o item arquivado não pode ser excluído.
+`GET /api/itens/meus` separa ofertas em `ativos` (rascunho e disponível), `em_andamento` (reservado e aguardando confirmação) e `encerrados` (concluído e arquivado). Proprietário e modalidade são filtrados antes da paginação. Arquivar exige oferta em `rascunho` ou `disponivel`; oferta reservada, aguardando confirmação ou concluída retorna `409` sem mudar de estado, e arquivar um item já arquivado é idempotente. Arquivar preserva item, histórico e referências; item arquivado não pode ser excluído.
 
-A listagem aceita `offset` (padrão `0`) e `limite` (padrão `20`, máximo `100`), sempre ordenada por `data_adicao` decrescente. O filtro `cidade` usa a cidade do proprietário e não expõe o endereço.
+A listagem aceita `offset` (padrão `0`) e `limite` (padrão `20`, máximo `100`), ordenada por `data_adicao` e ID decrescentes para desempate estável. O filtro `cidade` usa a cidade do proprietário e não expõe o endereço.
 
 Transições permitidas, sem saltos entre fluxos:
 
@@ -89,21 +87,17 @@ Transições permitidas, sem saltos entre fluxos:
 |---|---|
 | `doacao` | `disponivel` → `reservado` → `aguardando_confirmacao` → `concluido` |
 | `revenda` | `disponivel` → `reservado` → `aguardando_confirmacao` → `concluido` |
-| `descarte` | `aguardando_ponto` → `entrega_prevista` → `recebido` |
-| `descarte` (alternativo) | `aguardando_ponto` → `destinacao_informada` → `aguardando_ponto` |
 
-Reserva de doação e venda nasce da seleção de um interesse; o `PUT` comum não cria reserva com o módulo de interesses habilitado. Declarar entrega e confirmar recebimento têm endpoints próprios. Descarte não muda de status pelo `PUT`: o item publicado fica em `aguardando_ponto` e a entrega é combinada em `/api/encaminhamentos`. Transição inválida retorna `400`, item concluído não volta a outro fluxo e cada mudança acrescenta um evento a `historico`. O `PUT` substitui os campos descritivos; `ponto_coleta_id` e `comprador_id` não são aceitos no corpo — o ponto vem do encaminhamento e o comprador, do interesse selecionado.
+Reserva de doação e venda nasce da seleção de um interesse; o `PUT` comum não cria reserva com o módulo de interesses habilitado. Declarar entrega e confirmar recebimento têm endpoints próprios. O fluxo de descarte por equipamento é removido, sem campos, rotas ou consultas do processo anterior. Transição inválida retorna `400`; oferta concluída ou arquivada não aceita mais edição (`409`) e cada mudança acrescenta um evento a `historico`. O `PUT` substitui os campos descritivos; `comprador_id` não é aceito no corpo — o comprador vem do interesse selecionado.
 
 | Comando | Exigência |
 |---|---|
 | `POST /api/itens/{id}/entrega` | interesse `selecionado`, combinação aceita e item `reservado` |
 | `POST /api/itens/{id}/recebimento` | pessoa selecionada e item `aguardando_confirmacao` |
-| `POST /api/encaminhamentos` | descarte próprio `aguardando_ponto` e ponto ativo que aceite a categoria |
-| `POST /api/encaminhamentos/{id}/acoes` | ação `cancelar`, `trocar`, `receber` ou `nao_recebido`, conforme o ator |
 
-Campo de fluxo enviado para outro destino retorna `400`, referência já definida retorna `409`, ponto ou pessoa inexistente `404` e categoria não aceita `409`. O destino pode ser corrigido apenas enquanto o item está `disponivel` ou `aguardando_ponto`. A exclusão só é aceita nesses mesmos estados; depois disso retorna `409`, preservando histórico e referências.
+Campo de fluxo indevido retorna `400`, referência já definida retorna `409` e pessoa inexistente retorna `404`. Modalidade de oferta pode ser corrigida em rascunho ou disponível. A exclusão de oferta é aceita em `rascunho` ou `disponivel`, quando não houver referências; depois disso retorna `409`.
 
-`beneficiario_id` é definido pelo servidor. `ponto_coleta_id`, `beneficiario_id` e `comprador_id` aparecem na resposta. Excluir um ponto ainda referenciado por item ou uma pessoa que seja proprietária, beneficiária ou compradora de item retorna `409`, preservando a referência.
+`beneficiario_id` é definido pelo servidor. `beneficiario_id` e `comprador_id` aparecem na resposta. Excluir uma pessoa que seja proprietária, beneficiária ou compradora de item retorna `409`, preservando a referência.
 
 Exemplo de cadastro:
 
@@ -124,7 +118,7 @@ Exemplo de cadastro:
 }
 ```
 
-A resposta inclui `cidade_proprietario`, `especificacoes`, `historico` e, quando aplicável, `ponto_coleta_id`, `beneficiario_id` e `comprador_id`, mas não inclui o endereço completo. `id`, `proprietario_id`, `status`, `data_adicao` e `data_modificacao` são controlados pelo servidor. Dados inválidos retornam `400`, sessão ausente retorna `401`, origem inválida retorna `403`, perfil sem permissão retorna `403` e item inexistente retorna `404`.
+A resposta inclui `cidade_proprietario`, `especificacoes`, `historico` e, quando aplicável, `beneficiario_id` e `comprador_id`, mas não inclui o endereço completo. `id`, `proprietario_id`, `status`, `data_adicao` e `data_modificacao` são controlados pelo servidor. Dados inválidos retornam `400`, sessão ausente retorna `401`, origem inválida retorna `403`, perfil sem permissão retorna `403` e item inexistente retorna `404`.
 
 ## Corpo de atualização
 
@@ -183,17 +177,17 @@ O Compose usa replica set de um nó para executar essas transações; consulte [
 | `GET` | `/api/notificacoes` | sessão | `lida`, `offset`, `limite` | `200` com a caixa do próprio usuário |
 | `PATCH` | `/api/notificacoes/{id}` | destinatário | `{"lida": true}` | `200` com a notificação lida |
 
-Os avisos são criados pelo servidor, nunca pelo cliente. Tipos: `interesse_aceito`, `interesse_recusado`, `interesse_cancelado`, `status_item_alterado`, `entrega_declarada`, `entrega_prevista`, `item_concluido`, `item_recebido`, `item_nao_recebido` e `ponto_inativado`. Cada aviso traz `link` interno para a tela em que o destinatário age, e o índice único por evento, destinatário e item impede repetição.
+Os avisos são criados pelo servidor, nunca pelo cliente. Tipos de aviso pertencem somente às ações de ofertas/interesses, sem entrega prevista, recebimento em ponto ou inativação de local. Cada aviso traz `link` interno para a tela em que o destinatário age, e o índice único por evento, destinatário e item impede repetição.
 
 Nas decisões transacionais de interesse e nas transições de entrega que emitem avisos, a gravação ocorre na mesma transação: a decisão de um interesse avisa o interessado (aceito/recusado) ou o proprietário (cancelado), e cada transição de status avisa quem possui interesse pendente ou aceito no item. O aceite de uma doação também avisa os demais interessados de que o item foi reservado, sem repetir o aviso para quem foi escolhido; o cancelamento do aceite avisa que o item voltou a ficar disponível. Quem não tem vínculo com o item não recebe aviso, e o proprietário não é notificado das próprias mudanças.
 
-O aviso de inativação de ponto é emitido em chamada separada após alterar a situação do ponto; não constitui a mesma unidade transacional. Links internos indicam a tela de ação, não necessariamente o registro individual. A emissão para cada evento previsto no desenho de produto deve ser conferida nos testes específicos.
+Alterar/inativar um local não emite aviso de descarte. Avisos pertencem às ofertas; a revisão geral de produto é da Etapa 19. Links internos indicam a tela de ação, não necessariamente o registro individual. A emissão para cada evento previsto no desenho de produto deve ser conferida nos testes específicos.
 
 O índice único por `evento_id`, destinatário e item garante uma única notificação por evento; repetir a gravação não duplica. A listagem é ordenada por `data_adicao` decrescente, aceita `offset`/`limite` (padrão 20, máximo 100) e o filtro `lida`. Marcar leitura preserva `data_adicao`, registra `data_leitura` e atualiza `data_modificacao`. Notificação de outro usuário ou identificador inválido retorna `404`; sessão ausente `401`; parâmetro desconhecido `400`.
 
 ## Pontos de coleta
 
-Na Etapa 16, a leitura do diretório é pública e não exige cadastro de item. Isso não libera gestão de locais nem antecipa a tela “Onde descartar” (Etapa 17). O processo anterior de descarte ainda está disponível até sua descontinuação na Etapa 18.
+A leitura do diretório é pública e não exige cadastro de item (Etapas 16–17). A Etapa 18 entrega a gestão privada “Meus locais”, sem fila de recebimento, e remove o processo anterior sem consultas do processo anterior ou compatibilidade.
 
 | Método | Caminho | Autenticação | Entrada | Sucesso |
 |---|---|---|---|---|
@@ -214,24 +208,7 @@ Consultas não criam sessão obrigatória nem documento de domínio, evento, avi
 
 O ponto guarda nome, endereço aninhado, categorias aceitas e horário de atendimento. O `responsavel_id` vem da sessão, precisa ser uma conta `ponto_coleta` e não é aceito no corpo. `categorias_aceitas` exige ao menos uma categoria conhecida e recusa repetição.
 
-Ponto inativo não recebe novas entregas previstas, mas as que já existiam continuam válidas e podem ser concluídas; ao desativar, os autores com entrega prevista são notificados para escolher outro ponto. Reativar libera novas entregas. Alteração, situação e exclusão só são aceitas para o responsável; outro operador recebe `404`, sem revelar a existência do ponto. Excluir um usuário que ainda responde por um ponto retorna `409`, preservando a referência.
-
-## Encaminhamentos de descarte
-
-| Método | Caminho | Autenticação | Entrada | Sucesso |
-|---|---|---|---|---|
-| `GET` | `/api/encaminhamentos` | sessão | `escopo=autor\|operador`, `ponto_id`, `item_id`, `status`, `offset`, `limite` | `200` com lista |
-| `GET` | `/api/encaminhamentos/{id}` | autor ou operador do ponto | — | `200` com encaminhamento |
-| `POST` | `/api/encaminhamentos` | pessoa proprietária | `item_id` e `ponto_id` | `201` com `entrega_prevista` |
-| `POST` | `/api/encaminhamentos/{id}/acoes` | autor ou operador do ponto | `acao`, `motivo`, `novo_ponto_id` | `200` com encaminhamento atualizado |
-
-Cada tentativa guarda item, autor, ponto, status, motivo e histórico com autor e data de cada evento. Estados: `entrega_prevista`, `cancelado`, `nao_recebido` e `recebido`. Um item tem no máximo uma tentativa ativa; o índice parcial garante isso mesmo em chamadas simultâneas.
-
-`cancelar` e `trocar` são do autor e só valem com `entrega_prevista`; cancelar devolve o item para `aguardando_ponto`, e trocar encerra a tentativa anterior como `cancelado` e cria outra, preservando o histórico. `receber` é do operador responsável pelo ponto: o item vira `recebido` e passa a contar em `coletados`. Repetir a confirmação devolve o mesmo resultado sem duplicar a contagem. `nao_recebido` é do operador, exige motivo e devolve o item para `aguardando_ponto`.
-
-Sem ponto cadastrado, ou por preferência, o autor pode indicar um lugar: `tipo_local` obrigatório (`ecoponto`, `cooperativa`, `comercio` ou `outro`) e nome, cidade e observação opcionais, todos texto livre. Coordenadas, arquivos e validação de endereço não são aceitos (`400`). A indicação encerra o item como `destinacao_informada`, não cria ponto, não entra no diretório, não aparece para operadores e vem rotulada como informada pelo próprio autor, sem verificação. Indicação e entrega prevista não coexistem: informar exige `aguardando_ponto` sem tentativa ativa, e registrar previsão exige que a indicação não esteja presente (`409`). Enquanto o item não estiver arquivado, o autor pode desfazer, voltando a `aguardando_ponto` sem apagar o evento anterior do histórico.
-
-Escolher o ponto não grava vínculo até a confirmação do `POST`: a listagem pública de pontos serve para comparar cidade, categorias e horário, sem declarar proximidade. A escolha é sempre explícita e o autor pode trocar de ponto enquanto a entrega estiver prevista.
+Local inativo sai da consulta pública, mas continua visível na gestão do responsável. Inativar/reativar não modifica ofertas nem gera avisos ou confirmações de equipamento. Locais não mantêm referências a equipamentos. Alteração, situação e exclusão só são aceitas para o responsável; outro operador recebe `404`, sem revelar a existência do ponto. Excluir um usuário que ainda responde por um ponto retorna `409`, preservando a referência.
 
 ## Indicadores
 
@@ -239,7 +216,7 @@ Escolher o ponto não grava vínculo até a confirmação do `POST`: a listagem 
 |---|---|---|---|
 | `GET` | `/api/indicadores` | sessão | `200` com `ofertas_ativas`, `pendencias`, `doados`, `coletados`, `indicados`, `vendidos` e `total` |
 
-`ofertas_ativas` conta itens `disponivel`; `pendencias` soma `reservado`, `aguardando_confirmacao`, `aguardando_ponto` e `entrega_prevista`. Nenhuma das duas entra em `total`, que reúne apenas conclusões confirmadas. Somente itens concluídos entram nos totais: `concluido` em doação e revenda, `recebido` em descarte. `indicados` conta `destinacao_informada` separadamente e nunca entra em `total`, porque informar um lugar não comprova recebimento nem reciclagem. Itens disponíveis, reservados ou em andamento não entram nas conclusões nem em `total`; aparecem nos recortes de ofertas e pendências conforme o status. Os números são da plataforma inteira, não de uma conta específica, e a consulta aceita qualquer sessão autenticada; sem sessão retorna `401`.
+`ofertas_ativas` conta ofertas disponíveis; `pendencias` reúne ofertas reservadas ou aguardando confirmação. `doados` e `vendidos` contam somente ofertas concluídas com confirmação bilateral; `total` soma essas conclusões. Consulta e gestão de locais não alteram esses resultados e não comprovam reciclagem. As chaves de coleta/indicação do processo retirado deixam de integrar a resposta.
 
 O snapshot da OpenAPI gerada do runtime e suas diferenças em relação a esta descrição estão em [openapi.md](openapi.md).
 

@@ -10,10 +10,6 @@ TipoNotificacao = Literal[
     "status_item_alterado",
     "item_concluido",
     "entrega_declarada",
-    "entrega_prevista",
-    "item_recebido",
-    "item_nao_recebido",
-    "ponto_inativado",
 ]
 
 

@@ -151,8 +151,9 @@ def test_itens_guia_cadastro_por_intencao_caracteristicas_e_revisao() -> None:
         'data-grupo="encerrados"',
     ):
         assert marca in html, marca
+    assert 'data-grupo="historico_descarte"' not in html
     js = ler("js/itens.js")
-    assert "/api/itens/meus?grupo=" in js
+    assert "/api/itens/meus?" in js
     assert '"publicar"' in js
     assert '"arquivar"' in js
     assert "publicar" in js and "rascunho" in js
@@ -227,23 +228,17 @@ def test_itens_oferece_acoes_do_fluxo_ao_proprietario() -> None:
     for chave in (
         '"doacao:reservado"',
         '"revenda:reservado"',
-        '"descarte:aguardando_ponto"',
-        '"descarte:entrega_prevista"',
     ):
         assert chave in itens, chave
-    # Descarte escolhe ponto e agenda entrega; o status não muda por PUT.
-    assert "/api/encaminhamentos" in itens
-    assert "Agendar entrega" in itens
-    assert "Cancelar entrega" in itens
-    assert 'status: "encaminhado"' not in itens
-    assert 'status: "coletado"' not in itens
+    # Descarte não é mais fluxo de item: não agenda entrega nem usa encaminhamentos.
+    assert "/api/encaminhamentos" not in itens
+    assert "Agendar entrega" not in itens
+    assert "Cancelar entrega" not in itens
     # Doação e venda terminam em entrega bilateral, não em conclusão por PUT.
     assert "Declarar entrega" in itens
     assert "executarComandoItem" in itens
     assert "em_avaliacao" not in itens
     assert 'status: "vendido"' not in itens
-    assert "ponto_coleta_id" in itens
-    assert "/api/pontos-coleta" in itens
 
 
 def test_avisos_e_navegacao_oferecem_link_e_recuperacao() -> None:
@@ -257,7 +252,7 @@ def test_avisos_e_navegacao_oferecem_link_e_recuperacao() -> None:
     assert "replaceState" in catalogo
 
 
-def test_itens_oferece_destinacao_informada() -> None:
+def test_itens_nao_oferece_destinacao_informada() -> None:
     itens = ler("js/itens.js")
     for marca in (
         '"descarte:destinacao_informada"',
@@ -265,24 +260,24 @@ def test_itens_oferece_destinacao_informada() -> None:
         "Indicar outro lugar",
         "Desfazer indicação",
         "/destinacao",
-        "não verificado",
     ):
-        assert marca in itens, marca
+        assert marca not in itens, marca
 
 
-def test_pontos_oferece_operacao_da_fila() -> None:
+def test_pontos_oferece_gestao_de_locais() -> None:
     pontos = ler("js/pontos.js")
     for marca in (
         "situacao",
         "/situacao",
-        "escopo=operador",
-        "Confirmar recebimento",
-        "nao_recebido",
-        "fila-list",
+        "Editar",
+        "Ativar",
+        "Desativar",
+        "/api/pontos-coleta",
     ):
         assert marca in pontos, marca
     html = ler("pontos.html")
-    assert 'id="fila-operador"' in html
+    assert 'id="pontos-gestao"' in html
+    assert 'id="fila-operador"' not in html
 
 
 def test_interesses_oferece_combinacao_e_recebimento() -> None:

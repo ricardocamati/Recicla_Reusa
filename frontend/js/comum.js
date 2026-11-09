@@ -31,19 +31,14 @@ export const ROTULOS = {
   },
   destino: {
     doacao: "Doação",
-    descarte: "Descarte",
     revenda: "Revenda",
   },
   status: {
     disponivel: "Disponível",
     reservado: "Reservado",
-    aguardando_ponto: "Aguardando ponto",
-    entrega_prevista: "Entrega prevista",
-    recebido: "Recebido",
-    destinacao_informada: "Destinação informada",
-    rascunho: "Rascunho",
     aguardando_confirmacao: "Aguardando confirmação",
     concluido: "Concluído",
+    rascunho: "Rascunho",
     arquivado: "Arquivado",
   },
 };
@@ -169,7 +164,7 @@ const NAVEGACAO_AUTENTICADA = [
   { pagina: "itens.html", href: "./itens.html", texto: "Meus itens", pessoa: true, id: "items-link" },
   { pagina: "interesses.html", href: "./interesses.html", texto: "Interesses", pessoa: true },
   { pagina: "onde-descartar.html", href: "./onde-descartar.html", texto: "Onde descartar" },
-  { pagina: "pontos.html", href: "./pontos.html", texto: "Pontos" },
+  { pagina: "pontos.html", href: "./pontos.html", texto: "Meus locais", operador: true },
   { pagina: "notificacoes.html", href: "./notificacoes.html", texto: "Notificações" },
   { pagina: "perfil.html", href: "./perfil.html", texto: "Meu perfil" },
 ];
@@ -182,6 +177,7 @@ function renderAuthenticatedNavigation(usuario) {
   const links = document.createDocumentFragment();
   for (const entrada of NAVEGACAO_AUTENTICADA) {
     if (entrada.pessoa && usuario.tipo !== "pessoa") continue;
+    if (entrada.operador && usuario.tipo !== "ponto_coleta") continue;
     const link = createElement("a", "nav-link", entrada.texto);
     link.href = entrada.href;
     if (entrada.id) link.id = entrada.id;
@@ -295,7 +291,7 @@ export function roleDescription(tipo) {
     return "Ofereça eletrônicos ou encontre itens para reaproveitar, com a mesma conta.";
   }
   if (tipo === "ponto_coleta") {
-    return "Gerencie seus pontos de coleta e acompanhe as entregas previstas e recebidas.";
+    return "Gerencie seus locais e mantenha as informações públicas de atendimento atualizadas.";
   }
   return "Explore o catálogo e encontre eletrônicos para reaproveitar.";
 }
@@ -311,7 +307,7 @@ export function createItemCard(item, { owned = false, onEdit = null, onDelete = 
   const article = createElement("article", "item-card");
   const tags = createElement("div", "item-tags");
   tags.append(
-    createElement("span", item.destino === "descarte" ? "tag tag-warm" : "tag", labelFor("destino", item.destino)),
+    createElement("span", "tag", labelFor("destino", item.destino)),
     createElement("span", "tag tag-neutral", labelFor("status", item.status)),
   );
 

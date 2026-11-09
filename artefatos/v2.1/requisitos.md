@@ -1,6 +1,6 @@
 # Requisitos — v2.1
 
-Esta é a especificação de produto da v2.1, revisada para descarte como diretório público. As Etapas 16–17 implementam leitura pública, proteção do legado e a tela “Onde descartar”; a retirada do fluxo por item continua pendente nas etapas seguintes. Os critérios abaixo não constituem resultado de teste nem comprovação integral de entrega. A [matriz](matriz_rastreabilidade.md) distingue código, evidências e limites; os [contratos](contratos_http.md) registram as diferenças entre o desenho aprovado e o executável. Casos verificáveis em [casos_de_teste.md](casos_de_teste.md).
+Esta é a especificação de produto da v2.1, revisada para descarte como diretório público. As Etapas 16–17 implementam leitura pública, proteção do legado e a tela “Onde descartar”; a retirada dos comandos do fluxo por item está implementada na Etapa 18, em validação integrada, sem camada de compatibilidade nem histórico de descarte. Os critérios abaixo não constituem resultado de teste nem comprovação integral de entrega. A [matriz](matriz_rastreabilidade.md) distingue código, evidências e limites; os [contratos](contratos_http.md) registram as diferenças entre o desenho aprovado e o executável. Casos verificáveis em [casos_de_teste.md](casos_de_teste.md).
 
 ## Objetivo e atores
 
@@ -22,7 +22,7 @@ Consultar somente doação/venda publicadas e disponíveis por padrão, com deta
 
 ### V21-RF-03 — Cadastro por intenção e gestão
 
-Guiar cadastro de doação/venda em intenção, características e revisão; salvar rascunho e publicar ofertas. “Onde descartar” abre o diretório, não o formulário de item. Exibir Ativos, Em andamento e Encerrados para ofertas; a apresentação dos registros legados não autoriza conversão ou exclusão automática.
+Guiar cadastro de doação/venda em intenção, características e revisão; salvar rascunho e publicar ofertas. “Onde descartar” abre o diretório, não o formulário de item. Exibir Ativos, Em andamento e Encerrados para ofertas; não há aba de histórico de descarte nem consulta a equipamentos descartados.
 
 **Aceitação:** Preço não aparece em doação; venda exige preço positivo; validação preserva preenchimento; não existe novo cadastro de item de descarte no fluxo-alvo; editar não altera estado por campo genérico.
 
@@ -70,7 +70,7 @@ Fora do escopo revisado. O diretório não registra tentativas; escolher outro l
 
 Cadastrar e atualizar os próprios locais, incluindo nome, endereço público, categorias, horário e situação ativo/inativo. Gestão exige sessão operacional, com listagem própria paginada que pode incluir inativos.
 
-**Aceitação:** Visitante e pessoa comum não gerem locais; operador não altera local alheio; inativação retira o local das novas consultas públicas; nenhum painel exige fila, previsão ou confirmação de recebimento. Registros e referências legadas são preservados.
+**Aceitação:** Visitante e pessoa comum não gerem locais; operador não altera local alheio; inativação retira o local das novas consultas públicas; nenhum painel exige fila, previsão ou confirmação de recebimento. Não há vínculo entre local e equipamento no novo produto.
 
 ### V21-RF-12 — Avisos acionáveis
 
@@ -82,7 +82,7 @@ Notificar novos interesses, seleção/liberação, combinação e entrega/recebi
 
 Separar ofertas ativas e pendências de doações/vendas com recebimento confirmado. O diretório informa locais, não conta equipamentos entregues, recebidos, indicados ou reciclados.
 
-**Aceitação:** Cada conclusão de oferta conta uma vez; consulta, cópia de endereço e abertura de mapa não alteram resultados. Quantidade de locais ativos, se exibida, é informação cadastral separada. Totais-alvo não somam descarte legado a resultados novos de doação/venda; dados históricos não são apagados para isso.
+**Aceitação:** Cada conclusão de oferta conta uma vez; consulta, cópia de endereço e abertura de mapa não alteram resultados. Quantidade de locais ativos, se exibida, é informação cadastral separada. Totais-alvo consideram somente ofertas confirmadas, sem tratar consultas como descarte realizado.
 
 ### V21-RF-14 — Arquivamento e histórico
 
@@ -98,13 +98,13 @@ Mostrar próximas ações por ator, estados vazios úteis, foco acessível e res
 
 ### V21-RF-16 — Retirado: indicar lugar de descarte
 
-A indicação privada e seu desfazimento deixam de integrar o produto-alvo porque não há item de descarte a encerrar. Ausência de resultado oferece mudar filtros, não informar uma destinação. Os dados anteriores permanecem preservados; o ID não é reutilizado.
+A indicação privada e seu desfazimento deixam de integrar o produto-alvo porque não há item de descarte a encerrar. Ausência de resultado oferece mudar filtros, não informar uma destinação. Não manter compatibilidade de leitura ou escrita; o ID não é reutilizado.
 
 ## Requisitos não funcionais
 
 ### V21-RNF-01 — Preservação do marco anterior
 
-Preservar a implementação v1.0 e a especificação v2.0 naquilo que não for substituído explicitamente. Definir estratégia de dados antes de qualquer conversão.
+Preservar os marcos anteriores no Git e as proteções de ofertas/contas. A retirada do descarte por item não exige migração, adaptador ou histórico compatível: não há dados desse fluxo a conservar. Não executar limpeza ou recriação de bancos reais como parte da remoção do código.
 
 ### V21-RNF-02 — Integridade e concorrência
 
@@ -132,7 +132,7 @@ A criação de indicação privada saiu do escopo com V21-RF-16. Isso não torna
 
 ### V21-RNF-08 — Projeção pública e consulta sem coleta pessoal
 
-Lista e detalhe públicos expõem somente os dados do local: identificador, nome, endereço público, categorias e horário. Não expor usuário responsável, hash, endereço pessoal, dados de itens ou indicações legadas. Não exigir identidade, localização precisa ou dados do equipamento para consultar. A liberação de leitura não altera a sessão e a autorização das mutações.
+Lista e detalhe públicos expõem somente os dados do local: identificador, nome, endereço público, categorias e horário. Não expor usuário responsável, hash, endereço pessoal, dados de itens ou informações privadas de contas. Não exigir identidade, localização precisa ou dados do equipamento para consultar. A liberação de leitura não altera a sessão e a autorização das mutações.
 
 ## Fronteira
 

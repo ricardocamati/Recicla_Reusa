@@ -88,7 +88,7 @@ class ServidorApi(BaseHTTPRequestHandler):
             self._responder(200, [])
             return
         if caminho == "/api/indicadores":
-            self._responder(200, {"doados": 0, "coletados": 0, "vendidos": 0, "total": 0})
+            self._responder(200, {"doados": 0, "vendidos": 0, "ofertas_ativas": 0, "pendencias": 0, "total": 0})
             return
         self._responder(404, {"detail": "Não encontrado"})
 
@@ -368,11 +368,13 @@ def test_selenium_navegacao_consistente_e_contexto_carregado(
     navegador.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         "source": f"window.RECICLA_API_BASE = {json.dumps(servidor_api)};",
     })
-    paginas = ("catalogo.html", "itens.html", "interesses.html", "onde-descartar.html", "pontos.html", "notificacoes.html", "perfil.html")
-    rotulos = ("Catálogo", "Meus itens", "Interesses", "Onde descartar", "Pontos", "Notificações", "Meu perfil")
+    if tipo == "pessoa":
+        paginas = ("catalogo.html", "itens.html", "interesses.html", "onde-descartar.html", "notificacoes.html", "perfil.html")
+        rotulos = ("Catálogo", "Meus itens", "Interesses", "Onde descartar", "Notificações", "Meu perfil")
+    else:
+        paginas = ("catalogo.html", "onde-descartar.html", "pontos.html", "notificacoes.html", "perfil.html")
+        rotulos = ("Catálogo", "Onde descartar", "Meus locais", "Notificações", "Meu perfil")
     esperados = list(zip(paginas, rotulos))
-    if tipo == "ponto_coleta":
-        esperados = [p for p in esperados if p[0] not in ("itens.html", "interesses.html")]
     for pagina, _ in esperados:
         navegador.get(f"{servidor_frontend}/{pagina}")
         espera = WebDriverWait(navegador, 5)

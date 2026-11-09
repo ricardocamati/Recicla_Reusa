@@ -184,9 +184,9 @@ Nesta revisão, descarte não exige conta ou item. Não recriar entrega prevista
 
 ## Etapa 16 — Consulta pública e proteção dos dados anteriores
 
-Referências: V21-RF-09, V21-RNF-01, V21-RNF-08 · V21-RN-11, V21-RN-21, V21-RN-24, V21-RN-25 · V21-CT-35, V21-CT-36, V21-CT-37, V21-CT-43 · [modelo](artefatos/v2.1/modelo_dados.md), [contratos](artefatos/v2.1/contratos_http.md).
+Referências: V21-RF-09, V21-RNF-01, V21-RNF-08 · V21-RN-11, V21-RN-21, V21-RN-24 · V21-CT-35, V21-CT-36, V21-CT-37 · [modelo](artefatos/v2.1/modelo_dados.md), [contratos](artefatos/v2.1/contratos_http.md).
 
-- [x] Definir o tratamento dos itens de descarte, encaminhamentos, indicações e referências existentes, separando seu histórico da experiência nova, sem excluir, converter em oferta ou concluir registros automaticamente.
+- [x] Definir o tratamento do descarte por item: ausência de dados a conservar e remoção integral do fluxo, das rotas, campos e testes exclusivos, sem migração de banco nem histórico de descarte. Mantida a história Git do marco anterior.
 - [x] Liberar lista e detalhe de locais ativos sem sessão, mantendo gestão e demais rotas protegidas; local inexistente ou inativo não é exposto pelo detalhe público.
 - [x] Criar projeção pública com apenas identificador, nome, endereço do local, categorias e horário; excluir responsável, endereço pessoal, equipamentos e dados legados das respostas públicas.
 - [x] Aplicar cidade, categoria e situação ativa antes da paginação, com ordenação estável por nome/ID e validação de filtros; não permitir revelar inativos por parâmetros públicos.
@@ -206,28 +206,28 @@ Referências: V21-RF-03, V21-RF-09, V21-RF-15, V21-RNF-03 · V21-RN-24 · V21-CT
 
 ## Etapa 18 — Gestão dos locais e retirada do processo antigo
 
-Referências: V21-RF-03, V21-RF-11, V21-RF-14, V21-RNF-08 · V21-RN-14, V21-RN-16, V21-RN-17, V21-RN-22, V21-RN-25 · V21-CT-04, V21-CT-24, V21-CT-29, V21-CT-40, V21-CT-41, V21-CT-43, V21-CT-44.
+Referências: V21-RF-03, V21-RF-11, V21-RF-14, V21-RNF-08 · V21-RN-14, V21-RN-16, V21-RN-17, V21-RN-22 · V21-CT-04, V21-CT-24, V21-CT-29, V21-CT-40, V21-CT-41, V21-CT-44.
 
-- [ ] Separar consulta pública da gestão autenticada de locais próprios, inclusive inativos; restringir responsável antes da paginação e não fazer fallback público quando a autorização falhar.
-- [ ] Manter cadastro, edição e ativação/inativação pelo responsável, com identidade derivada da sessão; refletir alterações nas consultas seguintes sem remover referências antigas.
-- [ ] Retirar descarte das opções de novo cadastro de item na interface e na API, direcionando “Quero descartar” ao diretório e preservando cadastro/gestão de doação e venda.
-- [ ] Retirar do novo produto filas e ações de entrega prevista, troca, cancelamento, recebimento e destinação informada; descontinuar os comandos antigos conforme o tratamento de legado definido na Etapa 16, sem substituí-los por outro rastreamento de descarte.
-- [ ] Preservar consulta histórica autorizada dos registros anteriores conforme a estratégia definida, sem publicar indicações privadas ou simular operações para encerrá-las.
-- [ ] Testar negação de gestão sem sessão, por pessoa comum e por operador alheio, visibilidade ativo/inativo, proteção do legado e regressão de arquivamento/entrega bilateral das ofertas.
+- [x] Separar consulta pública da gestão autenticada de locais próprios, inclusive inativos; restringir responsável antes da paginação e não fazer fallback público quando a autorização falhar.
+- [x] Manter cadastro, edição e ativação/inativação pelo responsável, com identidade derivada da sessão; refletir alterações nas consultas seguintes, sem criar vínculos com equipamentos.
+- [x] Retirar descarte das opções de novo cadastro de item na interface e na API, direcionando “Quero descartar” ao diretório e preservando cadastro/gestão de doação e venda.
+- [x] Retirar do novo produto filas e ações de entrega prevista, troca, cancelamento, recebimento e destinação informada; remover os comandos antigos, sem respostas de compatibilidade ou outro rastreamento de descarte.
+- [x] Remover rotas, modelos, campos, índices, testes e interface exclusivos do descarte por item, sem aba histórica, adaptadores ou migração de dados; manter histórico e relações das ofertas.
+- [x] Testar negação de gestão sem sessão, por pessoa comum e por operador alheio, visibilidade ativo/inativo, ausência das rotas/campos retirados e regressão de arquivamento/entrega bilateral das ofertas.
 
 ## Etapa 19 — Avisos, indicadores e demonstração coerentes
 
-Referências: V21-RF-07, V21-RF-12, V21-RF-13 · V21-RN-18, V21-RN-19, V21-RN-24, V21-RN-25 · V21-CT-22, V21-CT-23, V21-CT-35, V21-CT-42, V21-CT-43.
+Referências: V21-RF-07, V21-RF-12, V21-RF-13 · V21-RN-18, V21-RN-19, V21-RN-24 · V21-CT-22, V21-CT-23, V21-CT-35, V21-CT-42.
 
-- [ ] Retirar emissão de avisos do fluxo de descarte descontinuado e garantir que consulta, cópia, mapa e gestão do diretório não produzam esses avisos; preservar a privacidade dos avisos históricos.
-- [ ] Ajustar contrato e consumidores dos indicadores para resultados de doação/venda confirmadas; total de conclusões não soma descarte legado nem contagem de consultas.
+- [ ] Retirar emissão de avisos do fluxo de descarte descontinuado e garantir que consulta, cópia, mapa e gestão do diretório não produzam esses avisos; manter a privacidade dos avisos de ofertas.
+- [ ] Ajustar contrato e consumidores dos indicadores para resultados de doação/venda confirmadas; total de conclusões soma somente ofertas confirmadas, nunca consultas.
 - [ ] Retirar da experiência nova rótulos de equipamento recebido/indicado/reciclado a partir do diretório. Se houver quantidade de locais ativos, apresentá-la separada de resultados de equipamentos.
-- [ ] Adaptar o script de demonstração e seus testes para os cenários novos de locais consultáveis e ofertas, sem exigir recriar banco ou encerrar ciclos antigos. Aplicação sobre demonstração existente continua dependente de autorização própria.
+- [ ] Adaptar o script de demonstração e seus testes para os cenários novos de locais consultáveis e ofertas, sem cenários do fluxo retirado e sem exigir recriar banco. Aplicação sobre demonstração existente continua dependente de autorização própria.
 - [ ] Testar navegação repetida sem alteração de resultados, confirmação única de doação/venda e reexecução aditiva da demonstração em banco de teste, sem duplicação ou modificação de documentos anteriores.
 
 ## Etapa 20 — Validação integrada e documentação do executável
 
-Referências: V21-RNF-02, V21-RNF-03, V21-RNF-04, V21-RNF-05, V21-RNF-06, V21-RNF-08 · V21-CT-28, V21-CT-29, V21-CT-30, V21-CT-35, V21-CT-36, V21-CT-37, V21-CT-38, V21-CT-39, V21-CT-40, V21-CT-41, V21-CT-42, V21-CT-43, V21-CT-44 · [matriz](artefatos/v2.1/matriz_rastreabilidade.md).
+Referências: V21-RNF-02, V21-RNF-03, V21-RNF-04, V21-RNF-05, V21-RNF-06, V21-RNF-08 · V21-CT-28, V21-CT-29, V21-CT-30, V21-CT-35, V21-CT-36, V21-CT-37, V21-CT-38, V21-CT-39, V21-CT-40, V21-CT-41, V21-CT-42, V21-CT-44 · [matriz](artefatos/v2.1/matriz_rastreabilidade.md).
 
 - [ ] Adaptar o verificador das três jornadas para doação, venda e consulta anônima de descarte, sem confirmação de recebimento em ponto na terceira jornada.
 - [ ] Executar as jornadas em stack/volume próprios, conferir dados e indicadores antes/depois da consulta e comprovar limpeza seletiva das fixtures.

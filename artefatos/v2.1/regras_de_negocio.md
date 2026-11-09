@@ -8,7 +8,7 @@ Visitante consulta o diretório sem identidade ou sessão. Tipos de conta implem
 
 ## V21-RN-02 — Modalidade e condição
 
-No modelo-alvo, modalidade de novo item é doacao ou venda; descarte é consulta independente, não modalidade cadastrável. Valores de descarte existentes são legados e não devem ser convertidos automaticamente. Enquanto o item for rascunho, o proprietário pode corrigir a modalidade antes de publicar; depois de publicado, ou com interesse, a troca deixa de ser edição comum e exige arquivar e cadastrar nova intenção. Condição física independente: funcional, funcional_com_defeito, reparavel, sem_conserto ou recondicionado. Venda não exige reparar. Não transformar valor ausente em zero; venda exige preço finito maior que zero, doação usa null. Esta restrição de preço é intencionalmente diferente da v2.0.
+No modelo-alvo, modalidade de novo item é doacao ou venda; descarte é consulta independente, não modalidade cadastrável. Não há compatibilidade de itens de descarte nem conversão de dados. Enquanto o item for rascunho, o proprietário pode corrigir a modalidade antes de publicar; depois de publicado, ou com interesse, a troca deixa de ser edição comum e exige arquivar e cadastrar nova intenção. Condição física independente: funcional, funcional_com_defeito, reparavel, sem_conserto ou recondicionado. Venda não exige reparar. Não transformar valor ausente em zero; venda exige preço finito maior que zero, doação usa null. Esta restrição de preço é intencionalmente diferente da v2.0.
 
 ## V21-RN-03 — Visão pública do catálogo
 
@@ -56,7 +56,7 @@ Sem tentativa persistida, não há comando de cancelamento/troca. A pessoa pode 
 
 ## V21-RN-14 — Inativação e atualização do diretório
 
-Somente o operador responsável altera ativo/inativo. Inativar remove o local das consultas públicas subsequentes; reativar o torna consultável novamente. Uma tela já aberta não é garantia de atendimento: ao recarregar um detalhe agora inativo, informar indisponibilidade e oferecer retorno à lista. Não criar aviso, tentativa nem resolução em massa; preservar dados e referências anteriores.
+Somente o operador responsável altera ativo/inativo. Inativar remove o local das consultas públicas subsequentes; reativar o torna consultável novamente. Uma tela já aberta não é garantia de atendimento: ao recarregar um detalhe agora inativo, informar indisponibilidade e oferecer retorno à lista. Não criar aviso, tentativa nem resolução em massa; não criar vínculo com equipamentos.
 
 ## V21-RN-15 — Retirado: confirmação de descarte no ponto
 
@@ -64,7 +64,7 @@ O operador mantém informações do local, sem confirmar entrega de equipamento 
 
 ## V21-RN-16 — Gestão e referências dos locais
 
-Criar, editar e ativar/inativar exige conta operacional. Derivar responsavel_id da sessão e não aceitar transferência por edição comum. A listagem de gestão filtra os próprios locais antes de paginar e pode incluir inativos. Visitante e pessoa comum não acessam essa gestão. Categorias, endereço e horário descrevem o local, sem vínculo com um novo equipamento. Referências históricas continuam protegidas; se um registro legado impedir uma alteração, tratar a compatibilidade explicitamente antes da implementação, sem apagar vínculos ou reativar o fluxo retirado.
+Criar, editar e ativar/inativar exige conta operacional. Derivar responsavel_id da sessão e não aceitar transferência por edição comum. A listagem de gestão filtra os próprios locais antes de paginar e pode incluir inativos. Visitante e pessoa comum não acessam essa gestão. Categorias, endereço e horário descrevem o local, sem vínculo com um novo equipamento. Locais não possuem fila, referência de equipamento ou dependência de encaminhamento. Histórico e referências de ofertas permanecem protegidos no seu próprio fluxo.
 
 ## V21-RN-17 — Arquivar versus excluir
 
@@ -76,7 +76,7 @@ Novo interesse avisa proprietário; decisão avisa interessado; combinação avi
 
 ## V21-RN-19 — Indicadores e resultados verificáveis
 
-Doação/venda contam itens concluídos com recebimento confirmado. Reserva e declaração ainda sem confirmação não contam. Não há contagem de descarte feito, recebido, indicado ou reciclado a partir de consultas de local. Se houver quantidade de locais ativos, rotular como informação cadastral e não somar a total de equipamentos. O total-alvo de conclusões soma somente doações e vendas; indicadores antigos de descarte não são reapresentados como resultado do diretório. Preservar registros históricos sem conversão ou exclusão automática.
+Doação/venda contam itens concluídos com recebimento confirmado. Reserva e declaração ainda sem confirmação não contam. Não há contagem de descarte feito, recebido, indicado ou reciclado a partir de consultas de local. Se houver quantidade de locais ativos, rotular como informação cadastral e não somar a total de equipamentos. O total-alvo de conclusões soma somente doações e vendas; indicadores antigos de descarte não são reapresentados como resultado do diretório. Não implementar histórico de descarte ou conversão automática de dados.
 
 ## V21-RN-20 — Versão, comandos e transações
 
@@ -92,15 +92,15 @@ Preservar login, validação de origem nas mutações, cookie HttpOnly e respost
 
 ## V21-RN-23 — Retirado: destinação informada pelo autor
 
-Não registrar nem desfazer indicação privada como etapa de descarte no novo produto. Indicações legadas mantêm sua privacidade e não alimentam o diretório.
+Não registrar nem desfazer indicação privada como etapa de descarte no novo produto. Rotas, schemas e campos da indicação são removidos, sem adaptadores.
 
 ## V21-RN-24 — Consulta sem efeitos de descarte
 
 Abrir página, filtrar, paginar, consultar detalhe, copiar endereço e abrir mapa não criam item, interesse, encaminhamento, indicação, notificação ou evento de descarte. Não exigir confirmação final, ID de equipamento ou login. Os filtros são estado de navegação, não documento de domínio. Sem resultado, orientar alteração/limpeza dos filtros; erro de rede não é lista vazia nem descarte concluído.
 
-## V21-RN-25 — Preservação do legado na transição
+## V21-RN-25 — Retirado: compatibilidade de descarte
 
-Retirar um recurso do escopo não autoriza remover suas coleções, campos, vínculos ou eventos. Separar registros históricos da experiência nova e definir estratégia de compatibilidade antes de implantar. Não converter descarte em oferta, concluir tentativas nem limpar demonstração automaticamente. O fluxo retirado não volta como requisito de fallback.
+Não há dados de descarte por item a conservar. Por decisão de escopo, não manter rotas antigas, adaptadores, campos ou aba de histórico desse fluxo. A remoção é do código e dos contratos ativos, não uma autorização para apagar bancos. Histórico de ofertas permanece.
 
 ## Estados e transições resumidos
 
@@ -119,4 +119,4 @@ Retirar um recurso do escopo não autoriza remover suas coleções, campos, vín
 
 Abrir diretório → filtrar/paginar → consultar detalhes/copiar endereço → voltar ou escolher outro local. Nenhuma dessas etapas altera dados de domínio, exige confirmação do operador ou produz conclusão de descarte.
 
-Não há transporte, previsão, recebimento ou destinação informada no fluxo-alvo. Os estados anteriores podem existir nos dados legados, sem constituir transições novas. `concluido` continua terminal para as ofertas; não há estorno automático nesta revisão.
+Não há transporte, previsão, recebimento ou destinação informada no fluxo-alvo. Os estados exclusivos do processo anterior são removidos do modelo executável. `concluido` continua terminal para as ofertas; não há estorno automático nesta revisão.

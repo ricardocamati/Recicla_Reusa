@@ -1,6 +1,6 @@
 # Jornadas e funções de frontend — v2.1
 
-Experiência-alvo da revisão de descarte como diretório. A Etapa 16 entrega a base HTTP pública e preservação de registros. A Etapa 17 implementa J-03 em `frontend/onde-descartar.html`, com navegação, filtros/paginação, detalhe, cópia e estados próprios. O frontend ainda mantém os comandos antigos até a Etapa 18; não confundir a nova consulta com sua retirada. Doação e venda preservam suas jornadas.
+Experiência-alvo da revisão de descarte como diretório. A Etapa 16 entrega a base HTTP pública e preservação de registros. A Etapa 17 implementa J-03 em `frontend/onde-descartar.html`, com navegação, filtros/paginação, detalhe, cópia e estados próprios. A Etapa 18 retira os controles antigos e entrega a gestão de locais sem histórico de descarte, em validação integrada; não confundir a nova consulta com registro de entrega. Doação e venda preservam suas jornadas.
 
 ## Interface de referência e diferenças para o alvo
 
@@ -24,7 +24,7 @@ Os nomes visíveis devem traduzir conceitos de negócio, sem expor códigos inte
 |---|---|---|
 | Início e “Onde descartar” | Catálogo de ofertas e “Onde descartar” | “Onde descartar” e Meus locais |
 | Filtros e detalhe de locais ativos | Meus itens e Interesses | Cadastro/edição e ativação/inativação dos próprios locais |
-| Copiar endereço; mapa opcional | Avisos e perfil | Perfil e avisos anteriores autorizados, sem fila de descarte |
+| Copiar endereço; mapa opcional | Avisos e perfil | Perfil e gestão de locais, sem fila de descarte |
 
 “Quero descartar” leva ao diretório sem passar por cadastro/login. As entradas “Quero doar” e “Quero vender” mantêm o fluxo autenticado de ofertas. O endereço da página pública deve poder ser aberto diretamente em uma sessão anônima. A consulta não recebe dados pessoais de quem procura o local.
 
@@ -82,15 +82,15 @@ Lista, detalhe, filtros, cópia e mapa não criam documento de domínio, aviso o
 4. Ativa/inativa local com efeito explicado: entrar/sair das consultas públicas subsequentes. Não aparece confirmação de recebimento, impossibilidade de descarte nem fila de equipamentos.
 5. Conflito ou falha mantém o formulário para reconciliação/recarga, sem anunciar sucesso indevido. Referências antigas não são removidas para permitir a edição.
 
-A estratégia de compatibilidade de registros legados deverá ser definida antes da implementação; esta jornada não manda concluir ou cancelar tentativas antigas.
+Não há aba histórica, campos ou chamadas de encaminhamento/destinação. As rotas antigas são removidas, não mantidas com `410`. Alterações/inativação de local não emitem avisos de descarte.
 
 ## J-05 — Avisos e indicadores
 
-Avisos ativos de doação/venda apontam para item ou negociação. Consulta e gestão do diretório não disparam avisos de descarte; avisos legados não ganham acesso público. Ao abrir registro encerrado, mostrar o que ocorreu e somente informações autorizadas. Não reconstruir ação antiga com base no texto do aviso.
+Avisos ativos de doação/venda apontam para item ou negociação. Consulta e gestão do diretório não disparam avisos de descarte; avisos de ofertas continuam privados. Ao abrir registro encerrado, mostrar o que ocorreu e somente informações autorizadas. Não reconstruir ação antiga com base no texto do aviso.
 
 Início da pessoa apresenta pendências antes dos indicadores: “Você precisa confirmar recebimento”, “Há interessados na sua oferta”. Operador vê a gestão dos locais, sem pendências de descarte decorrentes da nova consulta.
 
-Rótulos-alvo de resultado: “Doações recebidas” e “Vendas concluídas com recebimento confirmado”. Eventual quantidade de locais ativos é informação do diretório, separada de equipamentos. Não apresentar consulta, cópia de endereço ou mapa como entrega/reciclagem; não somar descarte legado ao total novo de ofertas.
+Rótulos-alvo de resultado: “Doações recebidas” e “Vendas concluídas com recebimento confirmado”. Eventual quantidade de locais ativos é informação do diretório, separada de equipamentos. Não apresentar consulta, cópia de endereço ou mapa como entrega/reciclagem; não somar consultas ao total de ofertas concluídas.
 
 ## Padrões obrigatórios de usabilidade
 

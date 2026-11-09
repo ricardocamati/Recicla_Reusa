@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Pontos de coleta no Recicla/Reusa.">
-  <title>Pontos de coleta | Recicla/Reusa</title>
+  <meta name="description" content="Gerencie seus locais de coleta no Recicla/Reusa.">
+  <title>Meus locais | Recicla/Reusa</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -16,9 +16,8 @@
       </a>
       <nav class="header-actions" aria-label="Navegação principal">
         <a class="nav-link" href="./catalogo.html">Catálogo</a>
-        <a class="nav-link" href="./itens.html">Meus itens</a>
-        <a class="nav-link" href="./interesses.html">Interesses</a>
-        <a class="nav-link active" href="./pontos.html" aria-current="page">Pontos</a>
+        <a class="nav-link" href="./onde-descartar.html">Onde descartar</a>
+        <a class="nav-link active" href="./pontos.html" aria-current="page">Meus locais</a>
         <a class="nav-link" href="./notificacoes.html">Notificações</a>
         <a class="nav-link" href="./perfil.html">Meu perfil</a>
         <span id="session-chip" class="session-chip" hidden></span>
@@ -35,18 +34,25 @@
     <div class="container">
       <section class="workspace-heading">
         <div>
-          <p class="eyebrow">Descarte formal</p>
-          <h1>Pontos de coleta, <span id="user-name">...</span>.</h1>
-          <p class="section-description">Encontre locais que recebem cada categoria de equipamento.</p>
+          <p class="eyebrow">Gestão de locais</p>
+          <h1>Meus locais, <span id="user-name">...</span>.</h1>
+          <p class="section-description">Gerencie apenas os pontos de coleta da sua conta operacional.</p>
         </div>
         <span id="role-badge" class="role-badge">...</span>
       </section>
 
-      <section class="section-block" aria-labelledby="pontos-title">
+      <section id="pontos-acesso-negado" class="section-block" hidden>
+        <p id="pontos-denied-message" class="form-message error" role="status" aria-live="polite">
+          Acesso negado: esta área é restrita a contas operacionais de ponto de coleta.
+        </p>
+        <a class="button button-secondary" href="./onde-descartar.html">Onde descartar</a>
+      </section>
+
+      <section id="pontos-gestao" class="section-block" hidden>
         <div class="section-heading">
           <div>
             <p class="eyebrow">Rede de coleta</p>
-            <h2 id="pontos-title">Locais cadastrados</h2>
+            <h2 id="pontos-title">Meus locais cadastrados</h2>
           </div>
           <form id="pontos-filtros" class="form-actions">
             <label class="field field-inline">Cidade
@@ -57,10 +63,20 @@
                 <option value="">Todas</option>
                 <option value="informatica">Informática</option>
                 <option value="notebook">Notebook</option>
+                <option value="desktop">Desktop</option>
                 <option value="celular">Celular</option>
+                <option value="tablet">Tablet</option>
+                <option value="televisao">Televisão</option>
                 <option value="monitor">Monitor</option>
                 <option value="impressora">Impressora</option>
                 <option value="outro">Outro</option>
+              </select>
+            </label>
+            <label class="field field-inline">Situação
+              <select id="filtro-ponto-ativo" name="ativo">
+                <option value="">Todos</option>
+                <option value="true">Ativos</option>
+                <option value="false">Inativos</option>
               </select>
             </label>
             <button class="button button-secondary" type="submit">Filtrar</button>
@@ -68,17 +84,23 @@
         </div>
         <p id="pontos-message" class="form-message" role="status" aria-live="polite"></p>
         <div id="pontos-list" class="item-grid" aria-live="polite"></div>
+        <div id="pontos-pagination" class="form-actions">
+          <button id="ponto-previous" class="button button-ghost" type="button">Anterior</button>
+          <span id="ponto-page">Página 1</span>
+          <button id="ponto-next" class="button button-ghost" type="button">Próximo</button>
+        </div>
       </section>
 
-      <section id="ponto-admin" class="section-block" aria-labelledby="ponto-admin-title" hidden>
+      <section id="ponto-admin" class="section-block" hidden>
         <div class="section-heading">
           <div>
             <p class="eyebrow">Conta operacional</p>
-            <h2 id="ponto-admin-title">Seus pontos</h2>
+            <h2 id="ponto-admin-title">Novo local</h2>
           </div>
         </div>
         <div class="card form-card">
           <form id="ponto-form" class="form-stack">
+            <input name="ponto_id" type="hidden">
             <label class="field">Nome do ponto
               <input name="nome" type="text" minlength="3" maxlength="120" required>
             </label>
@@ -90,6 +112,9 @@
                 <input name="numero" type="text" maxlength="20" required>
               </label>
             </div>
+            <label class="field">Complemento
+              <input name="complemento" type="text" maxlength="160">
+            </label>
             <div class="field-row">
               <label class="field">CEP
                 <input name="cep" type="text" maxlength="9" required>
@@ -115,22 +140,12 @@
               <input name="horario_atendimento" type="text" minlength="3" maxlength="160" required>
             </label>
             <div class="form-actions">
-              <button class="button button-primary" type="submit">Salvar ponto</button>
+              <button class="button button-primary" type="submit" id="ponto-submit">Salvar local</button>
+              <button class="button button-ghost" type="button" id="ponto-cancel-edit" hidden>Cancelar edição</button>
             </div>
             <p id="ponto-form-message" class="form-message" role="status" aria-live="polite"></p>
           </form>
         </div>
-      </section>
-      <section id="fila-operador" class="section-block" aria-labelledby="fila-title" hidden>
-        <div class="section-heading">
-          <div>
-            <p class="section-kicker">Operação</p>
-            <h2 id="fila-title">Fila do ponto</h2>
-            <p class="section-description">Entregas previstas aguardando conferência no balcão.</p>
-          </div>
-        </div>
-        <p id="fila-message" class="form-message" role="status" aria-live="polite"></p>
-        <div id="fila-list" class="item-grid" aria-live="polite"></div>
       </section>
     </div>
   </main>
@@ -138,7 +153,7 @@
   <footer class="site-footer">
     <div class="container footer-content">
       <p><strong>Recicla/Reusa</strong></p>
-      <p>Cada escolha pode iniciar um novo ciclo.</p>
+      <p>Você administra somente seus próprios locais de coleta.</p>
     </div>
   </footer>
 

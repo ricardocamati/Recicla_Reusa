@@ -36,9 +36,6 @@ itens = banco[os.environ.get("MONGO_COLLECTION_ITENS", "itens")]
 pontos = banco[os.environ.get("MONGO_COLLECTION_PONTOS_COLETA", "pontos_coleta")]
 interesses = banco[os.environ.get("MONGO_COLLECTION_INTERESSES", "interesses")]
 avisos = banco[os.environ.get("MONGO_COLLECTION_NOTIFICACOES", "notificacoes")]
-encaminhamentos = banco[
-    os.environ.get("MONGO_COLLECTION_ENCAMINHAMENTOS", "encaminhamentos")
-]
 
 
 def preparar_operador() -> str:
@@ -232,9 +229,9 @@ class Navegador:
     def avancar(self, titulo: str, status: str, referencia: tuple[str, str] | None = None) -> None:
         documento = itens.find_one({"titulo": titulo})
         situacao = documento.get("status") if documento else None
-        if situacao in {"concluido", "recebido", "arquivado"}:
+        if situacao in {"concluido", "arquivado"}:
             grupo = "encerrados"
-        elif situacao in {"reservado", "aguardando_confirmacao", "entrega_prevista"}:
+        elif situacao in {"reservado", "aguardando_confirmacao"}:
             grupo = "em_andamento"
         else:
             grupo = "ativos"
@@ -311,41 +308,6 @@ class Navegador:
 
         self.espera.until(combinacao_aceita)
 
-    def indicar_destinacao(
-        self, titulo: str, tipo: str = "Ecoponto", nome: str = "Ecoponto Jornada"
-    ) -> None:
-        self.abrir("itens.html?grupo=ativos", "#my-items-list")
-        cartao = self.cartao("my-items-list", titulo)
-        formulario = cartao.find_element(By.CSS_SELECTOR, "form.destination-form")
-        Select(formulario.find_element(By.NAME, "tipo_local")).select_by_visible_text(tipo)
-        formulario.find_element(By.NAME, "nome").send_keys(nome)
-        self.clicar(formulario.find_element(By.CSS_SELECTOR, "button[type='submit']"))
-        self.espera.until(
-            lambda d: "não é verificada" in d.find_element(By.ID, "my-items-message").text
-        )
-        self.abrir("itens.html?grupo=encerrados", "#my-items-list")
-        assert "Informado por você" in self.cartao("my-items-list", titulo).text
-
-    def agendar_entrega(self, titulo: str, ponto_nome: str) -> None:
-        self.abrir("itens.html?grupo=ativos", "#my-items-list")
-        cartao = self.cartao("my-items-list", titulo)
-        seletor = Select(
-            cartao.find_element(By.CSS_SELECTOR, "select[data-papel='ponto']")
-        )
-        seletor.select_by_visible_text(ponto_nome)
-        self.clicar(cartao.find_element(By.CSS_SELECTOR, "button[data-acao='agendar']"))
-        self.espera.until(
-            lambda d: "Entrega prevista" in d.find_element(By.ID, "my-items-message").text
-        )
-
-    def confirmar_recebimento_no_ponto(self, titulo: str) -> None:
-        self.abrir("pontos.html", "#fila-list")
-        cartao = self.cartao("fila-list", titulo)
-        self.clicar(cartao.find_element(By.CSS_SELECTOR, "button[data-acao='receber']"))
-        self.espera.until(
-            lambda d: "Recebimento confirmado" in d.find_element(By.ID, "fila-message").text
-        )
-
     def declarar_entrega(self, titulo: str) -> None:
         self.abrir("itens.html?grupo=em_andamento", "#my-items-list")
         cartao = self.cartao("my-items-list", titulo)
@@ -395,7 +357,6 @@ def auditar_datas() -> dict[str, int]:
         ("pontos_coleta", banco_utc[pontos.name]),
         ("interesses", banco_utc[interesses.name]),
         ("notificacoes", banco_utc[avisos.name]),
-        ("encaminhamentos", banco_utc[encaminhamentos.name]),
     ):
         documentos = list(colecao.find({}))
         assert documentos, f"{nome} sem documentos para auditar"
@@ -429,9 +390,6 @@ def limpar(prefixo: str = MARCA) -> None:
         interesses.delete_many(
             {"$or": [{"item_id": {"$in": ids_itens}}, {"usuario_id": {"$in": ids_usuarios}}]}
         )
-    removidos_entregas = encaminhamentos.delete_many(
-        {"item_id": {"$in": ids_itens}}
-    ).deleted_count
     removidos_itens = itens.delete_many({"_id": {"$in": ids_itens}}).deleted_count
     removidos_pontos = pontos.delete_many({"_id": {"$in": ids_pontos}}).deleted_count
     removidos_usuarios = usuarios.delete_many({"_id": {"$in": ids_usuarios}}).deleted_count
@@ -449,7 +407,7 @@ def limpar(prefixo: str = MARCA) -> None:
     print(
         "limpeza=ok; removidos "
         f"usuarios={removidos_usuarios} itens={removidos_itens} "
-        f"pontos={removidos_pontos} entregas={removidos_entregas}"
+        f"pontos={removidos_pontos}"
     )
 
 
@@ -466,8 +424,6 @@ def main() -> None:
     doador_email = f"{MARCA}-doador@example.test"
     beneficiario_email = f"{MARCA}-beneficiario@example.test"
     titulo_doacao = f"{MARCA} Notebook doacao"
-    titulo_descarte = f"{MARCA} Monitor descarte"
-    titulo_indicado = f"{MARCA} Impressora indicada"
     titulo_revenda = f"{MARCA} Tablet revenda"
     nome_ponto = f"{MARCA} Ponto Central"
 
@@ -504,27 +460,8 @@ def main() -> None:
         navegador.sair()
         print("jornada_doacao=ok")
 
-        # Jornada 2 — descarte.
-        navegador.entrar(operador_email)
-        navegador.criar_ponto(nome_ponto, "Notebook")
-        navegador.sair()
-
-        navegador.entrar(doador_email)
-        navegador.criar_item(titulo_descarte, "Descarte", "Notebook")
-        navegador.agendar_entrega(titulo_descarte, nome_ponto)
-        navegador.sair()
-
-        navegador.entrar(operador_email)
-        navegador.confirmar_recebimento_no_ponto(titulo_descarte)
-        navegador.sair()
-
-        navegador.entrar(doador_email)
-        navegador.abrir("itens.html?grupo=encerrados", "#my-items-list")
-        assert "Recebido" in navegador.cartao("my-items-list", titulo_descarte).text
-        navegador.criar_item(titulo_indicado, "Descarte", "Impressora")
-        navegador.indicar_destinacao(titulo_indicado)
-        navegador.sair()
-        print("jornada_descarte=ok")
+        # A jornada publica integrada (onde descartar) sera validada na etapa 20.
+        print("jornada_publica_onde_descartar=pendente_etapa20")
 
         # Jornada 3 — venda direta com entrega bilateral.
         navegador.entrar(doador_email)
@@ -560,13 +497,6 @@ def main() -> None:
     selecionado = interesses.find_one({"item_id": documento["_id"]})
     assert selecionado["status"] == "encerrado" and selecionado["resultado"] == "concluido"
     assert selecionado["combinacao"]["aceito_por"] is not None
-    descarte = itens.find_one({"titulo": titulo_descarte})
-    assert descarte["status"] == "recebido" and descarte["ponto_coleta_id"] is not None
-    entrega = encaminhamentos.find_one({"item_id": descarte["_id"]})
-    assert entrega is not None and entrega["status"] == "recebido"
-    indicado = itens.find_one({"titulo": titulo_indicado})
-    assert indicado["status"] == "destinacao_informada"
-    assert indicado["destinacao_informada"]["tipo_local"] == "ecoponto"
     revenda = itens.find_one({"titulo": titulo_revenda})
     assert revenda["status"] == "concluido" and revenda["valor"] == 120.0
     assert avisos.count_documents({"item_id": documento["_id"]}) >= 1

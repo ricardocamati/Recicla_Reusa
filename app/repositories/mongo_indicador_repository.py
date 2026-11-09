@@ -2,8 +2,7 @@ from typing import Any
 
 from pymongo.collection import Collection
 
-# Destinação informada entra na contagem própria, nunca como recebimento no ponto.
-STATUS_CONTADOS = ("concluido", "recebido", "destinacao_informada")
+STATUS_CONTADOS = ("concluido",)
 
 
 class MongoIndicadorRepository:

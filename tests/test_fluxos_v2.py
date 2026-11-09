@@ -131,50 +131,29 @@ async def autenticar_doador(api: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_descarte_exige_ponto_compativel_e_preserva_referencia(
-    repositorio_usuarios: RepositorioEmMemoria,
-    repositorio_itens: RepositorioItensEmMemoria,
-) -> None:
+async def test_novo_descarte_e_rejeitado_sem_criar_item(repositorio_usuarios, repositorio_itens):
     async with cliente(app_para(repositorio_usuarios, repositorio_itens)) as api:
         await autenticar_doador(api)
-        criado = (
-            await api.post("/api/itens", json=payload_item(destino="descarte", valor=None))
-        ).json()
-        tentativa = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo(criado, status="disponivel", ponto_coleta_id="ponto-1"),
-        )
-
-    assert criado["status"] == "aguardando_ponto"
-    assert tentativa.status_code in (400, 422), tentativa.text
-    assert "encaminhamentos" in str(tentativa.json()["detail"])
-
+        for publicar in (True, False):
+            rejeitado = await api.post("/api/itens", json=payload_item(destino="descarte", valor=None, publicar=publicar))
+            assert rejeitado.status_code == 400, rejeitado.text
+            assert any(e["loc"][-1] == "destino" for e in rejeitado.json()["detail"])
+        assert not repositorio_itens.itens
+        oferta = await api.post("/api/itens", json=payload_item())
+        assert oferta.status_code == 201 and oferta.json()["destino"] == "doacao"
 
 @pytest.mark.anyio
-async def test_campos_de_fluxo_incompativeis_com_o_destino(
-    repositorio_usuarios: RepositorioEmMemoria,
-    repositorio_itens: RepositorioItensEmMemoria,
-) -> None:
+async def test_campos_de_fluxo_incompativeis_com_doacao(repositorio_usuarios, repositorio_itens):
+    from copy import deepcopy
     async with cliente(app_para(repositorio_usuarios, repositorio_itens)) as api:
         await autenticar_doador(api)
         doacao = (await api.post("/api/itens", json=payload_item())).json()
-        descarte = (
-            await api.post("/api/itens", json=payload_item(destino="descarte", valor=None))
-        ).json()
-        ponto_em_doacao = await api.put(
-            f"/api/itens/{doacao['id']}",
-            json=corpo(doacao, ponto_coleta_id="ponto-1"),
-        )
-        comprador_em_descarte = await api.put(
-            f"/api/itens/{descarte['id']}",
-            json=corpo(descarte, comprador_id="comprador-1"),
-        )
-
-    assert ponto_em_doacao.status_code == 400, ponto_em_doacao.text
-    assert "ponto_coleta_id" in ponto_em_doacao.json()["detail"]
-    assert comprador_em_descarte.status_code == 400, comprador_em_descarte.text
-    assert "comprador" in comprador_em_descarte.json()["detail"]
-
+        antes = deepcopy(repositorio_itens.itens)
+        ponto_em_doacao = await api.put(f"/api/itens/{doacao['id']}", json=corpo(doacao, ponto_coleta_id="ponto-1"))
+        comprador_em_doacao = await api.put(f"/api/itens/{doacao['id']}", json=corpo(doacao, comprador_id="comprador-1"))
+        assert ponto_em_doacao.status_code == 400 and any(e["type"] == "extra_forbidden" and e["loc"][-1] == "ponto_coleta_id" for e in ponto_em_doacao.json()["detail"])
+        assert comprador_em_doacao.status_code == 400 and "comprador" in comprador_em_doacao.json()["detail"]
+        assert repositorio_itens.itens == antes
 
 @pytest.mark.anyio
 async def test_destino_nao_muda_depois_de_iniciado_o_fluxo(
@@ -253,25 +232,13 @@ async def test_item_com_fluxo_iniciado_nao_pode_ser_excluido(
 
 
 @pytest.mark.anyio
-async def test_encaminhamento_valida_a_categoria_enviada_no_mesmo_put(
-    repositorio_usuarios: RepositorioEmMemoria,
-    repositorio_itens: RepositorioItensEmMemoria,
-) -> None:
+async def test_rascunho_oferta_permite_categoria_mas_nao_vinculo_de_descarte(repositorio_usuarios, repositorio_itens):
     async with cliente(app_para(repositorio_usuarios, repositorio_itens)) as api:
         await autenticar_doador(api)
-        criado = (
-            await api.post("/api/itens", json=payload_item(destino="descarte", valor=None))
-        ).json()
-        recategorizado = await api.put(
-            f"/api/itens/{criado['id']}", json=corpo(criado, categoria="celular")
-        )
-        com_ponto = await api.put(
-            f"/api/itens/{criado['id']}",
-            json=corpo(criado, categoria="celular", ponto_coleta_id="ponto-celular"),
-        )
-
-    assert recategorizado.status_code == 200, recategorizado.text
-    assert recategorizado.json()["categoria"] == "celular"
-    assert recategorizado.json()["status"] == "aguardando_ponto"
-    assert com_ponto.status_code == 400, com_ponto.text
-    assert "encaminhamentos" in com_ponto.json()["detail"]
+        criado = (await api.post("/api/itens", json=payload_item(publicar=False))).json()
+        recategorizado = await api.put(f"/api/itens/{criado['id']}", json=corpo(criado, categoria="celular"))
+        assert recategorizado.status_code == 200, recategorizado.text
+        assert recategorizado.json()["categoria"] == "celular" and recategorizado.json()["status"] == "rascunho"
+        com_ponto = await api.put(f"/api/itens/{criado['id']}", json=corpo(recategorizado.json(), ponto_coleta_id="ponto-celular"))
+        assert com_ponto.status_code == 400 and any(e["type"] == "extra_forbidden" and e["loc"][-1] == "ponto_coleta_id" for e in com_ponto.json()["detail"])
+        assert not hasattr(repositorio_itens.itens[criado["id"]], "ponto_coleta_id")

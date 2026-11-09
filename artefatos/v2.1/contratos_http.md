@@ -1,19 +1,19 @@
 # Contratos HTTP — v2.1
 
-## Contrato executável — leitura pública da Etapa 16
+## Contrato executável e descontinuação — Etapas 16–18
 
 As Etapas 9 a 15 têm implementação. Para integrar ou testar o checkout atual, use [docs/http-api.md](../../docs/http-api.md), os schemas em `app/schemas/` e a [OpenAPI gerada](../../docs/openapi.json). A tabela original preservada abaixo não representa todos os caminhos e campos efetivamente entregues.
 
 | Tema | Implementação atual / diferença |
 |---|---|
-| Campos do item | `destino` (`doacao`, `revenda`, `descarte`), `status`, `valor`; não `modalidade`, `situacao`, `preco` |
+| Campos do item | `destino` de escrita aceita `doacao`/`revenda`; a leitura também aceita apenas ofertas; campos `status`/`valor`, não `situacao`/`preco` |
 | Listagem própria | `GET /api/itens/meus`, com `grupo`; não `escopo=meus` no catálogo |
 | Ciclo do item | Endpoints próprios `POST /{id}/publicar`, `/arquivar`, `/entrega`, `/recebimento`; não `/transicoes` genérico |
-| Indicação de lugar | `POST /api/itens/{id}/destinacao` e `DELETE` no mesmo caminho |
+| Indicação de lugar | Removida; não há campo nem rota de destinação |
 | Histórico | Integra as respostas; não existe rota `/api/itens/{id}/historico` |
 | Comandos | Não aceitam `id_operacao`, `versao_esperada` ou `versao_item_esperada` genéricos |
 | Combinação | Proposta por `PUT /api/interesses/{id}/combinacao`; aceite por `POST /combinacao/aceite` com `revisao` |
-| Encaminhamentos | Criação com `item_id`/`ponto_id`; ações com `acao`, `motivo`, `novo_ponto_id`; listagem com `escopo=autor` ou `operador` |
+| Encaminhamentos | Removidos; sem comandos, consultas históricas ou adaptadores |
 | Consulta pública (Etapa 16) | Lista/detalhe de ativos sem sessão, cinco campos públicos, filtros e paginação; gestão protegida com `escopo=meus` |
 | Situação do ponto | `POST /api/pontos-coleta/{id}/situacao` com `ativo`; sem versão/chave genérica |
 | Indicadores | `ofertas_ativas`, `pendencias`, `doados`, `vendidos`, `coletados`, `indicados`, `total`; escopo global, não pendências pessoais |
@@ -21,9 +21,17 @@ As Etapas 9 a 15 têm implementação. Para integrar ou testar o checkout atual,
 
 Verificação de status no banco e revisão da combinação não detectam todo conflito entre edições no mesmo estado. Não declarar versionamento otimista genérico, rollback de qualquer comando ou idempotência persistida por chave como já entregues. Os testes de runtime exercitam subconjuntos específicos dessas garantias.
 
+## Remoção do fluxo antigo — Etapa 18 em validação
+
+- `destino` aceita somente `doacao`/`revenda` em escrita e leitura. Novo descarte é inválido (`400`), sem criar item.
+- Não há grupo `historico_descarte`, campos de destinação ou estados de entrega em ponto no modelo de item.
+- Todas as rotas de encaminhamento e de destinação são removidas, inclusive GETs. Não há resposta `410`, schema de compatibilidade ou endpoint substituto.
+- “Meus locais” exige operador e `escopo=meus`; lista próprios, inclusive inativos. Identidade vem da sessão. Inativar apenas muda a visibilidade pública, sem aviso ou vínculo com equipamento.
+- Histórico, arquivamento e entrega bilateral de ofertas continuam. A remoção do código não executa migração ou exclusão em bancos reais.
+
 ## Contrato-alvo revisado — ainda não usar como referência de chamada
 
-O conteúdo abaixo mantém os critérios de ofertas e substitui explicitamente o descarte por um diretório público. Leitura anônima e projeção pública foram implementadas na Etapa 16; a retirada dos comandos de descarte permanece pendente. As rotas de leitura de pontos abaixo são executáveis, mas versões/chaves genéricas e demais diferenças continuam propostas; os caminhos atuais permanecem descritos acima e em docs/http-api.md. A Etapa 16 não migra o banco nem retira o processo anterior. Documentos sem `ativo` mantêm o padrão ativo sem alteração persistida.
+O conteúdo abaixo separa o alvo mais amplo de ofertas do runtime. A Etapa 18 remove o descarte por item sem compatibilidade nem histórico; a consulta pública e a gestão de locais permanecem. Versões/chaves genéricas e demais diferenças continuam propostas, não aceitação automática. Os caminhos executáveis estão acima e em docs/http-api.md.
 
 ## Convenções
 
@@ -41,7 +49,7 @@ O conteúdo abaixo mantém os critérios de ofertas e substitui explicitamente o
 | POST `/api/usuarios` | Cadastro público cria pessoa | Não aceita operador por autoatribuição |
 | GET `/api/usuarios/me` | Perfil da sessão | Sem hash |
 | POST `/api/itens` | Características, modalidade, preço e intenção de salvar/publicar | Pessoa; proprietário derivado; somente oferta de doação/venda rascunho/publicada; não criar item de descarte |
-| GET `/api/itens` | escopo=catalogo (padrão) ou meus; filtros documentados | Catálogo só oferta; gestão inclui ofertas próprias, com legado tratado separadamente e sem apagar registros |
+| GET `/api/itens` | escopo=catalogo (padrão) ou meus; filtros documentados | Catálogo só oferta; gestão inclui somente ofertas próprias |
 | GET `/api/itens/{id}` | Detalhe projetado para ator | Não vaza combinação de terceiros |
 | PUT `/api/itens/{id}` | Campos editáveis + versão | Sem alteração livre de modalidade/situação |
 | POST `/api/itens/{id}/transicoes` | publicar, arquivar, declarar_entrega, confirmar_recebimento | Ator e estado da oferta validados; indicação/desfazimento de descarte retirados do alvo |
@@ -85,7 +93,7 @@ Os GETs não criam sessão obrigatória nem escrevem item, encaminhamento, indic
 
 ### Operações retiradas do contrato-alvo
 
-Não expor no novo fluxo criação/listagem/ações de `/api/encaminhamentos`, nem informar/desfazer destinação em `/api/itens/{id}/destinacao` ou `/transicoes`. Essas rotas ainda existem no programa de referência; sua descontinuação e a apresentação dos registros anteriores precisam de estratégia explícita, não de uma exclusão de banco. Não criar endpoints substitutos de previsão, confirmação ou rastreamento de descarte.
+Não expor no novo fluxo criação/listagem/ações de `/api/encaminhamentos`, nem informar/desfazer destinação em `/api/itens/{id}/destinacao` ou `/transicoes`. As rotas antigas são removidas na Etapa 18, sem compatibilidade ou histórico. Não criar endpoints substitutos de previsão, confirmação ou rastreamento de descarte.
 
 ## Versões por comando e validação concorrente
 
@@ -94,7 +102,7 @@ Não expor no novo fluxo criação/listagem/ações de `/api/encaminhamentos`, n
 | Criar interesse | versao_item_esperada | Item disponível, autoria, unicidade e operação anterior |
 | Ações/combinação/aceite de interesse | versao_esperada do interesse + versao_item_esperada | Relação atual, seleção e revisão da combinação |
 | Publicar/arquivar/declarar entrega/confirmar recebimento de oferta | versao_esperada do item | Seleção, combinação aceita e estado do interesse lidos/validados na transação |
-| Ativar/inativar ou editar ponto | versao_esperada do ponto | Propriedade e consistência da edição; referências legadas preservadas |
+| Ativar/inativar ou editar ponto | versao_esperada do ponto | Propriedade e consistência da edição; sem vínculo com equipamento |
 | Edição/exclusão comum de item | versao_esperada do item | Restrições de mutabilidade e referências |
 
 O frontend deve receber/consultar essas versões antes da ação; não fabricá-las com valor padrão. Interesses retornam `versao_item` no detalhe autorizado para compor os comandos. A versão enviada de um registro não autoriza confiar em relações antigas: o servidor relê e protege os demais documentos na unidade transacional. Conflito deixa tudo inalterado, incluindo avisos.

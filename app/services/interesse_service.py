@@ -48,8 +48,8 @@ class InteresseService:
             raise InteresseError(404, "Item não encontrado")
         if str(item.get("proprietario_id")) == usuario_id:
             raise InteresseError(400, "Não é permitido demonstrar interesse no próprio item")
-        if item.get("destino") == "descarte":
-            raise InteresseError(400, "Itens destinados a descarte não aceitam interesses")
+        if item.get("destino") not in {"doacao", "revenda"}:
+            raise InteresseError(400, "Interesse exige oferta de doação ou venda")
         if item.get("status") != "disponivel" or item.get("interesse_aceito_id") is not None:
             raise InteresseError(409, "Item não está disponível")
         agora = self._relogio()

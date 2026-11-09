@@ -1,6 +1,6 @@
 # Casos de teste — v2.1
 
-Cenários de aceitação da v2.1, revisados para descarte como diretório público. A Etapa 16 tem testes de API e MongoDB para leitura, projeção, filtros e preservação. A Etapa 17 acrescenta Selenium para J-03 e uma jornada anônima via HTTP/API/MongoDB reais, sem alteração dos snapshots das seis coleções. Isso não comprova a retirada dos comandos antigos nem a transição completa de cada cenário. A matriz delimita a evidência. Casos retirados mantêm seu identificador, mas não são requisitos pendentes nem recebem aprovação de testes antigos. Há automação nesta versão, mas os cenários não estão todos comprovados integralmente: versões genéricas, chaves de operação e navegação paginada, por exemplo, não correspondem ao contrato atual. Evidências por família e limites estão centralizados na [matriz](matriz_rastreabilidade.md); não inferir aprovação de cada cenário a partir da contagem total de testes.
+Cenários de aceitação da v2.1, revisados para descarte como diretório público. A Etapa 16 tem testes de API e MongoDB para leitura, projeção, filtros e preservação. A Etapa 17 acrescenta Selenium para J-03 e uma jornada anônima via HTTP/API/MongoDB reais, sem alteração das coleções de ofertas e locais. Isso não comprova a retirada dos comandos antigos nem a transição completa de cada cenário. A matriz delimita a evidência. Casos retirados mantêm seu identificador, mas não são requisitos pendentes nem recebem aprovação de testes antigos. Há automação nesta versão, mas os cenários não estão todos comprovados integralmente: versões genéricas, chaves de operação e navegação paginada, por exemplo, não correspondem ao contrato atual. Evidências por família e limites estão centralizados na [matriz](matriz_rastreabilidade.md); não inferir aprovação de cada cenário a partir da contagem total de testes.
 
 ## Ambiente e dados
 
@@ -20,7 +20,7 @@ Visitante V sem cookie e sem conta; pessoas A/B/C e operadores O1/O2 com locais 
 
 **Vínculos:** V21-RF-02; V21-RN-03, V21-RN-21.
 
-**Precondições:** Ofertas disponíveis, reservadas, concluídas, arquivadas, rascunhos e descarte.
+**Precondições:** Ofertas disponíveis, reservadas, concluídas, arquivadas e rascunhos.
 
 **Passos:** Consultar catálogo padrão, incluir reservados e tentar filtro de descarte.
 
@@ -52,7 +52,7 @@ Visitante V sem cookie e sem conta; pessoas A/B/C e operadores O1/O2 com locais 
 
 **Precondições:** Oferta própria e alheia em cada estado.
 
-**Passos:** Criar interesse próprio, duplicado, em reserva e em descarte; criar válido.
+**Passos:** Criar interesse próprio, duplicado, em reserva; tentar modalidade inválida no cadastro e criar interesse válido.
 
 **Resultado esperado:** Somente válido cria pendente; índice/serviço impedem duplicata; falhas não criam avisos.
 
@@ -290,15 +290,15 @@ O cenário antigo saiu do escopo de descarte como diretório; não deve ser reim
 **Resultado esperado:** API filtra ativos/cidade/categoria antes de paginar, com ordem estável nome/ID; resultado posterior acessível; retorno preserva filtros/página; mudar filtro reinicia paginação; não promete proximidade.
 
 
-## V21-CT-37 — DTO público não expõe responsável ou legado
+## V21-CT-37 — DTO público não expõe responsável ou dados privados
 
 **Vínculos:** V21-RF-09, V21-RNF-08; V21-RN-21, V21-RN-22.
 
-**Precondições:** Local público associado a operador com endereço pessoal distinto; dados privados e indicações antigas na base.
+**Precondições:** Local público associado a operador com endereço pessoal distinto; dados privados da conta na base.
 
 **Passos:** Como visitante e pessoa comum, inspecionar lista/detalhe; tentar acrescentar responsavel_id, item_id, ativo=false e escopo desconhecido à consulta pública.
 
-**Resultado esperado:** Somente id/nome/endereco público/categorias_aceitas/horario_atendimento são retornados. Querys não permitidas são rejeitadas, sem liberar inativos ou dados privados; nenhum dado legado é unido à resposta.
+**Resultado esperado:** Somente id/nome/endereco público/categorias_aceitas/horario_atendimento são retornados. Querys não permitidas são rejeitadas, sem liberar inativos ou dados privados; nenhum dado privado da conta é unido à resposta.
 
 
 ## V21-CT-38 — Vazio, carregamento e erro sem falso resultado
@@ -338,7 +338,7 @@ O cenário antigo saiu do escopo de descarte como diretório; não deve ser reim
 
 **Vínculos:** V21-RF-09, V21-RF-11; V21-RN-11, V21-RN-14, V21-RN-16.
 
-**Precondições:** Local próprio ativo, visto por visitante antes da alteração; nenhum vínculo legado impeditivo na fixture.
+**Precondições:** Local próprio ativo, visto por visitante antes da alteração; sem vínculo com equipamento.
 
 **Passos:** Atualizar categoria/endereço/horário; refazer busca; inativar, consultar lista e abrir detalhe anterior; reativar e consultar novamente.
 
@@ -349,22 +349,16 @@ O cenário antigo saiu do escopo de descarte como diretório; não deve ser reim
 
 **Vínculos:** V21-RF-13; V21-RN-19, V21-RN-24.
 
-**Precondições:** Ofertas concluídas e registros legados de descarte, além de locais ativos; indicadores-alvo com origens identificadas.
+**Precondições:** Ofertas concluídas e locais ativos; indicadores-alvo com origens identificadas.
 
 **Passos:** Consultar lista/detalhe, copiar endereço e abrir mapa repetidamente; alterar número de locais ativos; consultar indicadores e concluir uma oferta em cenário separado.
 
-**Resultado esperado:** Navegação não altera doados/vendidos/total; total-alvo considera somente doação/venda confirmadas. Quantidade de locais, se exibida, é separada. coletas/indicações antigas não são recontadas como consulta nem somadas a resultado novo do diretório.
+**Resultado esperado:** Navegação não altera doados/vendidos/total; total-alvo considera somente doação/venda confirmadas. Quantidade de locais, se exibida, é separada. Consultas não são contadas como entrega ou reciclagem.
 
 
-## V21-CT-43 — Legado preservado durante a transição
+## V21-CT-43 — Retirado: preservação de descarte legado
 
-**Vínculos:** V21-RNF-01, V21-RNF-08; V21-RN-25.
-
-**Precondições:** Snapshots de itens de descarte, encaminhamentos, indicações privadas, avisos e suas referências na base de teste; estratégia de transição explícita antes da futura implantação.
-
-**Passos:** Aplicar a futura implementação em ambiente isolado segundo essa estratégia; consultar diretório e ofertas; comparar documentos e verificar projeções.
-
-**Resultado esperado:** Não apaga/converte/conclui dados anteriores por conveniência; mantém referências e privacidade; legado não vira oferta ou cadastro público. Não exige reintroduzir os comandos de descarte retirados.
+Sem dados desse fluxo a conservar, não exigir snapshots de descarte, migração ou leitura compatível. A remoção das rotas/campos antigos é validada no contrato executável da Etapa 18; o ID não é reutilizado como novo cenário.
 
 
 ## V21-CT-44 — Entrada de descarte não cria uma oferta

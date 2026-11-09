@@ -20,7 +20,6 @@ let passoAtual = 1;
 const DICAS_INTENCAO = {
   doacao: "A oferta entra no catálogo depois de publicada e pode receber interesses.",
   revenda: "A venda aparece no catálogo com preço; condição física não obriga reparo.",
-  descarte: "O descarte fica fora do catálogo e segue para um ponto de coleta.",
 };
 
 function updateValueField() {
@@ -112,11 +111,8 @@ function resetItemForm() {
 }
 
 const PROXIMA_ACAO = {
-  "doacao:reservado": { entrega: true, rotulo: "Declarar entrega" },
-  "descarte:aguardando_ponto": { encaminhar: true, rotulo: "Agendar entrega" },
-  "descarte:entrega_prevista": { cancelarEntrega: true, rotulo: "Cancelar entrega" },
-  "descarte:destinacao_informada": { desfazerDestino: true, rotulo: "Desfazer indicação" },
-  "revenda:reservado": { entrega: true, rotulo: "Declarar entrega" },
+  "doacao:reservado": { rotulo: "Declarar entrega" },
+  "revenda:reservado": { rotulo: "Declarar entrega" },
 };
 
 let pontos = [];
@@ -148,214 +144,18 @@ function opcoes(select, valores) {
 }
 
 function painelFluxo(item) {
-  const message = document.getElementById("my-items-message");
   const acao = PROXIMA_ACAO[`${item.destino}:${item.status}`];
   if (!acao) return null;
   const painel = createElement("div", "item-actions");
-  let select = null;
-
-  if (item.destinacao_informada) {
-    const indicada = item.destinacao_informada;
-    painel.append(
-      createElement(
-        "p",
-        "item-card-description",
-        `Informado por você, não verificado: ${indicada.tipo_local}${
-          indicada.nome ? ` — ${indicada.nome}` : ""
-        }${indicada.cidade ? ` (${indicada.cidade})` : ""}`,
-      ),
-    );
-  }
-
-  if (acao.encaminhar) {
-    const compativeis = pontos.filter(
-      (ponto) =>
-        (ponto.categorias_aceitas || []).includes(item.categoria) &&
-        ponto.ativo !== false,
-    );
-    if (!compativeis.length) {
-      painel.append(
-        createElement(
-          "p",
-          "item-card-description",
-          "Nenhum ponto ativo aceita esta categoria. Indique outro lugar abaixo.",
-        ),
-      );
-    }
-    if (compativeis.length) {
-      select = createElement("select", "", "");
-      select.dataset.papel = "ponto";
-      select.setAttribute("aria-label", "Ponto de coleta");
-      opcoes(select, compativeis.map((ponto) => ({ valor: ponto.id, texto: ponto.nome })));
-      painel.append(select);
-    }
-  }
   const botao = createElement("button", "button button-secondary", acao.rotulo);
-  if (acao.encaminhar && !select) {
-    botao.hidden = true;
-  }
   botao.type = "button";
-  botao.dataset.acao = acao.status
-    || (acao.encaminhar ? "agendar" : acao.cancelarEntrega ? "cancelar-entrega" : "entrega");
+  botao.dataset.acao = "entrega";
   botao.dataset.itemId = item.id;
-  botao.addEventListener("click", async () => {
-    if (acao.entrega) {
-      executarComandoItem(item.id, "entrega", "Entrega declarada. Aguardando confirmação.");
-      return;
-    }
-    if (acao.encaminhar) {
-      if (!select?.value) {
-        setMessage(message, "Escolha um ponto de coleta.", "error");
-        return;
-      }
-      try {
-        await requestApi("/api/encaminhamentos", {
-          method: "POST",
-          body: JSON.stringify({ item_id: item.id, ponto_id: select.value }),
-        });
-        await loadOwnedItems();
-        setMessage(message, "Entrega prevista no ponto escolhido.", "success");
-      } catch (error) {
-        handleError(error, message);
-      }
-      return;
-    }
-    if (acao.desfazerDestino) {
-      try {
-        await requestApi(`/api/itens/${encodeURIComponent(item.id)}/destinacao`, {
-          method: "DELETE",
-        });
-        await loadOwnedItems();
-        setMessage(message, "Indicação desfeita; o item voltou a aguardar ponto.", "success");
-      } catch (error) {
-        handleError(error, message);
-      }
-      return;
-    }
-    if (acao.cancelarEntrega) {
-      try {
-        const abertos = await requestApi(
-          `/api/encaminhamentos?escopo=autor&item_id=${encodeURIComponent(item.id)}&status=entrega_prevista`,
-        );
-        if (!abertos.length) {
-          setMessage(message, "Nenhuma entrega prevista para cancelar.", "error");
-          return;
-        }
-        await requestApi(`/api/encaminhamentos/${encodeURIComponent(abertos[0].id)}/acoes`, {
-          method: "POST",
-          body: JSON.stringify({ acao: "cancelar" }),
-        });
-        await loadOwnedItems();
-        setMessage(message, "Entrega cancelada; o item voltou a aguardar ponto.", "success");
-      } catch (error) {
-        handleError(error, message);
-      }
-      return;
-    }
-    aplicarAcao(item, acao, select);
+  botao.addEventListener("click", () => {
+    executarComandoItem(item.id, "entrega", "Entrega declarada. Aguardando confirmação.");
   });
   painel.append(botao);
-
-  if (acao.encaminhar) {
-    const form = createElement("form", "form-stack destination-form");
-    const tipo = createElement("select", "", "");
-    tipo.name = "tipo_local";
-    tipo.setAttribute("aria-label", "Tipo de local");
-    opcoes(tipo, [
-      { valor: "ecoponto", texto: "Ecoponto" },
-      { valor: "cooperativa", texto: "Cooperativa" },
-      { valor: "comercio", texto: "Comércio" },
-      { valor: "outro", texto: "Outro lugar" },
-    ]);
-    const nome = createElement("input", "", "");
-    nome.name = "nome";
-    nome.maxLength = 120;
-    nome.placeholder = "Nome do lugar (opcional)";
-    const cidade = createElement("input", "", "");
-    cidade.name = "cidade";
-    cidade.maxLength = 160;
-    cidade.placeholder = "Cidade (opcional)";
-    const observacao = createElement("input", "", "");
-    observacao.name = "observacao";
-    observacao.maxLength = 300;
-    observacao.placeholder = "Observação (opcional)";
-    const enviar = createElement("button", "button button-secondary", "Indicar outro lugar");
-    enviar.type = "submit";
-    form.append(
-      createElement("p", "item-card-description", "Sem ponto cadastrado? Indique onde pretende descartar."),
-      tipo,
-      nome,
-      cidade,
-      observacao,
-      enviar,
-    );
-    form.addEventListener("submit", async (evento) => {
-      evento.preventDefault();
-      if (enviar.dataset.ocupado === "1") return;
-      enviar.dataset.ocupado = "1";
-      enviar.disabled = true;
-      try {
-        await requestApi(`/api/itens/${encodeURIComponent(item.id)}/destinacao`, {
-          method: "POST",
-          body: JSON.stringify({
-            tipo_local: tipo.value,
-            nome: nome.value.trim() || null,
-            cidade: cidade.value.trim() || null,
-            observacao: observacao.value.trim() || null,
-          }),
-        });
-        await loadOwnedItems();
-        setMessage(message, "Destinação informada registrada; não é verificada.", "success");
-      } catch (error) {
-        handleError(error, message);
-      } finally {
-        delete enviar.dataset.ocupado;
-        enviar.disabled = false;
-      }
-    });
-    painel.append(form);
-  }
   return painel;
-}
-
-function corpoDoItem(item, status, extras = {}) {
-  return {
-    titulo: item.titulo,
-    descricao: item.descricao,
-    categoria: item.categoria,
-    marca: item.marca,
-    modelo: item.modelo,
-    condicao: item.condicao,
-    destino: item.destino,
-    valor: item.valor,
-    especificacoes: item.especificacoes || {},
-    status,
-    ...extras,
-  };
-}
-
-async function aplicarAcao(item, acao, select) {
-  const message = document.getElementById("my-items-message");
-  const extras = {};
-  if (acao.referencia === "ponto") {
-    if (!select?.value) {
-      setMessage(message, "Selecione um ponto de coleta compatível.", "error");
-      return;
-    }
-    extras.ponto_coleta_id = select.value;
-  }
-  setMessage(message);
-  try {
-    await requestApi(`/api/itens/${encodeURIComponent(item.id)}`, {
-      method: "PUT",
-      body: JSON.stringify(corpoDoItem(item, acao.status, extras)),
-    });
-    await Promise.all([loadOwnedItems(), loadIndicadores()]);
-    // A recarga das listas reescreve a mensagem; o aviso vem depois.
-    setMessage(message, "Fluxo atualizado.", "success");
-  } catch (error) {
-    handleError(error, message);
-  }
 }
 
 function renderOwnedItems() {
@@ -403,7 +203,8 @@ async function loadOwnedItems() {
   const message = document.getElementById("my-items-message");
   setMessage(message, "Carregando suas ofertas...");
   try {
-    itens = await requestApi(`/api/itens/meus?grupo=${grupoAtual}`);
+    const params = new URLSearchParams({ grupo: grupoAtual, offset: "0", limite: "20" });
+    itens = await requestApi(`/api/itens/meus?${params.toString()}`);
     setMessage(message, `${itens.length} oferta(s) neste grupo.`, "success");
     renderOwnedItems();
   } catch (error) {
@@ -480,7 +281,7 @@ async function deleteItem(itemId) {
   const message = document.getElementById("my-items-message");
   setMessage(message);
   try {
-    await requestApi(`/api/itens/${itemId}`, { method: "DELETE" });
+    await requestApi(`/api/itens/${encodeURIComponent(itemId)}`, { method: "DELETE" });
     setMessage(message, "Item excluído.", "success");
     await loadOwnedItems();
   } catch (error) {
@@ -493,8 +294,6 @@ async function loadIndicadores() {
   try {
     const indicadores = await requestApi("/api/indicadores");
     document.getElementById("indicador-doados").textContent = indicadores.doados;
-    document.getElementById("indicador-coletados").textContent = indicadores.coletados;
-    document.getElementById("indicador-indicados").textContent = indicadores.indicados ?? 0;
     document.getElementById("indicador-ofertas").textContent = indicadores.ofertas_ativas ?? 0;
     document.getElementById("indicador-pendencias").textContent = indicadores.pendencias ?? 0;
     document.getElementById("indicador-vendidos").textContent = indicadores.vendidos;

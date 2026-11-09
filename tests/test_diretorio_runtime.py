@@ -17,7 +17,7 @@ def snapshot(banco):
     }
 
 
-def test_diretorio_preserva_seis_colecoes_com_fluxos_e_indicacoes_legadas(ambiente):
+def test_diretorio_nao_modifica_colecoes_de_ofertas_e_locais(ambiente):
     from scripts.povoar_demonstracao import CONTAS, garantir_conta, povoar, provisionar_operador
 
     # A própria fixture configura nomes de coleção não padrão no wiring real.
@@ -34,9 +34,7 @@ def test_diretorio_preserva_seis_colecoes_com_fluxos_e_indicacoes_legadas(ambien
         assert ponto is not None
         # Legado anterior ao campo ativo: preservar sem normalização persistida.
         colecao_pontos.update_one({"_id": ponto["_id"]}, {"$unset": {"ativo": ""}})
-        assert ambiente.itens.count_documents({"destinacao_informada": {"$ne": None}}) == 1
-        assert ambiente.banco[Settings().mongo_collection_encaminhamentos].count_documents({}) == 2
-        assert len(ambiente.banco.list_collection_names()) == 6
+        assert len(ambiente.banco.list_collection_names()) == 5
         autenticado = next(iter(clientes.values()))
         indicadores_antes = autenticado.get("/api/indicadores").json()
         antes = snapshot(ambiente.banco)

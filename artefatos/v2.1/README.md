@@ -4,7 +4,11 @@
 
 **“Onde descartar” passa a ser uma consulta pública de locais, sem login nem cadastro de item.** Doação e venda continuam centradas no equipamento: publicação, interesse, reserva, combinação e confirmação bilateral. O operador mantém o cadastro dos próprios locais, sem fila ou confirmação de entregas no novo fluxo de descarte.
 
-**Implementação parcial da revisão: Etapas 16 e 17 concluídas.** A base anterior é `f216802`, integração do PR #25 com os ajustes do PR #26. Lista e detalhe de pontos ativos agora são públicos, com DTO reduzido, filtros/paginação e escopo de gestão protegido. A tela pública está implementada em `frontend/onde-descartar.html` (Etapa 17), com entradas pública e autenticada, filtros/paginação, detalhe e cópia de endereço. A retirada do processo por item (Etapa 18) e a revisão de avisos/indicadores/demonstração (Etapa 19) continuam pendentes. Dados anteriores não são migrados, convertidos ou excluídos: mantêm suas referências e permissões; as rotas antigas continuam até a descontinuação coordenada.
+**Implementação parcial da revisão: Etapas 16 e 17 concluídas.** A base anterior é `f216802`, integração do PR #25 com os ajustes do PR #26. Lista e detalhe de pontos ativos agora são públicos, com DTO reduzido, filtros/paginação e escopo de gestão protegido. A tela pública está implementada em `frontend/onde-descartar.html` (Etapa 17), com entradas pública e autenticada, filtros/paginação, detalhe e cópia de endereço. A Etapa 18 implementa a gestão própria de locais e a retirada dos comandos antigos, em validação integrada. A revisão de avisos/indicadores/demonstração (Etapa 19) continua pendente. Dados anteriores não são migrados, convertidos ou excluídos: mantêm suas referências e permissões; as rotas antigas continuam até a descontinuação coordenada.
+
+### Simplificação aprovada na Etapa 18
+
+Não há dados do descarte por item a conservar. Portanto, sua retirada remove código, rotas, schemas, campos e testes exclusivos, sem aba histórica, resposta de compatibilidade ou migração. Histórico e relações de ofertas permanecem. Nenhum banco real ou de demonstração é apagado por essa decisão; as evidências das Etapas 16–17 continuam registros daqueles marcos, não exigências de compatibilidade atual.
 
 ## Documentos e autoridade
 
@@ -13,7 +17,7 @@
 | [Requisitos](requisitos.md) | Escopo e aceitação da revisão |
 | [Regras de negócio](regras_de_negocio.md) | Acesso, invariantes e exclusões |
 | [Jornadas e frontend](jornadas_frontend.md) | Navegação, filtros, cartões e estados |
-| [Modelo de dados](modelo_dados.md) | Modelo-alvo e registros legados |
+| [Modelo de dados](modelo_dados.md) | Modelo-alvo e estrutura executável |
 | [Contratos HTTP](contratos_http.md) | Consultas propostas e diferenças do runtime |
 | [Casos de teste](casos_de_teste.md) | Critérios escritos, não resultados de execução |
 | [Matriz](matriz_rastreabilidade.md) | Rastreabilidade, código existente e implementação pendente |
@@ -48,13 +52,13 @@ Identificadores retirados permanecem marcados, sem reutilização para outros si
 | Consulta | Etapas 16–17: API pública e tela “Onde descartar”, filtros/paginação e detalhe | Gestão revisada e retirada do processo anterior pendentes |
 | Operador | Locais e entregas | Gestão autenticada dos próprios locais |
 | Indicadores | Incluem recebidos e indicados | Resultados de doação/venda separados de informações do diretório |
-| Dados | Seis coleções, inclusive `encaminhamentos` | Preservar documentos e referências anteriores |
+| Dados | Cinco coleções, sem encaminhamentos ou campos de destinação | Sem migração/compatibilidade de descarte; histórico de ofertas mantido |
 
-Testes e jornadas anteriores não comprovam o novo diretório. Os novos casos começam em V21-CT-35; os casos de descarte retirados mantêm seus IDs. A Etapa 16 entrega leitura e testes em `tests/test_diretorio_publico.py` e `tests/test_diretorio_runtime.py`. A Etapa 17 tem testes de interface em `tests/test_onde_descartar_selenium.py` e jornada anônima com HTTP/API/MongoDB reais em `tests/test_onde_descartar_browser_runtime.py`, incluindo snapshots. Retirada do processo antigo e indicadores continuam pendentes; essa evidência não aprova toda a revisão.
+Testes e jornadas anteriores não comprovam o novo diretório. Os novos casos começam em V21-CT-35; os casos de descarte retirados mantêm seus IDs. A Etapa 16 entrega leitura e testes em `tests/test_diretorio_publico.py` e `tests/test_diretorio_runtime.py`. A Etapa 17 tem testes de interface em `tests/test_onde_descartar_selenium.py` e jornada anônima com HTTP/API/MongoDB reais em `tests/test_onde_descartar_browser_runtime.py`, incluindo snapshots. A Etapa 18 acrescenta testes de remoção dos comandos e gestão, sem histórico de descarte; a validação integrada está em andamento. Indicadores continuam pendentes e essa evidência não aprova toda a revisão.
 
 ## Preservação e exclusões
 
-Nenhuma migração, conversão de item, povoamento ou exclusão é executada por esta revisão. Política da Etapa 16: manter documentos anteriores e permissões originais; a nova consulta não projeta itens/indicações privadas. A apresentação do histórico na descontinuação fica para a Etapa 18; não limpar o banco por conveniência.
+Nenhuma migração, conversão de item, povoamento ou exclusão é executada por esta revisão. A política inicial da Etapa 16 foi substituída na Etapa 18: sem dados de descarte a conservar, remover o fluxo do programa sem adaptadores nem apresentação histórica. Nenhuma limpeza de banco é executada.
 
 Permanecem fora do incremento: pagamentos, transporte domiciliar, agendamento/capacidade, chat em tempo real, fotos/upload, certificação, mapas embutidos e APIs geográficas, infraestrutura de publicação na internet e o tópico I já excluído. Consulta sem login não implica implantação pública nem remoção da autorização de gestão.
 

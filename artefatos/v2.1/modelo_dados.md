@@ -1,6 +1,6 @@
 # Modelo de dados — v2.1
 
-## Modelo-alvo revisado — implementação parcial nas Etapas 16–17
+## Modelo-alvo revisado — Etapas 16–18, em validação integrada
 
 Descarte é consulta de `pontos_coleta`, não cadastro ou estado de `itens`. Não criar nova coleção de visitas, intenções, encaminhamentos ou comprovantes para usar o diretório. As estruturas de doação/venda permanecem; os nomes originalmente propostos de oferta continuam distintos dos nomes do runtime, como indicado ao final.
 
@@ -14,7 +14,7 @@ Descarte é consulta de `pontos_coleta`, não cadastro ou estado de `itens`. Nã
 | `pontos_coleta` | Diretório de locais mantidos pelo responsável |
 | `notificacoes` | Avisos privados das operações de doação/venda |
 
-`encaminhamentos` e os campos de descarte anteriores são **legado preservado**, não uma sexta coleção que o novo diretório precise alimentar. A existência física desses dados não significa que o fluxo retirado continue obrigatório. Este documento não remove coleções ou índices.
+Não há coleção, serviço ou índice de encaminhamentos no runtime revisado. Campos de ponto/destinação em item e estados exclusivos de descarte são removidos. Não existe adaptador, migração ou consulta histórica desse processo. A remoção do código não executa limpeza de bancos.
 
 ### Pontos de coleta e projeções
 
@@ -46,28 +46,25 @@ Filtrar `ativo=true`, cidade e categoria antes da paginação. Ordem estável po
 - Selecionar/liberar e declarar/confirmar entrega de oferta devem preservar atomicidade entre item, interesse, histórico e avisos. A proposta de versões e resultado persistido por `id_operacao` permanece para comandos, não para consultas do diretório; não alegar que já existe no runtime.
 - Não copiar endereço pessoal para itens. Combinação permanece privada aos participantes autorizados; crescimento de históricos não equivale a capacidade de produção.
 
-### Legado e transição
+### Escopo simplificado da Etapa 18
 
-`encaminhamentos`, `ponto_coleta_id`, `destinacao_informada` e estados `aguardando_ponto`, `entrega_prevista` e `recebido` podem existir na base atual. Não preencher novos documentos desses tipos por uma consulta. Não apagar, converter em oferta, encerrar ou reinterpretar registros antigos automaticamente.
+Somente ofertas de doação/venda usam `itens`. Diretório e gestão de locais são independentes de equipamento. O histórico acumulativo de ofertas e interesses continua; o de descarte não integra o produto. Dados de demonstração reais não são apagados nem recriados por essa alteração.
 
-Na Etapa 16, a política é manter documentos e acessos autorizados anteriores; a nova consulta não une itens/indicações ao ponto. Ausência de `ativo` mantém o padrão verdadeiro já existente no mapper, sem escrita. A apresentação e a descontinuação dos comandos antigos ficam para a Etapa 18, sem quebrar referências. Os indicadores-alvo não somam registros de descarte a doações/vendas, mas isso não autoriza apagar o histórico. Em particular, não transformar `indicados` ou `coletados` antigos em contagem de consultas ao diretório.
+## Estrutura executável revisada — Etapa 18
 
-## Estrutura persistida de referência — mantida na Etapa 16
-
-O código das Etapas 9 a 15 utiliza seis coleções. As classes estão em `app/models/`; os repositórios convertem IDs para BSON ObjectId e datas para UTC. O JSON retorna identificadores como strings.
+O runtime revisado utiliza cinco coleções. As classes estão em `app/models/`; os repositórios convertem IDs para BSON ObjectId e datas para UTC. O JSON retorna identificadores como strings.
 
 | Coleção | Campos e estruturas presentes |
 |---|---|
 | `usuarios` | `nome`, `email`, `tipo` (`pessoa`/`ponto_coleta`), `endereco` (`logradouro`, `numero`, `cep`, `cidade`, `complemento`), `senha_hash`, datas |
-| `itens` | `titulo`, `descricao`, `categoria`, `marca`, `modelo`, `condicao`, `destino`, `valor`, `status`, `proprietario_id`, `especificacoes`, `historico`, referências de ponto/beneficiário/comprador, `destinacao_informada` e datas |
+| `itens` | `titulo`, `descricao`, `categoria`, `marca`, `modelo`, `condicao`, `destino`, `valor`, `status`, `proprietario_id`, `especificacoes`, `historico`, referências de beneficiário/comprador e datas |
 | `interesses` | `item_id`, `usuario_id`, `status`, `tentativa`, `motivo`, `preco_selecionado`, `resultado`, `combinacao`, `historico` e datas |
 | `pontos_coleta` | `nome`, `endereco`, `categorias_aceitas`, `horario_atendimento`, `responsavel_id`, `ativo` e datas |
-| `encaminhamentos` | `item_id`, `autor_id`, `ponto_id`, `status`, `motivo`, `historico` e datas |
 | `notificacoes` | `usuario_id`, `item_id`, `interesse_id` opcional, `tipo`, `titulo`, `mensagem`, `evento_id`, `link`, `lida`, `data_leitura` e datas |
 
-Histórico do item usa `etapa`, `status`, `data_evento`, `responsavel_id` e `observacao`. Históricos de interesse/encaminhamento usam `status`, `data_evento`, `ator_id` e `motivo`. A combinação contém local textual, previsão/observação opcionais, revisão, proponente/data e aceitante/data. Destinação informada contém tipo de local, textos opcionais e `informado_em`; a autoria é determinada pelo proprietário do item.
+Histórico do item usa `etapa`, `status`, `data_evento`, `responsavel_id` e `observacao`. Históricos de interesse usam `status`, `data_evento`, `ator_id` e `motivo`. A combinação contém local textual, previsão/observação opcionais, revisão, proponente/data e aceitante/data.
 
-A seleção é registrada internamente em `itens.interesse_aceito_id`, preservado pelo repositório e não exposto como campo do modelo de resposta. A tentativa ativa é consultada em `encaminhamentos`, com índice parcial único por item em `entrega_prevista`; não há campo implementado `encaminhamento_ativo_id`. A entrega bilateral fica registrada nos estados e históricos, não em um subdocumento `entrega` do item.
+A seleção é registrada internamente em `itens.interesse_aceito_id`, preservado pelo repositório e não exposto como campo do modelo de resposta. A entrega bilateral fica registrada nos estados e históricos, não em um subdocumento `entrega` do item.
 
 Os nomes executáveis são `destino=revenda`, `status` e `valor` (número representado como float), não `modalidade=venda`, `situacao` e preço decimal. Não há campo genérico `versao`, ledger ou `id_operacao`. O índice de notificação é único por `evento_id`, `usuario_id`, `item_id`; `origem_tipo`/`origem_id` não são campos implementados.
 

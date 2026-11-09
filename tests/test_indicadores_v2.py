@@ -27,7 +27,6 @@ def test_contabiliza_somente_concluidos_por_modalidade() -> None:
         [
             ("doacao", "concluido"),
             ("doacao", "concluido"),
-            ("descarte", "recebido"),
             ("revenda", "concluido"),
             ("doacao", "aguardando_confirmacao"),
             ("doacao", "reservado"),
@@ -38,9 +37,8 @@ def test_contabiliza_somente_concluidos_por_modalidade() -> None:
     indicadores = IndicadorService(MongoIndicadorRepository(colecao)).obter()
 
     assert indicadores.doados == 2
-    assert indicadores.coletados == 1
     assert indicadores.vendidos == 1
-    assert indicadores.total == 4
+    assert indicadores.total == 3
     assert indicadores.ofertas_ativas == 1
     assert indicadores.pendencias == 2
 
@@ -52,5 +50,5 @@ def test_base_sem_confirmacao_retorna_zero() -> None:
         )
     ).obter()
 
-    assert (indicadores.doados, indicadores.coletados, indicadores.vendidos) == (0, 0, 0)
+    assert (indicadores.doados, indicadores.vendidos) == (0, 0)
     assert indicadores.total == 0

@@ -103,9 +103,9 @@ def test_service_cria_interesse_pendente_com_timestamps_utc():
 
 @pytest.mark.parametrize(
     ("proprietario_id", "destino", "status_code"),
-    [("beneficiario-2", "doacao", 400), ("doador-1", "descarte", 400), ("doador-1", "doacao", 409)],
+    [("beneficiario-2", "doacao", 400), ("doador-1", "modalidade_invalida", 400), ("doador-1", "doacao", 409)],
 )
-def test_service_rejeita_interesse_proprio_descarte_ou_indisponivel(proprietario_id, destino, status_code):
+def test_service_rejeita_interesse_proprio_modalidade_invalida_ou_indisponivel(proprietario_id, destino, status_code):
     repo = RepositorioServicoFake(destino=destino, proprietario_id=proprietario_id)
     if status_code == 409:
         repo.item["status"] = "reservado"

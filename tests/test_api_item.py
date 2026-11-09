@@ -68,15 +68,18 @@ class RepositorioItensEmMemoria:
     def listar_por_proprietario(
         self,
         proprietario_id: str,
-        statuses: tuple[str, ...],
+        statuses: tuple[str, ...] | None = None,
         *,
+        destinos: tuple[str, ...] | None = None,
         offset: int = 0,
         limite: int = 20,
     ) -> list[Item]:
         return [
             self._copiar(item)
             for item in self.itens.values()
-            if item.proprietario_id == proprietario_id and item.status in statuses
+            if item.proprietario_id == proprietario_id
+            and (statuses is None or item.status in statuses)
+            and (destinos is None or item.destino in destinos)
         ][offset : offset + limite]
 
     def atualizar(
