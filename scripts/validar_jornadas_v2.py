@@ -461,14 +461,15 @@ def limpar(prefixo: str = MARCA) -> None:
         documento["_id"]
         for documento in pontos.find({"nome": {"$regex": f"^{prefixo}"}}, {"_id": 1})
     ]
-    if ids_itens or ids_usuarios:
-        avisos.delete_many(
-            {"$or": [{"item_id": {"$in": ids_itens}}, {"usuario_id": {"$in": ids_usuarios}}]}
-        )
-    if ids_itens or ids_usuarios:
-        interesses.delete_many(
-            {"$or": [{"item_id": {"$in": ids_itens}}, {"usuario_id": {"$in": ids_usuarios}}]}
-        )
+    vinculos = {
+        "$or": [{"item_id": {"$in": ids_itens}}, {"usuario_id": {"$in": ids_usuarios}}]
+    }
+    esperados_avisos = avisos.count_documents(vinculos)
+    esperados_interesses = interesses.count_documents(vinculos)
+    removidos_avisos = avisos.delete_many(vinculos).deleted_count
+    removidos_interesses = interesses.delete_many(vinculos).deleted_count
+    assert removidos_avisos == esperados_avisos, (removidos_avisos, esperados_avisos)
+    assert removidos_interesses == esperados_interesses, (removidos_interesses, esperados_interesses)
     removidos_itens = itens.delete_many({"_id": {"$in": ids_itens}}).deleted_count
     removidos_pontos = pontos.delete_many({"_id": {"$in": ids_pontos}}).deleted_count
     removidos_usuarios = usuarios.delete_many({"_id": {"$in": ids_usuarios}}).deleted_count
@@ -491,7 +492,8 @@ def limpar(prefixo: str = MARCA) -> None:
     print(
         "limpeza=ok; removidos "
         f"usuarios={removidos_usuarios} itens={removidos_itens} "
-        f"pontos={removidos_pontos}"
+        f"pontos={removidos_pontos} interesses={removidos_interesses} "
+        f"notificacoes={removidos_avisos}"
     )
 
 
