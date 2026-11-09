@@ -116,6 +116,43 @@ Acesse:
 - documentação OpenAPI: <http://127.0.0.1:8000/docs>;
 - Mongo Express opcional: <http://127.0.0.1:18081>.
 
+### 9.1 Subir com os dados de demonstração
+
+O comando acima inicia a aplicação **sem contas nem ofertas**: o banco nasce vazio e o login
+retorna `401`. Para percorrer as jornadas com dados fictícios, execute o povoamento uma vez,
+depois que os serviços estiverem de pé.
+
+O script roda no host, com as dependências de desenvolvimento instaladas (`pip install -e '.[dev]'`),
+e precisa de duas informações que **não** podem vir do `MONGO_URI` padrão do `.env`:
+
+- `directConnection=true`, porque o replica set é acessado pela porta publicada;
+- um `MONGO_DATABASE` igual ao que a API está usando, pois o script confere a identidade das
+  contas no banco antes de escrever.
+
+```bash
+# 1. Subir a aplicação (banco vazio).
+docker compose up -d --build --wait
+
+# 2. Povoar, no host, com as mesmas variáveis que o Compose usa.
+set -a; . ./.env; set +a          # carrega porta, usuário e banco do .env
+MONGO_URI="mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@127.0.0.1:${MONGO_PORT}/${MONGO_DATABASE}?authSource=admin&replicaSet=rs0&directConnection=true" \
+MONGO_DATABASE="${MONGO_DATABASE}" \
+DEMO_SENHA="<senha fictícia com ao menos 8 caracteres>" \
+  .venv/Scripts/python.exe scripts/povoar_demonstracao.py --aplicar --ampliar \
+    --api-url http://127.0.0.1:${BACKEND_PORT:-8000} \
+    --origin http://127.0.0.1:${FRONTEND_PORT:-8080}
+```
+
+A saída termina em `Demonstração confirmada` e lista as contas criadas. A partir daí
+`ana.demo@example.test` autentica com a senha informada em `DEMO_SENHA`.
+
+O povoamento é **aditivo e reexecutável**: não apaga banco, não redefine senhas e não duplica
+registros quando a carga anterior está intacta. Para apenas conferir o que seria criado, rode o
+script sem `--aplicar`. Para remover tudo, `docker compose down -v` apaga o volume do MongoDB.
+
+> O `MONGO_URI` do `.env` serve ao backend dentro da rede Docker e aponta para o host `mongo`;
+> ele não funciona para o script rodando no host. Use a forma acima.
+
 O backend usa o nome de serviço `mongo` para acessar o banco dentro da rede Docker. O navegador acessa a API pela porta publicada `8000`, e o Compose acrescenta as origens das portas `5500` e `8080` à configuração CORS. Além do CORS, mutações que transportam o cookie de sessão exigem `Origin` ou `Referer` permitido. `SECURE_COOKIES=false` é intencional no ambiente HTTP local; em produção, use HTTPS e uma configuração própria.
 
 Para acompanhar os logs e encerrar o ambiente:
