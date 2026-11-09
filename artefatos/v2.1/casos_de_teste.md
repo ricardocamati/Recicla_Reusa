@@ -180,7 +180,7 @@ O cenário antigo saiu do escopo de descarte como diretório; não deve ser reim
 
 **Passos:** Consultar totais antes/depois de receber doação/venda e repetir comando; abrir diretório e detalhe de local.
 
-**Resultado esperado:** Só conclusões de ofertas aumentam uma vez; consulta de local não altera resultados; não mede pagamento/reciclagem nem reapresenta legado de descarte como resultado novo.
+**Resultado esperado:** Só conclusões de ofertas aumentam uma vez; consulta de local não altera resultados nem cria aviso; `locais_ativos` aparece separado e não entra em `total`; não mede pagamento ou reciclagem.
 
 ## V21-CT-24 — Arquivar e excluir sem apagar histórico
 
@@ -353,7 +353,7 @@ O cenário antigo saiu do escopo de descarte como diretório; não deve ser reim
 
 **Passos:** Consultar lista/detalhe, copiar endereço e abrir mapa repetidamente; alterar número de locais ativos; consultar indicadores e concluir uma oferta em cenário separado.
 
-**Resultado esperado:** Navegação não altera doados/vendidos/total; total-alvo considera somente doação/venda confirmadas. Quantidade de locais, se exibida, é separada. Consultas não são contadas como entrega ou reciclagem.
+**Resultado esperado:** Navegação repetida não altera doados/vendidos/total, não cria aviso e não muda `locais_ativos`; total considera somente doação/venda confirmadas; consultas não são contadas como entrega ou reciclagem. Evidência real em `tests/test_etapa19_coerencia.py`.
 
 
 ## V21-CT-43 — Retirado: preservação de descarte legado

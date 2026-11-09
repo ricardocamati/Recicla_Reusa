@@ -5,6 +5,7 @@ from app.schemas.indicador import IndicadorResponse
 
 class RepositorioDeIndicadores(Protocol):
     def contar_por_modalidade_e_status(self) -> dict[str, int]: ...
+    def contar_locais_ativos(self) -> int: ...
 
 
 class IndicadorService:
@@ -31,4 +32,5 @@ class IndicadorService:
             pendencias=pendencias,
             vendidos=vendidos,
             total=doados + vendidos,
+            locais_ativos=self._repositorio.contar_locais_ativos(),
         )

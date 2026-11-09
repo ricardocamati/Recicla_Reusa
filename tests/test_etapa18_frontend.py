@@ -417,7 +417,7 @@ def test_editar_local_preserva_todas_categorias_aceitas_pelo_contrato(navegador,
 
 
 def test_indicadores_da_interface_usam_somente_ofertas(navegador, servidor_frontend, servidor_api, monkeypatch):
-    valores = {"doados": 1, "vendidos": 2, "ofertas_ativas": 3, "pendencias": 4, "total": 1 + 2}
+    valores = {"doados": 1, "vendidos": 2, "ofertas_ativas": 3, "pendencias": 4, "total": 1 + 2, "locais_ativos": 5}
     def obter(h):
         caminho = urlsplit(h.path).path
         if caminho == "/api/usuarios/me":
@@ -433,3 +433,5 @@ def test_indicadores_da_interface_usam_somente_ofertas(navegador, servidor_front
     assert not navegador.find_elements(By.ID, "indicador-indicados")
     assert navegador.find_element(By.ID, "indicador-vendidos").text == "2"
     assert navegador.find_element(By.ID, "indicador-total").text == str(valores["total"])
+    assert navegador.find_element(By.ID, "indicador-locais").text == "5"
+    assert "informação cadastral" in navegador.find_element(By.CSS_SELECTOR, "[aria-labelledby='indicadores-title']").text

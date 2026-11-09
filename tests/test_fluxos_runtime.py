@@ -211,6 +211,7 @@ def test_indicadores_contam_apenas_apos_confirmacao(ambiente):
     antes = dono.get("/api/indicadores").json()
     assert antes == {
         "doados": 0,
+        "locais_ativos": 0,
         "ofertas_ativas": 0,
         "pendencias": 2,
         "vendidos": 0,
@@ -223,6 +224,7 @@ def test_indicadores_contam_apenas_apos_confirmacao(ambiente):
     depois = dono.get("/api/indicadores").json()
     assert depois == {
         "doados": 1,
+        "locais_ativos": 0,
         "ofertas_ativas": 0,
         "pendencias": 1,
         "vendidos": 0,

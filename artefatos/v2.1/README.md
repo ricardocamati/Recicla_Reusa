@@ -54,7 +54,7 @@ Identificadores retirados permanecem marcados, sem reutilização para outros si
 | Indicadores | Incluem recebidos e indicados | Resultados de doação/venda separados de informações do diretório |
 | Dados | Cinco coleções, sem encaminhamentos ou campos de destinação | Sem migração/compatibilidade de descarte; histórico de ofertas mantido |
 
-Testes e jornadas anteriores não comprovam o novo diretório. Os novos casos começam em V21-CT-35; os casos de descarte retirados mantêm seus IDs. A Etapa 16 entrega leitura e testes em `tests/test_diretorio_publico.py` e `tests/test_diretorio_runtime.py`. A Etapa 17 tem testes de interface em `tests/test_onde_descartar_selenium.py` e jornada anônima com HTTP/API/MongoDB reais em `tests/test_onde_descartar_browser_runtime.py`, incluindo snapshots. A Etapa 18 acrescenta testes de remoção dos comandos e gestão, sem histórico de descarte; a validação integrada está em andamento. Indicadores continuam pendentes e essa evidência não aprova toda a revisão.
+Testes e jornadas anteriores não comprovam o novo diretório. Os novos casos começam em V21-CT-35; os casos de descarte retirados mantêm seus IDs. A Etapa 16 entrega leitura e testes em `tests/test_diretorio_publico.py` e `tests/test_diretorio_runtime.py`. A Etapa 17 tem testes de interface em `tests/test_onde_descartar_selenium.py` e jornada anônima com HTTP/API/MongoDB reais em `tests/test_onde_descartar_browser_runtime.py`, incluindo snapshots. A Etapa 18 cobre a remoção dos comandos e a gestão; a Etapa 19 prova em MongoDB real a coerência de avisos e indicadores; a Etapa 20 executou as três jornadas em stack isolada. Limites não comprovados permanecem na matriz, que não usa evidência anterior como aprovação desta revisão.
 
 ## Preservação e exclusões
 

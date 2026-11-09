@@ -54,13 +54,13 @@ Histórico, integridade de referências, controle de status e avisos das ofertas
 
 ## Avisos, indicadores e demonstração
 
-Avisos e resultados pertencem às ofertas, nunca à navegação no diretório. A remoção das dependências do processo antigo faz parte da Etapa 18; a revisão geral de produto/indicadores e enriquecimento da demonstração continua na Etapa 19. O seeder usa somente ofertas e cadastro de locais, com reexecução aditiva e sem aplicar mudanças automaticamente à demonstração real.
+Avisos e resultados pertencem às ofertas, nunca à navegação no diretório. A Etapa 19 confirmou em MongoDB real que consulta e gestão não criam aviso, e que os indicadores expõem só ofertas confirmadas mais a contagem cadastral `locais_ativos`, separada do total. O seeder usa somente ofertas e cadastro de locais, com reexecução aditiva e sem aplicar mudanças automaticamente à demonstração real.
 
 ## Testabilidade e reprodução
 
 - `tests/`: testes unitários, transporte, MongoDB e Selenium.
 - [Contrato HTTP](http-api.md) e [OpenAPI](openapi.md): documentação do executável e snapshot gerado.
 - [Casos e matriz](../artefatos/v2.1/matriz_rastreabilidade.md): distinguem evidência atual e trabalho futuro.
-- [Verificador de jornadas](../scripts/validar_jornadas_v2.py): a jornada pública completa no verificador será ajustada na Etapa 20; o processo antigo não é evidência atual.
+- [Verificador de jornadas](../scripts/validar_jornadas_v2.py): executa doação, venda e consulta anônima do diretório na stack isolada, audita datas das cinco coleções, confere indicadores antes/depois e remove apenas as fixtures que criou.
 
 Integrações sem URI de teste são ignoradas e não contam como aprovadas. Relatórios locais ficam em diretório ignorado, sem novos documentos de verificação em `docs/`.

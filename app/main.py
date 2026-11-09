@@ -104,7 +104,7 @@ def criar_app(
             colecao_notificacoes, criar_indices=False
         )
         repositorio_notificacoes = repositorio_notificacoes_mongo
-        repositorio_indicadores_mongo = MongoIndicadorRepository(colecao_itens)
+        repositorio_indicadores_mongo = MongoIndicadorRepository(colecao_itens, colecao_pontos)
         repositorio_indicadores = repositorio_indicadores_mongo
 
     relogio = relogio or (lambda: datetime.now(UTC))

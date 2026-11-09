@@ -330,6 +330,11 @@
             "title": "Doados",
             "type": "integer"
           },
+          "locais_ativos": {
+            "default": 0,
+            "title": "Locais Ativos",
+            "type": "integer"
+          },
           "ofertas_ativas": {
             "default": 0,
             "title": "Ofertas Ativas",

@@ -39,7 +39,7 @@ def test_povoamento_real_e_reexecucao_sem_duplicar(monkeypatch, ampliar):
                 assert banco.itens.count_documents({}) == 8
                 assert banco.interesses.count_documents({}) == 5
                 assert set(banco.itens.distinct("destino")) == {"doacao", "revenda"}
-                assert resultado["indicadores"] == {"ofertas_ativas": 3, "pendencias": 2, "doados": 1, "vendidos": 1, "total": 2}
+                assert resultado["indicadores"] == {"ofertas_ativas": 3, "pendencias": 2, "doados": 1, "vendidos": 1, "total": 2, "locais_ativos": 1}
                 antes = {n: list(banco[n].find().sort("_id")) for n in banco.list_collection_names()}
                 segundo = povoar(clientes, perfis)
                 depois = {n: list(banco[n].find().sort("_id")) for n in banco.list_collection_names()}
@@ -59,7 +59,7 @@ def test_povoamento_real_e_reexecucao_sem_duplicar(monkeypatch, ampliar):
                     assert set(banco.itens.distinct("destino")) == {"doacao", "revenda"}
                     assert len(banco.itens.distinct("categoria")) >= 10
                     assert len(banco.usuarios.distinct("endereco.cidade")) >= 3
-                    assert expandido["indicadores"] == {"ofertas_ativas": 27, "pendencias": 14, "doados": 7, "vendidos": 7, "total": 14}
+                    assert expandido["indicadores"] == {"ofertas_ativas": 27, "pendencias": 14, "doados": 7, "vendidos": 7, "total": 14, "locais_ativos": 3}
                     for nome, documentos in antes.items():
                         for documento in documentos:
                             assert banco[nome].find_one({"_id": documento["_id"]}) == documento

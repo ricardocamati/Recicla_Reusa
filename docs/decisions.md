@@ -135,3 +135,11 @@
 **Motivação:** manter uma representação única e simples do endereço em todo o fluxo, evitando divergência entre o contrato JSON, o domínio e o documento MongoDB.
 
 **Consequência:** o Mapper transporta os campos planos diretamente entre request, domínio, response e Repository. A v1.0 não grava nem aceita `usuarios.endereco`; subdocumentos previstos para históricos e especificações continuam pertencendo ao escopo futuro da v2.0.
+
+## ADR-018 — Retirada do descarte por item e diretoria como consulta
+
+**Decisão:** o descarte não é mais um fluxo do item. Novas ofertas aceitam somente doação ou revenda; a consulta de locais fica no diretório público e a gestão fica restrita ao operador responsável. Rotas, modelos, campos, índices, testes e interface exclusivos do fluxo anterior foram removidos, sem resposta de compatibilidade, aba histórica ou migração de dados.
+
+**Motivação:** não existiam dados de descarte por item a conservar, e manter adaptadores e histórico ampliava a superfície de código sem benefício de produto. O diretório resolve o descarte sem exigir cadastro de equipamento, e a remoção simples é auditável no histórico Git.
+
+**Consequência:** a base deixa de ter a coleção `encaminhamentos` e os campos de ponto/destinação em `itens`. Consultas e gestão de locais não gravam domínio nem emitem aviso. Os indicadores expõem resultados de ofertas confirmadas e a contagem cadastral `locais_ativos` separada do total. Remover o código não apaga nem recria bancos reais ou de demonstração.

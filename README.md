@@ -54,7 +54,7 @@ A documentação da revisão está em [artefatos/v2.1/](artefatos/v2.1/README.md
 
 ## 6. Stack utilizada
 
-A Etapa 16 acrescenta leitura pública de locais ativos em `GET /api/pontos-coleta` e `GET /api/pontos-coleta/{id}`, sem login nem cadastro de equipamento. As respostas expõem somente dados do local; a gestão continua autenticada com `escopo=meus`. A Etapa 17 acrescenta a tela pública [Onde descartar](frontend/onde-descartar.html), com filtros, paginação, detalhe e cópia de endereço, acessível pela página inicial e pela navegação autenticada. Ela não cria registros de descarte. A Etapa 18 implementa “Meus locais” para operadores, a remoção do fluxo antigo, sem histórico de descarte ou adaptadores, ainda em validação integrada neste checkout. A revisão de indicadores continua na Etapa 19. Detalhes e política de preservação em [docs/http-api.md](docs/http-api.md) e nos [artefatos v2.1](artefatos/v2.1/README.md).
+A Etapa 16 acrescenta leitura pública de locais ativos em `GET /api/pontos-coleta` e `GET /api/pontos-coleta/{id}`, sem login nem cadastro de equipamento. As respostas expõem somente dados do local; a gestão continua autenticada com `escopo=meus`. A Etapa 17 acrescenta a tela pública [Onde descartar](frontend/onde-descartar.html), com filtros, paginação, detalhe e cópia de endereço, acessível pela página inicial e pela navegação autenticada. Ela não cria registros de descarte. A Etapa 18 removeu o fluxo antigo por completo, sem histórico de descarte ou adaptadores, e entregou “Meus locais”. A Etapa 19 separa resultados de ofertas confirmadas da contagem cadastral de locais e garante que consultar o diretório não produza avisos nem resultados de equipamentos. Detalhes e política de preservação em [docs/http-api.md](docs/http-api.md) e nos [artefatos v2.1](artefatos/v2.1/README.md).
 
 - Python 3.11+;
 - FastAPI e Uvicorn;
@@ -178,13 +178,13 @@ MONGO_DATA_VOLUME=recicla_v2_fechamento_mongo_data MONGO_PORT=27119 \
 BACKEND_PORT=8029 FRONTEND_PORT=8109 \
 docker compose --env-file .env.example --project-name recicla_fechamento up -d --build --wait
 
-# 2. rode as três jornadas pela interface; o script audita datas e limpa o que criou
+# 2. rode as três jornadas (doação, venda e consulta anônima do diretório); o script audita datas, confere indicadores e limpa o que criou
 JORNADAS_MONGO_URI="<uri do replica set com directConnection=true>" \
 JORNADAS_FRONTEND_URL=http://127.0.0.1:8109 JORNADAS_API_URL=http://127.0.0.1:8029 \
 python scripts/validar_jornadas_v2.py
 ```
 
-A validação executada na Etapa 15 percorreu as três jornadas então existentes e conferiu referências e datas; o fluxo de descarte por item foi retirado depois. Para validar uma alteração, execute novamente os comandos; o resultado anterior não aprova automaticamente um checkout diferente.
+A Etapa 20 executou as três jornadas revisadas em stack e volume próprios, conferiu indicadores antes/depois da consulta pública e removeu somente as fixtures criadas. Para validar uma alteração, execute novamente os comandos; o resultado anterior não aprova automaticamente um checkout diferente.
 
 ## 12. Dados fictícios de demonstração
 

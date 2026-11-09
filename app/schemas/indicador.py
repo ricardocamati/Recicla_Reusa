@@ -7,3 +7,4 @@ class IndicadorResponse(BaseModel):
     pendencias: int = 0
     vendidos: int
     total: int
+    locais_ativos: int = 0

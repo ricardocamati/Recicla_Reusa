@@ -16,7 +16,7 @@ As Etapas 9 a 15 têm implementação. Para integrar ou testar o checkout atual,
 | Encaminhamentos | Removidos; sem comandos, consultas históricas ou adaptadores |
 | Consulta pública (Etapa 16) | Lista/detalhe de ativos sem sessão, cinco campos públicos, filtros e paginação; gestão protegida com `escopo=meus` |
 | Situação do ponto | `POST /api/pontos-coleta/{id}/situacao` com `ativo`; sem versão/chave genérica |
-| Indicadores | `ofertas_ativas`, `pendencias`, `doados`, `vendidos`, `coletados`, `indicados`, `total`; escopo global, não pendências pessoais |
+| Indicadores | `ofertas_ativas`, `pendencias`, `doados`, `vendidos`, `total` e `locais_ativos` separado; escopo global, não pendências pessoais |
 | Reenvio | Há caminhos específicos idempotentes e índice de eventos; isso não implementa recuperação genérica por chave com fingerprint de payload |
 
 Verificação de status no banco e revisão da combinação não detectam todo conflito entre edições no mesmo estado. Não declarar versionamento otimista genérico, rollback de qualquer comando ou idempotência persistida por chave como já entregues. Os testes de runtime exercitam subconjuntos específicos dessas garantias.

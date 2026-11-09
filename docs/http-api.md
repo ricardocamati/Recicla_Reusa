@@ -214,9 +214,9 @@ Local inativo sai da consulta pública, mas continua visível na gestão do resp
 
 | Método | Caminho | Autenticação | Sucesso |
 |---|---|---|---|
-| `GET` | `/api/indicadores` | sessão | `200` com `ofertas_ativas`, `pendencias`, `doados`, `coletados`, `indicados`, `vendidos` e `total` |
+| `GET` | `/api/indicadores` | sessão | `200` com `ofertas_ativas`, `pendencias`, `doados`, `vendidos`, `total` e `locais_ativos` |
 
-`ofertas_ativas` conta ofertas disponíveis; `pendencias` reúne ofertas reservadas ou aguardando confirmação. `doados` e `vendidos` contam somente ofertas concluídas com confirmação bilateral; `total` soma essas conclusões. Consulta e gestão de locais não alteram esses resultados e não comprovam reciclagem. As chaves de coleta/indicação do processo retirado deixam de integrar a resposta.
+`ofertas_ativas` conta ofertas disponíveis; `pendencias` reúne ofertas reservadas ou aguardando confirmação. `doados` e `vendidos` contam somente ofertas concluídas com confirmação bilateral; `total` soma essas conclusões. `locais_ativos` é contagem cadastral do diretório e não entra em `total`. Registros com modalidade fora de doação/revenda não participam de nenhuma chave. Consulta, cópia e gestão de locais não alteram resultados nem comprovam reciclagem.
 
 O snapshot da OpenAPI gerada do runtime e suas diferenças em relação a esta descrição estão em [openapi.md](openapi.md).
 

@@ -15,8 +15,9 @@ from uuid import uuid4
 from bson import ObjectId
 from pymongo import MongoClient
 from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import StaleElementReferenceException, WebDriverException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
@@ -120,18 +121,24 @@ class Navegador:
 
     def aguardar_sem_botao(self, lista: str, titulo: str, seletor: str) -> None:
         def sem_botao(driver) -> bool:
-            card = self._cartao(lista, titulo)
-            # Após a transição o item pode sair do grupo exibido.
-            return card is None or not card.find_elements(By.CSS_SELECTOR, seletor)
+            try:
+                card = self._cartao(lista, titulo)
+                # Após a transição o item pode sair do grupo exibido.
+                return card is None or not card.find_elements(By.CSS_SELECTOR, seletor)
+            except StaleElementReferenceException:
+                return False
 
         self.espera.until(sem_botao)
 
     def aguardar_sem_texto(self, lista: str, titulo: str, texto: str) -> None:
         def sem_texto(driver) -> bool:
-            card = self._cartao(lista, titulo)
-            return card is None or texto not in [
-                botao.text for botao in card.find_elements(By.TAG_NAME, "button")
-            ]
+            try:
+                card = self._cartao(lista, titulo)
+                return card is None or texto not in [
+                    botao.text for botao in card.find_elements(By.TAG_NAME, "button")
+                ]
+            except StaleElementReferenceException:
+                return False
 
         self.espera.until(sem_texto)
 
@@ -260,7 +267,7 @@ class Navegador:
             self.preencher(campo, valor, escopo="#ponto-form")
         self.selecionar("categorias_aceitas", categoria, escopo="#ponto-form")
         self.clicar(self.driver.find_element(By.CSS_SELECTOR, "#ponto-form button[type='submit']"))
-        self.espera.until(lambda d: "Ponto cadastrado" in d.find_element(By.ID, "ponto-form-message").text)
+        self.espera.until(lambda d: "Local cadastrado" in d.find_element(By.ID, "ponto-form-message").text)
 
     def propor_combinacao(self, lista: str, titulo: str, local: str = "Portaria da jornada") -> None:
         self.abrir("interesses.html", f"#{lista}")
@@ -335,6 +342,47 @@ class Navegador:
             return "Confirmar recebimento" not in lista.text
 
         self.espera.until(confirmado)
+
+    def ler_indicadores(self) -> dict[str, str]:
+        """Lê os indicadores expostos na tela de ofertas da sessão atual."""
+        self.abrir("itens.html", "#indicadores-title")
+        self.espera.until(lambda d: d.find_element(By.ID, "indicador-total").text != "")
+        return {
+            chave: self.driver.find_element(By.ID, f"indicador-{chave}").text
+            for chave in ("doados", "vendidos", "ofertas", "pendencias", "total", "locais")
+        }
+
+    def consultar_diretorio_anonimo(self, cidade: str, categoria: str) -> None:
+        """Terceira jornada: consulta pública sem conta, cookie ou cadastro de item."""
+        self.driver.delete_all_cookies()
+        self.abrir("onde-descartar.html", "#directory-list")
+        self.espera.until(lambda d: d.find_elements(By.CSS_SELECTOR, "#directory-list article"))
+        campo = self.driver.find_element(By.ID, "directory-city")
+        campo.clear()
+        campo.send_keys(cidade)
+        Select(self.driver.find_element(By.ID, "directory-category")).select_by_value(categoria)
+        self.clicar(self.driver.find_element(By.CSS_SELECTOR, "#directory-filters button[type='submit']"))
+        cartao = self.espera.until(
+            lambda d: next(
+                (c for c in d.find_elements(By.CSS_SELECTOR, "#directory-list article")
+                 if cidade in c.text),
+                False,
+            )
+        )
+        assert "Rua" in cartao.text, cartao.text
+        self.clicar(cartao.find_element(By.CSS_SELECTOR, ".directory-detail-link"))
+        detalhe = self.espera.until(
+            lambda d: d.find_element(By.ID, "directory-detail").is_displayed()
+            and "Rua" in d.find_element(By.ID, "directory-detail").text
+        )
+        assert detalhe
+        self.clicar(self.driver.find_element(By.ID, "directory-copy"))
+        self.espera.until(
+            lambda d: "copi" in d.find_element(By.ID, "directory-copy-message").text.lower()
+        )
+        self.clicar(self.driver.find_element(By.ID, "directory-back"))
+        self.espera.until(lambda d: d.find_elements(By.CSS_SELECTOR, "#directory-list article"))
+        assert not self.driver.get_cookies(), "consulta pública não deve criar sessão"
 
     def avisos(self, titulo: str | None = None) -> str:
         self.abrir("notificacoes.html", "#notificacoes-list")
@@ -429,6 +477,11 @@ def main() -> None:
 
     navegador = Navegador()
     try:
+        # Preparação: operador cadastra o local consultado na terceira jornada.
+        navegador.entrar(operador_email)
+        navegador.criar_ponto(nome_ponto, "Notebook")
+        navegador.sair()
+
         # Jornada 1 — doação com entrega bilateral.
         navegador.cadastrar("Doadora Jornada", doador_email, "Doador")
         navegador.entrar(doador_email)
@@ -460,10 +513,11 @@ def main() -> None:
         navegador.sair()
         print("jornada_doacao=ok")
 
-        # A jornada publica integrada (onde descartar) sera validada na etapa 20.
-        print("jornada_publica_onde_descartar=pendente_etapa20")
+        # Jornada 3 — consulta anônima do diretório, sem item, conta ou escrita.
+        navegador.consultar_diretorio_anonimo("Maringá", "notebook")
+        print("jornada_publica_onde_descartar=ok")
 
-        # Jornada 3 — venda direta com entrega bilateral.
+        # Jornada 2 — venda direta com entrega bilateral.
         navegador.entrar(doador_email)
         navegador.criar_item(titulo_revenda, "Revenda", "Tablet", valor="120")
         navegador.sair()
@@ -491,6 +545,18 @@ def main() -> None:
         print("jornada_revenda=ok")
     finally:
         navegador.fechar()
+
+    # Indicadores após as jornadas: somente ofertas confirmadas e locais cadastrais.
+    navegador = Navegador()
+    try:
+        navegador.entrar(doador_email)
+        indicadores = navegador.ler_indicadores()
+    finally:
+        navegador.fechar()
+    assert indicadores["doados"] == "1" and indicadores["vendidos"] == "1", indicadores
+    assert indicadores["total"] == "2", indicadores
+    assert indicadores["locais"] == "1", indicadores
+    print("indicadores=ok; " + " ".join(f"{k}={v}" for k, v in indicadores.items()))
 
     documento = itens.find_one({"titulo": titulo_doacao})
     assert documento["status"] == "concluido"

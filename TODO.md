@@ -219,19 +219,19 @@ Referências: V21-RF-03, V21-RF-11, V21-RF-14, V21-RNF-08 · V21-RN-14, V21-RN-1
 
 Referências: V21-RF-07, V21-RF-12, V21-RF-13 · V21-RN-18, V21-RN-19, V21-RN-24 · V21-CT-22, V21-CT-23, V21-CT-35, V21-CT-42.
 
-- [ ] Retirar emissão de avisos do fluxo de descarte descontinuado e garantir que consulta, cópia, mapa e gestão do diretório não produzam esses avisos; manter a privacidade dos avisos de ofertas.
-- [ ] Ajustar contrato e consumidores dos indicadores para resultados de doação/venda confirmadas; total de conclusões soma somente ofertas confirmadas, nunca consultas.
-- [ ] Retirar da experiência nova rótulos de equipamento recebido/indicado/reciclado a partir do diretório. Se houver quantidade de locais ativos, apresentá-la separada de resultados de equipamentos.
-- [ ] Adaptar o script de demonstração e seus testes para os cenários novos de locais consultáveis e ofertas, sem cenários do fluxo retirado e sem exigir recriar banco. Aplicação sobre demonstração existente continua dependente de autorização própria.
-- [ ] Testar navegação repetida sem alteração de resultados, confirmação única de doação/venda e reexecução aditiva da demonstração em banco de teste, sem duplicação ou modificação de documentos anteriores.
+- [x] Retirar emissão de avisos do fluxo de descarte descontinuado e garantir que consulta, cópia, mapa e gestão do diretório não produzam esses avisos; manter a privacidade dos avisos de ofertas.
+- [x] Ajustar contrato e consumidores dos indicadores para resultados de doação/venda confirmadas; total de conclusões soma somente ofertas confirmadas, nunca consultas.
+- [x] Retirar da experiência nova rótulos de equipamento recebido/indicado/reciclado a partir do diretório. Se houver quantidade de locais ativos, apresentá-la separada de resultados de equipamentos.
+- [x] Adaptar o script de demonstração e seus testes para os cenários novos de locais consultáveis e ofertas, sem cenários do fluxo retirado e sem exigir recriar banco. Aplicação sobre demonstração existente continua dependente de autorização própria.
+- [x] Testar navegação repetida sem alteração de resultados, confirmação única de doação/venda e reexecução aditiva da demonstração em banco de teste, sem duplicação ou modificação de documentos anteriores.
 
 ## Etapa 20 — Validação integrada e documentação do executável
 
 Referências: V21-RNF-02, V21-RNF-03, V21-RNF-04, V21-RNF-05, V21-RNF-06, V21-RNF-08 · V21-CT-28, V21-CT-29, V21-CT-30, V21-CT-35, V21-CT-36, V21-CT-37, V21-CT-38, V21-CT-39, V21-CT-40, V21-CT-41, V21-CT-42, V21-CT-44 · [matriz](artefatos/v2.1/matriz_rastreabilidade.md).
 
-- [ ] Adaptar o verificador das três jornadas para doação, venda e consulta anônima de descarte, sem confirmação de recebimento em ponto na terceira jornada.
-- [ ] Executar as jornadas em stack/volume próprios, conferir dados e indicadores antes/depois da consulta e comprovar limpeza seletiva das fixtures.
-- [ ] Rodar a suíte completa com integração real, Selenium e medição configurada; distinguir cenários realmente executados de ignorados e preservar as evidências em local ignorado, sem novos relatórios de verificação em `docs/`.
-- [ ] Atualizar README principal, arquitetura, contratos, OpenAPI gerada e instruções de demonstração para o comportamento efetivamente implementado, sem reapresentar campos/rotas planejados como executáveis.
-- [ ] Conciliar os artefatos e a matriz com código e testes finais, preservando limites não comprovados e os IDs retirados, sem reutilizar evidência do fluxo anterior como aprovação desta revisão.
-- [ ] Marcar somente tarefas comprovadas e incluir o TODO no respectivo commit de implementação; publicação e merge continuam separados e sujeitos a autorização explícita.
+- [x] Adaptar o verificador das três jornadas para doação, venda e consulta anônima de descarte, sem confirmação de recebimento em ponto na terceira jornada.
+- [x] Executar as jornadas em stack/volume próprios, conferir dados e indicadores antes/depois da consulta e comprovar limpeza seletiva das fixtures.
+- [x] Rodar a suíte completa com integração real, Selenium e medição configurada; distinguir cenários realmente executados de ignorados e preservar as evidências em local ignorado, sem novos relatórios de verificação em `docs/`.
+- [x] Atualizar README principal, arquitetura, contratos, OpenAPI gerada e instruções de demonstração para o comportamento efetivamente implementado, sem reapresentar campos/rotas planejados como executáveis.
+- [x] Conciliar os artefatos e a matriz com código e testes finais, preservando limites não comprovados e os IDs retirados, sem reutilizar evidência do fluxo anterior como aprovação desta revisão.
+- [x] Marcar somente tarefas comprovadas e incluir o TODO no respectivo commit de implementação; publicação e merge continuam separados e sujeitos a autorização explícita.

@@ -298,6 +298,7 @@ async function loadIndicadores() {
     document.getElementById("indicador-pendencias").textContent = indicadores.pendencias ?? 0;
     document.getElementById("indicador-vendidos").textContent = indicadores.vendidos;
     document.getElementById("indicador-total").textContent = indicadores.total;
+    document.getElementById("indicador-locais").textContent = indicadores.locais_ativos ?? 0;
     setMessage(message);
   } catch (error) {
     handleError(error, message);

@@ -13,7 +13,7 @@ O teste falha quando o snapshot diverge do runtime, então qualquer mudança de 
 
 ## Cobertura
 
-O snapshot reúne os caminhos de usuários, sessão, itens, interesses e combinação, diretório e gestão de locais, notificações, indicadores e saúde. Todas as rotas de negócio descritas em [http-api.md](http-api.md) aparecem na OpenAPI com os mesmos métodos.
+O snapshot reúne os caminhos de usuários, sessão, itens, interesses e combinação, diretório e gestão de locais, notificações, indicadores e saúde. Todas as rotas de negócio descritas em [http-api.md](http-api.md) aparecem na OpenAPI com os mesmos métodos. Não há caminho de encaminhamento ou destinação: o fluxo de descarte por item foi removido, não descontinuado com resposta de compatibilidade.
 
 ## Diferenças registradas
 
