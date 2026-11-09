@@ -12,6 +12,7 @@ from app.models.ponto_coleta import PontoColeta
 from app.models.usuario import Usuario
 from app.schemas.ponto_coleta import (
     PontoColetaCreateRequest,
+    PontoColetaPublicResponse,
     PontoColetaResponse,
     PontoColetaUpdateRequest,
 )
@@ -78,6 +79,7 @@ class PontoColetaService:
         categoria: str | None = None,
         escopo: str | None = None,
         usuario_id: str,
+        ativo: bool | None = None,
         offset: int = 0,
         limite: int = 20,
     ) -> list[PontoColetaResponse]:
@@ -86,10 +88,27 @@ class PontoColetaService:
             cidade=cidade,
             categoria=categoria,
             responsavel_id=responsavel_id,
+            ativo=ativo,
             offset=offset,
             limite=limite,
         )
         return [PontoColetaMapper.para_resposta(ponto) for ponto in pontos]
+
+    def buscar_proprio(self, ponto_id: str, *, responsavel_id: str) -> PontoColetaResponse:
+        ponto = self._buscar(ponto_id)
+        if ponto.responsavel_id != responsavel_id:
+            raise PontoNaoEncontradoError(ponto_id)
+        return PontoColetaMapper.para_resposta(ponto)
+
+    def listar_publicos(self, **filtros) -> list[PontoColetaPublicResponse]:
+        return [PontoColetaMapper.para_resposta_publica(ponto)
+                for ponto in self._repositorio.listar(ativo=True, **filtros)]
+
+    def buscar_publico(self, ponto_id: str) -> PontoColetaPublicResponse:
+        ponto = self._buscar(ponto_id)
+        if not ponto.ativo:
+            raise PontoNaoEncontradoError(ponto_id)
+        return PontoColetaMapper.para_resposta_publica(ponto)
 
     def buscar_por_id(self, ponto_id: str) -> PontoColetaResponse:
         return PontoColetaMapper.para_resposta(self._buscar(ponto_id))

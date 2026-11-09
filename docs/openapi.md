@@ -20,6 +20,6 @@ O snapshot reúne os caminhos de usuários, sessão, itens, interesses e combina
 - **Validação:** o FastAPI anuncia `422` para corpo inválido, mas o runtime converte `RequestValidationError` em `400` com a lista de erros. A prosa documenta `400`; a OpenAPI mantém o `422` padrão do framework.
 - **Erros de negócio:** `401`, `403`, `404`, `409` e `503` são descritos em prosa e não declaram esquema de resposta na OpenAPI. O runtime devolve `{"detail": "..."}`.
 - **`/health`:** existe na OpenAPI e não faz parte do contrato de negócio em `http-api.md`.
-- **Autenticação:** a sessão via cookie `HttpOnly` não é representada como security scheme; os endpoints aparecem sem `security` declarado, embora exijam sessão em runtime.
+- **Autenticação:** a sessão via cookie `HttpOnly` não é representada como security scheme. Na Etapa 16, lista/detalhe de pontos ativos são públicos; `escopo=meus` seleciona gestão protegida, e as demais rotas mantêm sua autorização. A união de DTO público/gestão na OpenAPI não autoriza escolher campos privados na consulta pública: a dependência de escopo e o mapper definem a projeção efetiva.
 
 Essas diferenças são de representação, não de comportamento: a suíte executa os endpoints reais e cobre os códigos devolvidos.

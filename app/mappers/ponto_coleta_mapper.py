@@ -4,6 +4,7 @@ from app.models.ponto_coleta import PontoColeta
 from app.models.usuario import Endereco
 from app.schemas.ponto_coleta import (
     PontoColetaCreateRequest,
+    PontoColetaPublicResponse,
     PontoColetaResponse,
     PontoColetaUpdateRequest,
 )
@@ -42,6 +43,18 @@ class PontoColetaMapper:
             ativo=ponto.ativo,
             data_adicao=ponto.data_adicao,
             data_modificacao=ponto.data_modificacao,
+        )
+
+    @staticmethod
+    def para_resposta_publica(ponto: PontoColeta) -> PontoColetaPublicResponse:
+        if ponto.id is None:
+            raise ValueError("Ponto persistido deve possuir identificador")
+        return PontoColetaPublicResponse(
+            id=ponto.id,
+            nome=ponto.nome,
+            endereco=EnderecoResponse(**asdict(ponto.endereco)),
+            categorias_aceitas=list(ponto.categorias_aceitas),
+            horario_atendimento=ponto.horario_atendimento,
         )
 
     @staticmethod

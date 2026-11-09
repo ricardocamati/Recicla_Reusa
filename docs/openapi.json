@@ -1475,6 +1475,42 @@
         "title": "PontoColetaCreateRequest",
         "type": "object"
       },
+      "PontoColetaPublicResponse": {
+        "description": "Dados do local que podem ser consultados sem identidade do visitante.",
+        "properties": {
+          "categorias_aceitas": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Categorias Aceitas",
+            "type": "array"
+          },
+          "endereco": {
+            "$ref": "#/components/schemas/EnderecoResponse"
+          },
+          "horario_atendimento": {
+            "title": "Horario Atendimento",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "endereco",
+          "categorias_aceitas",
+          "horario_atendimento"
+        ],
+        "title": "PontoColetaPublicResponse",
+        "type": "object"
+      },
       "PontoColetaResponse": {
         "properties": {
           "ativo": {
@@ -3471,6 +3507,22 @@
               "title": "Limite",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "ativo",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ativo"
+            }
           }
         ],
         "responses": {
@@ -3479,7 +3531,14 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/PontoColetaResponse"
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/PontoColetaResponse"
+                      },
+                      {
+                        "$ref": "#/components/schemas/PontoColetaPublicResponse"
+                      }
+                    ]
                   },
                   "title": "Response Listar Api Pontos Coleta Get",
                   "type": "array"
@@ -3589,6 +3648,23 @@
               "title": "Ponto Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "escopo",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "const": "meus",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Escopo"
+            }
           }
         ],
         "responses": {
@@ -3596,7 +3672,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PontoColetaResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PontoColetaResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PontoColetaPublicResponse"
+                    }
+                  ],
+                  "title": "Response Buscar Api Pontos Coleta  Ponto Id  Get"
                 }
               }
             },

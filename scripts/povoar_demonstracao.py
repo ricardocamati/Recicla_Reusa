@@ -42,15 +42,16 @@ def chamar(cliente, metodo: str, caminho: str, *, codigos=(200,), **kwargs):
     return resposta.json() if resposta.content else None
 
 
-def garantir_registro(cliente, caminho, registros, identidade, campo_dono, dono_id, *, corpo=None):
+def garantir_registro(cliente, caminho, registros, identidade, campo_dono, dono_id, *, corpo=None, parametros_leitura=None):
     candidatos = [r for r in registros if all(r.get(k) == v for k, v in identidade.items())]
     if len(candidatos) > 1 or (candidatos and candidatos[0].get(campo_dono) != dono_id):
         raise DemonstracaoError("Registro de demonstração ambíguo ou pertencente a outra conta")
     if candidatos:
-        registro = chamar(cliente, "GET", f"{caminho}/{candidatos[0]['id']}")
+        registro_id = candidatos[0]["id"]
     else:
         criado = chamar(cliente, "POST", caminho, codigos=(201,), json=corpo or identidade)
-        registro = chamar(cliente, "GET", f"{caminho}/{criado['id']}")
+        registro_id = criado["id"]
+    registro = chamar(cliente, "GET", f"{caminho}/{registro_id}", params=parametros_leitura)
     if registro.get(campo_dono) != dono_id or not all(registro.get(k) == v for k, v in identidade.items()):
         raise DemonstracaoError("O registro relido não confirmou a identidade da demonstração")
     return registro
@@ -123,7 +124,7 @@ def povoar(clientes: dict, perfis: dict, *, cenarios=CENARIOS, ponto_existente=N
     operador = clientes["operador"]
     ponto = ponto_existente or garantir_registro(
         operador, "/api/pontos-coleta", listar_todos(operador, "/api/pontos-coleta", escopo="meus"),
-        {"nome": "Ponto Escola — Demonstração"}, "responsavel_id", perfis["operador"]["id"],
+        {"nome": "Ponto Escola — Demonstração"}, "responsavel_id", perfis["operador"]["id"], parametros_leitura={"escopo": "meus"},
         corpo={"nome": "Ponto Escola — Demonstração", "endereco": ENDERECO,
                "categorias_aceitas": ["informatica", "notebook", "monitor", "impressora", "televisao", "perifericos"],
                "horario_atendimento": "Demonstração fictícia: segunda a sexta, 08h às 17h"},
@@ -240,7 +241,7 @@ def povoar_ampliado(clientes: dict, perfis: dict) -> dict:
     ):
         pontos.append(garantir_registro(
             operador, "/api/pontos-coleta", listar_todos(operador, "/api/pontos-coleta", escopo="meus"),
-            {"nome": nome}, "responsavel_id", perfis["operador"]["id"],
+            {"nome": nome}, "responsavel_id", perfis["operador"]["id"], parametros_leitura={"escopo": "meus"},
             corpo={"nome": nome, "endereco": {**ENDERECO, "cidade": cidade, "numero": numero},
                    "categorias_aceitas": sorted({e[1] for e in EQUIPAMENTOS}),
                    "horario_atendimento": "Local fictício: segunda a sábado, 09h às 18h"},

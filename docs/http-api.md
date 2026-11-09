@@ -193,18 +193,26 @@ O índice único por `evento_id`, destinatário e item garante uma única notifi
 
 ## Pontos de coleta
 
+Na Etapa 16, a leitura do diretório é pública e não exige cadastro de item. Isso não libera gestão de locais nem antecipa a tela “Onde descartar” (Etapa 17). O processo anterior de descarte ainda está disponível até sua descontinuação na Etapa 18.
+
 | Método | Caminho | Autenticação | Entrada | Sucesso |
 |---|---|---|---|---|
-| `GET` | `/api/pontos-coleta` | sessão | filtros `cidade`, `categoria`, `escopo=meus`, `offset`, `limite` | `200` com lista paginada |
+| `GET` | `/api/pontos-coleta` | pública, mesmo sem cookie | `cidade`, `categoria`, `offset`, `limite` | `200`, lista de locais ativos com DTO público |
+| `GET` | `/api/pontos-coleta/{id}` | pública | — | `200`, DTO público; `404` para inativo/inexistente |
+| `GET` | `/api/pontos-coleta?escopo=meus` | operador | filtros anteriores e `ativo` opcional | `200`, somente locais próprios, incluindo inativos |
+| `GET` | `/api/pontos-coleta/{id}?escopo=meus` | operador responsável | — | `200`, detalhe de gestão, inclusive inativo |
 | `POST` | `/api/pontos-coleta` | conta `ponto_coleta` | `PontoColetaCreateRequest` | `201`, `Location` e ponto criado |
-| `GET` | `/api/pontos-coleta/{id}` | sessão | — | `200` com ponto |
 | `PUT` | `/api/pontos-coleta/{id}` | responsável | `PontoColetaUpdateRequest` | `200` com ponto atualizado |
 | `POST` | `/api/pontos-coleta/{id}/situacao` | responsável | `{"ativo": bool}` | `200` com ponto ativo ou inativo |
 | `DELETE` | `/api/pontos-coleta/{id}` | responsável | — | `204` sem corpo |
 
-O ponto guarda nome, endereço aninhado, categorias aceitas e horário de atendimento. O `responsavel_id` vem da sessão, precisa ser uma conta `ponto_coleta` e não é aceito no corpo.
+O DTO público contém somente `id`, `nome`, `endereco`, `categorias_aceitas` e `horario_atendimento`: não retorna responsável, datas internas, endereço pessoal, equipamento, histórico ou indicação privada. Enviar cookie não amplia essa projeção; é necessário selecionar explicitamente `escopo=meus` para a gestão. Esse escopo exige sessão operacional antes de validar filtros, sem fallback público: `401` sem sessão, `403` para pessoa comum e `404` no detalhe de gestão de local alheio.
 
-`categorias_aceitas` exige ao menos uma categoria conhecida e recusa repetição. A listagem é ordenada por nome, aceita `offset`/`limite` (padrão 20, máximo 100) e o filtro `categoria` seleciona pontos que aceitam aquela categoria.
+Na leitura pública, filtros desconhecidos, repetidos e tentativas de enviar `ativo`, `responsavel_id`, `item_id` ou chave de operação retornam `400`. O detalhe só admite `escopo=meus` para a operação protegida. Cidade é literal, sem distinção de maiúsculas/minúsculas; categoria usa a enumeração existente. Os filtros e a visibilidade são aplicados antes da paginação, em ordem estável por nome e ID (`offset=0`, `limite=20`, máximo 100). Resultado vazio é `200` com lista vazia.
+
+Consultas não criam sessão obrigatória nem documento de domínio, evento, aviso ou resultado de descarte. Registros antigos sem o campo `ativo` preservam a convenção existente de ativo por padrão, sem escrita de normalização; `ativo=false` é ocultado na lista e no detalhe públicos.
+
+O ponto guarda nome, endereço aninhado, categorias aceitas e horário de atendimento. O `responsavel_id` vem da sessão, precisa ser uma conta `ponto_coleta` e não é aceito no corpo. `categorias_aceitas` exige ao menos uma categoria conhecida e recusa repetição.
 
 Ponto inativo não recebe novas entregas previstas, mas as que já existiam continuam válidas e podem ser concluídas; ao desativar, os autores com entrega prevista são notificados para escolher outro ponto. Reativar libera novas entregas. Alteração, situação e exclusão só são aceitas para o responsável; outro operador recebe `404`, sem revelar a existência do ponto. Excluir um usuário que ainda responde por um ponto retorna `409`, preservando a referência.
 

@@ -1,46 +1,61 @@
 # v2.1 — Coerência de negócio e usabilidade
 
-A revisão v2.1 tem implementação nas Etapas 9 a 15, sobre o marco v2.0 (`71e8dfa`, PR #18). O fechamento funcional está no commit `1f36c2b` (PR #25). Isso identifica o código analisado, não declara que o PR foi integrado nem que todos os critérios do desenho original foram comprovados.
+## Revisão aprovada: descarte como diretório
 
-## Objetivo
+**“Onde descartar” passa a ser uma consulta pública de locais, sem login nem cadastro de item.** Doação e venda continuam centradas no equipamento: publicação, interesse, reserva, combinação e confirmação bilateral. O operador mantém o cadastro dos próprios locais, sem fila ou confirmação de entregas no novo fluxo de descarte.
 
-Permitir que pessoas ofereçam eletrônicos para doação/venda e organizem a entrega de descartes em pontos físicos, sabendo quem deve agir e como cancelar uma tentativa ainda não concluída. O autor também pode informar outro lugar, sem verificação externa.
+**Implementação parcial da revisão: Etapa 16 concluída.** A base anterior é `f216802`, integração do PR #25 com os ajustes do PR #26. Lista e detalhe de pontos ativos agora são públicos, com DTO reduzido, filtros/paginação e escopo de gestão protegido. A tela pública (Etapa 17), a retirada do processo por item (Etapa 18) e a revisão de avisos/indicadores/demonstração (Etapa 19) continuam pendentes. Dados anteriores não são migrados, convertidos ou excluídos: mantêm suas referências e permissões; as rotas antigas continuam até a descontinuação coordenada.
 
 ## Documentos e autoridade
 
 | Documento | Responsabilidade |
 |---|---|
-| [Requisitos](requisitos.md) | Escopo e critérios de aceitação; não constituem resultado de teste |
-| [Regras de negócio](regras_de_negocio.md) | Regras de produto e transições do desenho aprovado |
-| [Jornadas e frontend](jornadas_frontend.md) | Experiência desejada e limites da interface entregue |
-| [Modelo de dados](modelo_dados.md) | Estrutura executável, diferenças e desenho original preservado |
-| [Contratos HTTP](contratos_http.md) | Diferenças entre operações implementadas e contrato originalmente planejado |
-| [Casos de teste](casos_de_teste.md) | Cenários escritos; comprovação depende da automação correspondente |
-| [Matriz](matriz_rastreabilidade.md) | Requisito → regra → cenário → código/testes e limites |
+| [Requisitos](requisitos.md) | Escopo e aceitação da revisão |
+| [Regras de negócio](regras_de_negocio.md) | Acesso, invariantes e exclusões |
+| [Jornadas e frontend](jornadas_frontend.md) | Navegação, filtros, cartões e estados |
+| [Modelo de dados](modelo_dados.md) | Modelo-alvo e registros legados |
+| [Contratos HTTP](contratos_http.md) | Consultas propostas e diferenças do runtime |
+| [Casos de teste](casos_de_teste.md) | Critérios escritos, não resultados de execução |
+| [Matriz](matriz_rastreabilidade.md) | Rastreabilidade, código existente e implementação pendente |
 
-Para executar a aplicação, use o [README](../../README.md), o [contrato HTTP atual](../../docs/http-api.md) e a [OpenAPI](../../docs/openapi.md). O desenho de produto não deve ser apresentado como contrato implementado quando houver diferença explícita.
+Requisitos delimitam escopo; regras definem comportamento; os demais artefatos devem corresponder a ambos. Para o programa existente, continuam valendo o [contrato atual](../../docs/http-api.md) e a [OpenAPI gerada](../../docs/openapi.md).
+
+## Experiência recomendada
+
+1. Abrir “Onde descartar” pela entrada do site, sem conta ou item.
+2. Filtrar por cidade e tipo/categoria do eletrônico; filtros opcionais e cumulativos.
+3. Consultar locais ativos, com paginação, nome, endereço público, categorias aceitas e horário quando disponível.
+4. Abrir detalhes ou copiar o endereço. Um link opcional pode abrir o endereço público em mapa externo por ação explícita, sem mapa embutido, API geográfica ou geolocalização.
+5. Sem resultados, alterar/limpar filtros, sem registrar descarte ou exigir cadastro.
+
+Consulta, detalhe, cópia de endereço e abertura de mapa não comprovam entrega, recebimento ou reciclagem e não geram indicadores desses acontecimentos. A consulta deve funcionar sem serviço externo.
+
+## O que sai do escopo
+
+- Cadastro de equipamento para localizar um ponto.
+- Registro, troca e cancelamento de entrega prevista.
+- Confirmação ou impossibilidade de recebimento pelo operador.
+- Indicação privada de outro lugar como encerramento de um item.
+- Avisos e indicadores decorrentes de operações de descarte.
+
+Identificadores retirados permanecem marcados, sem reutilização para outros significados nem transformação em pendências futuras. O desenho anterior fica no histórico Git, não como uma segunda alternativa normativa.
 
 ## Implementação e evidências
 
-- Conta única de pessoa, catálogo de ofertas e cadastro por intenção.
-- Interesse com retomada/reabertura, seleção única e reserva reversível.
-- Combinação revisada, declaração de entrega e confirmação bilateral; venda direta de usado.
-- Encaminhamentos com histórico e operação do ponto, ou destinação informada apenas pelo autor.
-- Avisos com links internos e indicadores de ofertas, pendências e conclusões.
-- Filtros do catálogo preservados no endereço e tratamento de erros/rede.
+| Frente | Código de referência | Alvo revisado |
+|---|---|---|
+| Descarte | Item, encaminhamento ou destinação informada | Diretório independente de item |
+| Consulta | Etapa 16: lista/detalhe ativos públicos, gestão protegida | Tela pública ainda pendente |
+| Operador | Locais e entregas | Gestão autenticada dos próprios locais |
+| Indicadores | Incluem recebidos e indicados | Resultados de doação/venda separados de informações do diretório |
+| Dados | Seis coleções, inclusive `encaminhamentos` | Preservar documentos e referências anteriores |
 
-A execução funcional da Etapa 15 aprovou 201 testes e três jornadas em stack isolada, sem medição de cobertura nessa execução. Reprodução: [testes](../../tests/), [jornadas](../../scripts/validar_jornadas_v2.py) e comandos do README. Não são mantidos relatórios de verificação separados.
+Testes e jornadas anteriores não comprovam o novo diretório. Os novos casos começam em V21-CT-35; os casos de descarte retirados mantêm seus IDs. A Etapa 16 entrega leitura e testes em `tests/test_diretorio_publico.py` e `tests/test_diretorio_runtime.py`. Interface, retirada do processo antigo e indicadores continuam pendentes; os testes de backend não comprovam toda a jornada de navegador.
 
-## Limites que não devem ser tratados como concluídos
+## Preservação e exclusões
 
-- O contrato genérico de `id_operacao`, versões esperadas e recuperação persistida por chave não foi implementado. A revisão da combinação e verificações de estado não equivalem a esse mecanismo.
-- O catálogo da interface carrega até 100 registros, sem navegação por páginas. Filtros são preservados no endereço; paginação da API não comprova paginação da interface.
-- Links dos avisos abrem a tela de ação, não necessariamente um registro específico. Existência de link não comprova emissão de aviso para cada evento previsto.
-- Os cenários escritos são critérios, não uma declaração de que cada passo foi automatizado. A matriz delimita a evidência disponível.
-- Integração do marco final, medição de cobertura e vídeo são passos próprios da entrega acadêmica.
+Nenhuma migração, conversão de item, povoamento ou exclusão é executada por esta revisão. Política da Etapa 16: manter documentos anteriores e permissões originais; a nova consulta não projeta itens/indicações privadas. A apresentação do histórico na descontinuação fica para a Etapa 18; não limpar o banco por conveniência.
 
-## Preservação dos dados e exclusões
+Permanecem fora do incremento: pagamentos, transporte domiciliar, agendamento/capacidade, chat em tempo real, fotos/upload, certificação, mapas embutidos e APIs geográficas, infraestrutura de publicação na internet e o tópico I já excluído. Consulta sem login não implica implantação pública nem remoção da autorização de gestão.
 
-A migração de perfis está em `scripts/migrar_papeis_v2_1.py`: simula por padrão e aplica somente com `--aplicar`. Esta documentação não autoriza migração, exclusão ou recriação do banco de demonstração.
-
-Pagamentos, transporte/retirada domiciliar, mapas externos, chat em tempo real, fotos/upload, certificação e infraestrutura para internet ficam fora do incremento. O tópico I da discussão foi excluído pelo usuário; login e proteções básicas são preservados.
+Os critérios mais amplos de doação/venda, versões e recuperação por chave continuam separados do runtime; esta mudança não os declara implementados. O [README do projeto](../../README.md) descreve a leitura entregue; o TODO mantém as etapas posteriores pendentes.

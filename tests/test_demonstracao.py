@@ -164,3 +164,29 @@ def test_listagem_percorre_paginas_antes_de_concluir_ausencia():
         registros = listar_todos(cliente, "/api/itens/meus")
     assert len(registros) == 205
     assert offsets == [0, 100, 200]
+
+
+@pytest.mark.parametrize("existente", [False, True])
+def test_ponto_e_relido_no_escopo_protegido_sem_misturar_query_e_path(existente):
+    from scripts.povoar_demonstracao import garantir_registro
+
+    ponto = {"id": "p1", "nome": "Local demo", "responsavel_id": "operador-1"}
+    chamadas = []
+    def responder(request):
+        chamadas.append((request.method, request.url.path, dict(request.url.params)))
+        if request.method == "POST":
+            assert request.url.path == "/api/pontos-coleta"
+            assert not request.url.params
+            return httpx.Response(201, json=ponto)
+        assert request.url.path == "/api/pontos-coleta/p1"
+        assert request.url.params.get("escopo") == "meus"
+        return httpx.Response(200, json=ponto)
+
+    with httpx.Client(base_url="http://teste", transport=httpx.MockTransport(responder)) as cliente:
+        resposta = garantir_registro(
+            cliente, "/api/pontos-coleta", [ponto] if existente else [],
+            {"nome": "Local demo"}, "responsavel_id", "operador-1",
+            parametros_leitura={"escopo": "meus"},
+        )
+    assert resposta == ponto
+    assert len(chamadas) == (1 if existente else 2)

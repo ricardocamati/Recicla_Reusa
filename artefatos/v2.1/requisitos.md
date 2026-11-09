@@ -1,10 +1,10 @@
 # Requisitos — v2.1
 
-Esta é a especificação de produto da v2.1, implementada por etapas. Os critérios abaixo não constituem resultado de teste nem comprovação integral de entrega. A [matriz](matriz_rastreabilidade.md) distingue código, evidências e limites; os [contratos](contratos_http.md) registram as diferenças entre o desenho aprovado e o executável. Casos verificáveis em [casos_de_teste.md](casos_de_teste.md).
+Esta é a especificação de produto da v2.1, revisada para descarte como diretório público. A Etapa 16 implementa leitura pública e proteção do legado; a interface pública e a retirada do fluxo por item continuam pendentes nas etapas seguintes. Os critérios abaixo não constituem resultado de teste nem comprovação integral de entrega. A [matriz](matriz_rastreabilidade.md) distingue código, evidências e limites; os [contratos](contratos_http.md) registram as diferenças entre o desenho aprovado e o executável. Casos verificáveis em [casos_de_teste.md](casos_de_teste.md).
 
 ## Objetivo e atores
 
-Pessoa: proprietária de equipamento ou interessada em oferta alheia. Operador: conta responsável por um ou mais pontos físicos. Sistema: aplica invariantes e cria avisos; não certifica acontecimentos físicos nem movimenta dinheiro.
+Visitante: qualquer pessoa que consulta onde descartar, sem sessão. Pessoa autenticada: proprietária de oferta ou interessada em doação/venda. Operador: conta responsável por um ou mais locais. Sistema: aplica invariantes de ofertas e gestão, mas não rastreia nem certifica descarte físico.
 
 ## Requisitos funcionais
 
@@ -22,9 +22,9 @@ Consultar somente doação/venda publicadas e disponíveis por padrão, com deta
 
 ### V21-RF-03 — Cadastro por intenção e gestão
 
-Guiar cadastro em intenção, características e revisão; salvar rascunho e publicar ofertas. Manter descarte salvo sem expor no catálogo. Exibir Ativos, Em andamento e Encerrados.
+Guiar cadastro de doação/venda em intenção, características e revisão; salvar rascunho e publicar ofertas. “Onde descartar” abre o diretório, não o formulário de item. Exibir Ativos, Em andamento e Encerrados para ofertas; a apresentação dos registros legados não autoriza conversão ou exclusão automática.
 
-**Aceitação:** Preço não aparece em doação/descarte; validação preserva preenchimento; editar não altera estado por campo genérico.
+**Aceitação:** Preço não aparece em doação; venda exige preço positivo; validação preserva preenchimento; não existe novo cadastro de item de descarte no fluxo-alvo; editar não altera estado por campo genérico.
 
 ### V21-RF-04 — Interesse e reabertura
 
@@ -56,37 +56,33 @@ Permitir venda de usado sem avaliação/reparo obrigatório. Manter condição i
 
 **Aceitação:** Aceite congela preço; venda não permanece disponível; alterar preço reservado exige liberação e novo aceite.
 
-### V21-RF-09 — Escolha guiada do ponto
+### V21-RF-09 — Onde descartar: diretório público
 
-**Caminhos:** escolher ponto cadastrado, indicar outro lugar (V21-RF-16) ou decidir depois. A opção de indicar lugar fica sempre disponível, sem depender da ausência de ponto compatível.
+Permitir consulta de locais ativos sem login, conta ou item. Oferecer filtros opcionais e cumulativos por cidade e categoria, paginação, detalhe e cópia do endereço público. Exibir nome, endereço, categorias aceitas e horário quando informado. Link opcional para mapa externo não é requisito para consultar o local.
 
-Selecionar ponto ativo e compatível por cidade/categoria, revisar e registrar entrega prevista.
+**Aceitação:** Visitante sem cookie consulta lista e detalhe; filtros são aplicados antes da paginação; local inativo não aparece; vazio e falha são distintos; nenhuma ação cria item, encaminhamento, indicação, aviso ou resultado de descarte. Não prometer proximidade sem cálculo de distância.
 
-**Aceitação:** Selecionar sem confirmar não cria vínculo; nenhuma opção compatível mantém cadastro salvo com orientação; não prometer proximidade sem distância.
+### V21-RF-10 — Retirado: cancelar/trocar encaminhamento
 
-### V21-RF-10 — Cancelar/trocar encaminhamento
+Fora do escopo revisado. O diretório não registra tentativas; escolher outro local é uma nova consulta, sem cancelamento ou troca persistidos. O ID fica reservado ao requisito anterior; não é pendência futura.
 
-Permitir ao proprietário cancelar tentativa ou trocar ponto antes do recebimento; disponibilizar solução quando local não puder receber.
+### V21-RF-11 — Gestão dos locais pelo operador
 
-**Aceitação:** Tentativas antigas permanecem; troca falha sem perder vínculo anterior; após recebimento não há troca/cancelamento.
+Cadastrar e atualizar os próprios locais, incluindo nome, endereço público, categorias, horário e situação ativo/inativo. Gestão exige sessão operacional, com listagem própria paginada que pode incluir inativos.
 
-### V21-RF-11 — Operação do ponto
-
-Gerir locais ativos/inativos e filas de entregas previstas e recebidas, com filtro por local e paginação.
-
-**Aceitação:** Operador confirma somente recebimento de item associado a seu ponto; impossibilidade exige motivo; inativação não apaga histórico.
+**Aceitação:** Visitante e pessoa comum não gerem locais; operador não altera local alheio; inativação retira o local das novas consultas públicas; nenhum painel exige fila, previsão ou confirmação de recebimento. Registros e referências legadas são preservados.
 
 ### V21-RF-12 — Avisos acionáveis
 
-Notificar novos interesses, seleção/liberação, combinação, declaração de entrega, confirmação, previsão e impossibilidade de recebimento aos afetados.
+Notificar novos interesses, seleção/liberação, combinação e entrega/recebimento de doação ou venda aos afetados. Consulta de local e gestão do diretório não criam avisos de encaminhamento, confirmação ou impossibilidade de descarte.
 
 **Aceitação:** Aviso contém link interno; não duplica por evento/destinatário; não concede acesso operacional a terceiro ou vínculo encerrado.
 
-### V21-RF-13 — Indicadores precisos
+### V21-RF-13 — Indicadores sem descarte presumido
 
-Separar ofertas ativas/pendências de doações e vendas com recebimento confirmado e equipamentos recebidos nos pontos.
+Separar ofertas ativas e pendências de doações/vendas com recebimento confirmado. O diretório informa locais, não conta equipamentos entregues, recebidos, indicados ou reciclados.
 
-**Aceitação:** Cada conclusão conta uma vez; previsão não conta; venda não significa pagamento verificado; recebimento não é reciclagem.
+**Aceitação:** Cada conclusão de oferta conta uma vez; consulta, cópia de endereço e abertura de mapa não alteram resultados. Quantidade de locais ativos, se exibida, é informação cadastral separada. Totais-alvo não somam descarte legado a resultados novos de doação/venda; dados históricos não são apagados para isso.
 
 ### V21-RF-14 — Arquivamento e histórico
 
@@ -100,11 +96,9 @@ Mostrar próximas ações por ator, estados vazios úteis, foco acessível e res
 
 **Aceitação:** Voltar do detalhe preserva filtros/página; envio tem bloqueio de duplo clique; falha não informa sucesso e oferece reconciliação/recarregamento.
 
-### V21-RF-16 — Indicar lugar de descarte
+### V21-RF-16 — Retirado: indicar lugar de descarte
 
-Permitir que a pessoa indique um lugar não cadastrado para descartar o equipamento, informando um tipo de local estruturado e, opcionalmente, nome, cidade e observação. O caminho encerra o item como destinação informada, sem confirmação de terceiro.
-
-**Aceitação:** a indicação não cria ponto de coleta, não aparece no diretório nem para operadores, não conta como recebimento no ponto e vem rotulada como informada pelo próprio autor; o autor pode desfazer a indicação enquanto o item não estiver arquivado, sem perder o histórico.
+A indicação privada e seu desfazimento deixam de integrar o produto-alvo porque não há item de descarte a encerrar. Ausência de resultado oferece mudar filtros, não informar uma destinação. Os dados anteriores permanecem preservados; o ID não é reutilizado.
 
 ## Requisitos não funcionais
 
@@ -122,7 +116,7 @@ Manter páginas HTML e módulos JavaScript sem build obrigatório, teclado utili
 
 ### V21-RNF-04 — Evidência própria
 
-Automatizar os cenários desta versão e executar três jornadas em stack/volume de teste próprios. Evidência v2.0 não é reutilizada como aprovação v2.1.
+Automatizar doação, venda e consulta pública de descarte em stack/volume de teste próprios. A terceira jornada não conclui item nem confirma recebimento em ponto. Testes do fluxo antigo e evidências anteriores não aprovam os critérios revisados.
 
 ### V21-RNF-05 — Contrato documentado
 
@@ -132,10 +126,14 @@ Definir requests/responses/comandos e confrontar contrato com runtime. Não decl
 
 Uso local com dados sintéticos; preservar proteções existentes sem acrescentar projeto de segurança pública, procedimentos técnicos de equipamento ou tópico I.
 
-### V21-RNF-07 — Privacidade da destinação informada
+### V21-RNF-07 — Retirado: privacidade da destinação informada
 
-A indicação de lugar pertence ao autor. Ela não é exposta no diretório, não é exibida a operadores de pontos nem a terceiros e não pode ser usada para inferir a localização de outra pessoa. Nome, cidade e observação são textos livres do autor; coordenadas e arquivos não são aceitos.
+A criação de indicação privada saiu do escopo com V21-RF-16. Isso não torna públicas indicações já armazenadas. Para o diretório, aplica-se V21-RNF-08.
+
+### V21-RNF-08 — Projeção pública e consulta sem coleta pessoal
+
+Lista e detalhe públicos expõem somente os dados do local: identificador, nome, endereço público, categorias e horário. Não expor usuário responsável, hash, endereço pessoal, dados de itens ou indicações legadas. Não exigir identidade, localização precisa ou dados do equipamento para consultar. A liberação de leitura não altera a sessão e a autorização das mutações.
 
 ## Fronteira
 
-A revisão é cumulativa e substitui os perfis públicos, a obrigatoriedade de reparo da revenda e a conclusão unilateral como padrão. A implementação dessas mudanças é identificada na matriz; os requisitos mais amplos de versão, idempotência, avisos e navegação não se tornam comprovados por estarem escritos. Exclusões: pagamentos, transporte, agendamento de capacidade, chat em tempo real, fotos/upload, certificação, procedimentos de segurança técnica e publicação pública. As diferenças remanescentes estão documentadas nos contratos e jornadas desta pasta.
+A revisão é cumulativa e mantém as decisões de conta única, venda direta e conclusão bilateral de ofertas. O descarte por item é explicitamente substituído por consulta pública de locais; não preservar o processo retirado como alternativa obrigatória. A implementação dessas mudanças é identificada na matriz; os requisitos mais amplos de versão, idempotência, avisos e navegação não se tornam comprovados por estarem escritos. Exclusões: pagamentos, transporte, agendamento de capacidade, chat em tempo real, fotos/upload, certificação, procedimentos de segurança técnica e infraestrutura de implantação pública na internet. Consulta local sem login está incluída. As diferenças remanescentes estão documentadas nos contratos e jornadas desta pasta.

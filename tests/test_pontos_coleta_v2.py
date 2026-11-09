@@ -35,6 +35,7 @@ class RepositorioPontosEmMemoria:
         cidade=None,
         categoria=None,
         responsavel_id=None,
+        ativo=None,
         offset=0,
         limite=20,
     ) -> list[PontoColeta]:
@@ -44,7 +45,9 @@ class RepositorioPontosEmMemoria:
             if (not cidade or ponto.endereco.cidade.lower() == cidade.lower())
             and (not categoria or categoria in ponto.categorias_aceitas)
             and (not responsavel_id or ponto.responsavel_id == responsavel_id)
+            and (ativo is None or ponto.ativo == ativo)
         ]
+        pontos.sort(key=lambda p: (p.nome, p.id))
         return pontos[offset : offset + limite]
 
     def buscar_por_id(self, ponto_id: str) -> PontoColeta | None:

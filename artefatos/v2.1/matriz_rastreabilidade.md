@@ -1,72 +1,67 @@
 # Matriz de rastreabilidade — v2.1
 
-As Etapas 9 a 15 têm implementação, com fechamento funcional em `1f36c2b` (PR #25). A tabela relaciona o desenho aos pontos de código; não significa que cada cenário associado esteja integralmente automatizado ou que o PR tenha sido integrado. Limites de contrato, interface e evidência estão descritos abaixo.
+Esta matriz corresponde à revisão de descarte como diretório público. **Implementação parcial: a Etapa 16 entrega leitura pública e preservação do legado; interface, retirada do processo anterior e indicadores permanecem pendentes.** Base: `f216802` (integração do PR #25, incluindo #26). Código ou teste do encaminhamento antigo não comprova acesso anônimo nem consulta sem item. A coluna de evidências descreve referências existentes e trabalho a fazer, não conclusão automática.
 
-## Requisitos funcionais
+## Requisitos ativos
 
-| Requisito | Regras | Casos escritos | Implementação e limites |
+| Requisito | Regras | Casos escritos | Código existente e diferença para o alvo |
 |---|---|---|---|
-| V21-RF-01 — Conta de pessoa e operação | V21-RN-01, V21-RN-21, V21-RN-22 | V21-CT-01, V21-CT-29 | `tipo` restrito a `pessoa`/`ponto_coleta`, cadastro público só de pessoa, operador provisionado; migração em `scripts/migrar_papeis_v2_1.py` |
-| V21-RF-02 — Catálogo de ofertas | V21-RN-03, V21-RN-09, V21-RN-15, V21-RN-19, V21-RN-20, V21-RN-21 | V21-CT-02, V21-CT-03 | `GET /api/itens` só devolve doação/venda `disponivel`; descarte/rascunho/arquivado/concluído ficam fora; `incluir_reservados` explícito; busca textual, modalidade, categoria, condição, cidade e faixa de preço de revenda |
-| V21-RF-03 — Cadastro por intenção e gestão | V21-RN-02, V21-RN-04, V21-RN-20, V21-RN-22 | V21-CT-04, V21-CT-25 | Assistente em três passos, `publicar` no cadastro, `POST /api/itens/{id}/publicar`, `POST /{id}/arquivar` e grupos Ativos/Em andamento/Encerrados em `GET /api/itens/meus` |
-| V21-RF-04 — Interesse e reabertura | V21-RN-05 | V21-CT-05, V21-CT-06 | `POST /api/interesses/{id}/acoes` com `desistir`/`retomar`/`reabrir`; uma relação por par, `tentativa`, `motivo` e histórico acumulativo |
-| V21-RF-05 — Reserva e liberação | V21-RN-06, V21-RN-07, V21-RN-20 | V21-CT-07, V21-CT-08 | `selecionar` reserva o item e congela `preco_selecionado`; `desistir`/`liberar` devolvem o item, preservam pendentes e registram histórico; concorrência real com um vencedor |
-| V21-RF-06 — Combinação da entrega | V21-RN-08 | V21-CT-09 | `PUT /api/interesses/{id}/combinacao` e `/combinacao/aceite`; revisão nova invalida aceite, quem propôs não aceita a própria proposta |
-| V21-RF-07 — Entrega e recebimento bilateral | V21-RN-03, V21-RN-09, V21-RN-10, V21-RN-15, V21-RN-19, V21-RN-20, V21-RN-22 | V21-CT-10, V21-CT-11 | `POST /api/itens/{id}/entrega` e `/recebimento`; declarar não conclui, terceiro não confirma, reenvio não duplica e indicadores contam na confirmação |
-| V21-RF-08 — Venda direta com preço reservado | V21-RN-02, V21-RN-06, V21-RN-07, V21-RN-09 | V21-CT-08, V21-CT-12 | Venda sem avaliação/reparo obrigatório, `preco_selecionado` congelado na seleção e mesma entrega bilateral; revisão de combinação invalida aceite anterior |
-| V21-RF-09 — Escolha guiada do ponto | V21-RN-11, V21-RN-12, V21-RN-20, V21-RN-21 | V21-CT-13, V21-CT-14, V21-CT-15 | Ponto escolhido entre os ativos que aceitam a categoria, com cidade na listagem; o vínculo só nasce no `POST /api/encaminhamentos`, nunca na seleção |
-| V21-RF-10 — Cancelar/trocar encaminhamento | V21-RN-12, V21-RN-13, V21-RN-15, V21-RN-20, V21-RN-22 | V21-CT-16, V21-CT-17, V21-CT-26, V21-CT-27 | `cancelar` devolve o item a `aguardando_ponto`; `trocar` encerra a tentativa como `cancelado` e cria outra, sem apagar histórico; categoria fica travada com entrega prevista |
-| V21-RF-11 — Operação do ponto | V21-RN-01, V21-RN-03, V21-RN-09, V21-RN-14, V21-RN-15, V21-RN-16, V21-RN-19, V21-RN-20, V21-RN-21, V21-RN-22 | V21-CT-18, V21-CT-19, V21-CT-20, V21-CT-21, V21-CT-29, V21-CT-30 | Fila `escopo=operador` com filtro por local e paginação; operador de outro ponto recebe `403`; `receber` conta uma vez e `nao_recebido` exige motivo; ponto inativo bloqueia novas entregas e avisa autores |
-| V21-RF-12 — Avisos acionáveis | V21-RN-18, V21-RN-20 | V21-CT-22, V21-CT-27 | Cada aviso carrega `link` interno, o índice único por evento/destinatário/item evita repetição e a caixa mostra "Abrir" na tela em que o ator age |
-| V21-RF-13 — Indicadores precisos | V21-RN-03, V21-RN-09, V21-RN-15, V21-RN-19, V21-RN-20 | V21-CT-23, V21-CT-30 | `ofertas_ativas` e `pendencias` separadas das conclusões confirmadas; `indicados` fora de `total`; cada conclusão conta uma vez e previsão não conta |
-| V21-RF-14 — Arquivamento e histórico | V21-RN-04, V21-RN-17 | V21-CT-24 | `frontend/js/itens.js::deleteItem`, `app/repositories/mongo_item_repository.py`; novo arquivamento |
-| V21-RF-16 — Indicar lugar de descarte | V21-RN-11, V21-RN-23 | V21-CT-31, V21-CT-32, V21-CT-33, V21-CT-34 | `POST/DELETE /api/itens/{id}/destinacao` com tipo estruturado e textos livres; item termina em `destinacao_informada`, campo visível só ao autor, sem ponto criado e com contagem separada em `indicados` |
-| V21-RF-15 — Navegação e recuperação | V21-RN-01, V21-RN-03, V21-RN-04, V21-RN-11, V21-RN-16, V21-RN-20, V21-RN-21, V21-RN-22 | V21-CT-03, V21-CT-14, V21-CT-21, V21-CT-25, V21-CT-26, V21-CT-28, V21-CT-29 | Filtros preservados no endereço (`history.replaceState`); sem paginação na interface. Bloqueio em controles específicos, foco na mensagem e orientação de recarga, sem chave de operação genérica |
+| V21-RF-01 — Conta de pessoa e operação | V21-RN-01, V21-RN-21, V21-RN-22 | V21-CT-01, V21-CT-29, V21-CT-40 | Conta única e operador já existem. Visitantes consultam a API do diretório sem flexibilizar a gestão; a entrada pública na interface permanece para a Etapa 17. |
+| V21-RF-02 — Catálogo de ofertas | V21-RN-03, V21-RN-19, V21-RN-21 | V21-CT-02, V21-CT-03 | `GET /api/itens` já restringe ofertas. Diretório deve ser separado do catálogo; paginação navegável continua um limite existente. |
+| V21-RF-03 — Cadastro e gestão de ofertas | V21-RN-02, V21-RN-04, V21-RN-20, V21-RN-22 | V21-CT-04, V21-CT-25, V21-CT-44 | Assistente e grupos em `frontend/js/itens.js` existem. Retirar descarte de novos cadastros e apontar entrada ao diretório; preservar registros antigos. |
+| V21-RF-04 — Interesse e reabertura | V21-RN-05 | V21-CT-05, V21-CT-06 | Relação única, ações e acompanhamento existem em `app/services/interesse_service.py` e `frontend/js/interesses.js`; não criar interesse para local. |
+| V21-RF-05 — Reserva e liberação | V21-RN-06, V21-RN-07, V21-RN-20 | V21-CT-07, V21-CT-08, V21-CT-27 | Reserva/reversão de ofertas permanecem. Garantias genéricas de versão/operação não se tornam comprovadas pela manutenção do fluxo. |
+| V21-RF-06 — Combinação | V21-RN-08 | V21-CT-09 | Proposta, revisão e aceite implementados para participantes selecionados; não usados no diretório. |
+| V21-RF-07 — Entrega bilateral | V21-RN-09, V21-RN-10, V21-RN-19, V21-RN-20, V21-RN-22 | V21-CT-10, V21-CT-11, V21-CT-26, V21-CT-30 | Declaração e recebimento de oferta permanecem. Retirada da confirmação de descarte não afeta a confirmação de doação/venda. |
+| V21-RF-08 — Venda e preço reservado | V21-RN-02, V21-RN-06, V21-RN-07, V21-RN-09 | V21-CT-08, V21-CT-12 | Venda direta e preço selecionado já existem; representação monetária proposta continua distinta do runtime. |
+| V21-RF-09 — Diretório público | V21-RN-11, V21-RN-21, V21-RN-22, V21-RN-24 | V21-CT-35, V21-CT-36, V21-CT-37, V21-CT-38, V21-CT-39, V21-CT-41, V21-CT-44 | Reutilizar dados de `pontos_coleta`. Leituras e DTO público implementados em `app/api/pontos_coleta.py` e mapper/schema específicos. `tests/test_diretorio_publico.py` e `tests/test_diretorio_runtime.py` exercitam os recortes de API de V21-CT-35, V21-CT-36, V21-CT-37 e preservação de V21-CT-43. **Tela e passos de navegador pendentes na Etapa 17.** |
+| V21-RF-11 — Gestão dos locais | V21-RN-01, V21-RN-14, V21-RN-16, V21-RN-21, V21-RN-22 | V21-CT-40, V21-CT-41, V21-CT-43 | CRUD e ativo/inativo já existem. Leitura de gestão separada da pública, com autorização e propriedade na Etapa 16. Filas/ações e apresentação do legado continuam na Etapa 18; a política inicial preserva documentos e permissões sem migração. |
+| V21-RF-12 — Avisos de ofertas | V21-RN-18, V21-RN-20 | V21-CT-22, V21-CT-27, V21-CT-35 | Links e unicidade de evento existem; não atribuir aviso a consulta/gestão do diretório. Retirar emissão de descarte junto com o fluxo, preservando avisos históricos privados. |
+| V21-RF-13 — Indicadores | V21-RN-19, V21-RN-24 | V21-CT-23, V21-CT-30, V21-CT-42 | `app/services/indicador_service.py` e repositório ainda incluem coletados/indicados e total antigo. Ajustar contrato e UI: resultados-alvo somente de ofertas; eventual quantidade de locais separada. |
+| V21-RF-14 — Arquivamento e histórico | V21-RN-04, V21-RN-17, V21-RN-25 | V21-CT-24, V21-CT-43 | Ofertas mantêm arquivamento e proteção de vínculos. Descarte consultado não produz item arquivável; não apagar o legado. |
+| V21-RF-15 — Navegação e recuperação | V21-RN-21, V21-RN-22, V21-RN-24 | V21-CT-03, V21-CT-25, V21-CT-26, V21-CT-28, V21-CT-36, V21-CT-38, V21-CT-39 | Menu compartilhado e filtros em URL existem. Entrada pública, paginação do diretório e retorno ao detalhe precisam de validação própria; não afirmar auditoria completa de acessibilidade. |
 
-## Requisitos não funcionais
+## Requisitos retirados, sem reutilização dos IDs
 
-| Requisito | Cenários de referência | Evidência / critério a conferir |
-|---|---|---|
-| V21-RNF-01 | Estratégia de dados e preservação do comportamento v1.0 | Decisão autorizada; nenhuma exclusão nesta fase |
-| V21-RNF-02 | V21-CT-07, V21-CT-15, V21-CT-16, V21-CT-20, V21-CT-26, V21-CT-27, V21-CT-29 | Testes de API, índices reais, disputa/rollback em replica set |
-| V21-RNF-03 | V21-CT-03, V21-CT-14, V21-CT-21, V21-CT-25, V21-CT-28 | Navegador, teclado e viewport pequeno |
-| V21-RNF-04 | V21-CT-30 e suíte completa | Comandos/saídas reais; fixtures isoladas e limpeza comprovada |
-| V21-RNF-05 | Conferência de regras/HTTP/DTOs e casos de erro | Snapshot `docs/openapi.json` confrontado com o gerador em `tests/test_openapi_runtime.py`; diferenças de representação em `docs/openapi.md` |
-| V21-RNF-06 | V21-CT-29 e inspeção de fronteira | Proteções existentes preservadas sem ampliar tópico I |
-| V21-RNF-07 | V21-CT-31, V21-CT-32 | Indicação legível apenas pelo autor; nenhuma exposição a operador ou terceiro |
-
-## Regras e origem documental
-
-- Regras V21-RN-01 a V21-RN-23 estão em [regras_de_negocio.md](regras_de_negocio.md).
-- Requisitos funcionais e não funcionais: [requisitos.md](requisitos.md).
-- Jornadas J-01 a J-05: [jornadas_frontend.md](jornadas_frontend.md).
-- Cenários de aceitação: [casos_de_teste.md](casos_de_teste.md).
-- Estrutura, operações e diferenças do desenho original: [modelo_dados.md](modelo_dados.md) e [contratos_http.md](contratos_http.md).
-
-## Evidências e limites
-
-A execução funcional da Etapa 15 aprovou 201 testes e as três jornadas do script `scripts/validar_jornadas_v2.py`, com referências persistidas, auditoria de datas e limpeza seletiva. Essa execução usou `--no-cov`; não comprova medição de cobertura no marco final. Não foi reexecutada por esta atualização documental.
-
-| Família | Testes / comando reproduzível |
+| Identificador | Decisão |
 |---|---|
-| Conta, migração e permissões | `tests/test_api_usuario.py`, `tests/test_migracao_papeis.py`, `tests/test_provisionamento_ponto_coleta.py` |
-| Catálogo, rascunho, publicação e gestão | `tests/test_api_item.py`, `tests/test_item_service.py`, `tests/test_fluxos_v2.py` |
-| Interesse e reserva | `tests/test_interesses_v2.py`, `tests/test_interesses_runtime.py`, `tests/test_interesse_repository.py` |
-| Combinação e entrega bilateral | `tests/test_fluxos_runtime.py` |
-| Encaminhamentos e operação do ponto | `tests/test_encaminhamentos_runtime.py` |
-| Indicação de lugar e privacidade | `tests/test_destinacao_runtime.py` |
-| Avisos e indicadores | `tests/test_notificacoes_runtime.py`, `tests/test_indicadores_v2.py` |
-| Interface e navegação | `tests/test_frontend.py`, `tests/test_selenium_frontend.py`, `scripts/validar_jornadas_v2.py` |
-| Contrato gerado | `tests/test_openapi_runtime.py` |
+| V21-RF-10 | Cancelar/trocar encaminhamento retirado; nova consulta substitui escolher outro local, sem operação persistida. |
+| V21-RF-16 | Indicar/desfazer destinação privada de item retirado; não é fallback do diretório. |
+| V21-RNF-07 | Critério da antiga indicação retirado, sem tornar públicos os registros existentes; privacidade do diretório passa a V21-RNF-08. |
+| V21-RN-12, V21-RN-13, V21-RN-15, V21-RN-23 | Tentativas, trocas, confirmação e indicação de descarte não são tarefas pendentes do novo alvo. |
+| V21-CT-13, V21-CT-14, V21-CT-15, V21-CT-16, V21-CT-17, V21-CT-18, V21-CT-19, V21-CT-20, V21-CT-21 | Casos do processo antigo de entrega em ponto retirados. Novas consultas/gestão têm casos próprios, sem reusar evidência anterior. |
+| V21-CT-31, V21-CT-32, V21-CT-33, V21-CT-34 | Casos de indicação/desfazimento e contagens de descarte retirados. Dados antigos permanecem protegidos. |
 
-Os arquivos acima são evidências por família, não equivalência automática com todos os passos de cada V21-CT. Testes que inspecionam texto-fonte não comprovam comportamento de navegador ou concorrência.
+## Requisitos não funcionais ativos
 
-### Critérios que continuam sem comprovação integral
+| Requisito | Casos | Evidência ou critério futuro |
+|---|---|---|
+| V21-RNF-01 — Preservação | V21-CT-43 | Política sem migração: preservar documentos/referências e comparar snapshots das seis coleções em teste real. A descontinuação posterior não é comprovada por esse recorte. |
+| V21-RNF-02 — Integridade | V21-CT-07, V21-CT-26, V21-CT-27, V21-CT-40 | Concorrência/transações das ofertas e autorização da gestão; consulta não exige transação de negócio. |
+| V21-RNF-03 — Frontend acessível | V21-CT-03, V21-CT-28, V21-CT-36, V21-CT-38, V21-CT-39 | Teclado, viewport pequeno, paginação e independência de mapas externos. |
+| V21-RNF-04 — Evidência própria | V21-CT-30, V21-CT-35 | Jornadas-alvo de doação, venda e consulta anônima; não a antiga terceira jornada de recebimento em ponto. |
+| V21-RNF-05 — Contrato documentado | V21-CT-35, V21-CT-37, V21-CT-40, V21-CT-44 | Atualizar OpenAPI somente com implementação, mantendo divergências explícitas até lá. |
+| V21-RNF-06 — Limites locais | V21-CT-29, V21-CT-39 | Consulta sem login não implanta internet nem amplia tópico I; mapa opcional não é dependência. |
+| V21-RNF-08 — Projeção pública | V21-CT-35, V21-CT-37, V21-CT-40, V21-CT-43 | DTO de local sem dados privados; gestão protegida; nenhuma exposição do legado. |
 
-- Versões esperadas e `id_operacao` persistido com fingerprint de payload não existem no contrato genérico. Cenários como V21-CT-07, V21-CT-26, V21-CT-27 e V21-CT-33 contêm critérios mais amplos que as verificações de estado e idempotência específicas entregues.
-- V21-CT-03 exige navegar por páginas e voltar do detalhe. O catálogo da interface não pagina; preservação de filtros não comprova o cenário inteiro.
-- A existência do link em notificações não comprova emissão para todo evento previsto em V21-RF-12, nem acesso direto ao registro individual.
-- Bloqueio de duplo envio, foco e recuperação estão presentes em pontos específicos; V21-CT-28 e a experiência completa de teclado/viewport pequeno precisam ser avaliados além dos testes de fonte e smoke existentes.
-- A inativação de ponto e seu aviso não estão na mesma unidade transacional no handler atual; não generalizar a atomicidade de reserva/entrega para todas as operações.
+## Referências de código e testes existentes
 
-Reprodução da suíte, integração e medição: [README](../../README.md). Não há relatórios de verificação separados. O histórico v2.0 fica no marco `71e8dfa`, não é reutilizado como aprovação de todo o escopo v2.1. Vídeo, identificação do commit final e integração são passos separados da entrega.
+| Família | Referências | Limite de evidência |
+|---|---|---|
+| Conta/permissões | `tests/test_api_usuario.py`, `tests/test_security.py`, `tests/test_provisionamento_ponto_coleta.py` | Não comprovam automaticamente a exceção de leitura pública de pontos. |
+| Ofertas/interesses/entrega | `tests/test_api_item.py`, `tests/test_fluxos_v2.py`, `tests/test_interesses_runtime.py`, `tests/test_fluxos_runtime.py` | Permanecem relevantes para doação/venda; validar regressão após implementação. |
+| Locais | `tests/test_pontos_coleta_v2.py`, `app/api/pontos_coleta.py`, `app/schemas/ponto_coleta.py` | `tests/test_diretorio_publico.py` e `tests/test_diretorio_runtime.py` exercitam DTO público, consulta sem sessão, filtros/ordenação e snapshots; telas permanecem pendentes. |
+| Descarte legado | `tests/test_encaminhamentos_runtime.py`, `tests/test_destinacao_runtime.py` | Evidência do comportamento substituído, não da revisão. |
+| Avisos/indicadores | `tests/test_notificacoes_runtime.py`, `tests/test_indicadores_v2.py` | Expectativas precisam acompanhar retirada de eventos/contagens de descarte. |
+| Frontend | `tests/test_frontend.py`, `tests/test_selenium_frontend.py` | Acrescentar jornada anônima, retorno/paginação e ausência de cadastro de item. |
+| Contrato/jornadas | `tests/test_openapi_runtime.py`, `scripts/validar_jornadas_v2.py` | Snapshot e terceira jornada atuais descrevem o fluxo anterior; não aprovam a revisão. |
+
+## Limites que continuam explícitos
+
+- Versões genéricas, `id_operacao` com fingerprint e recuperação persistida não existem no contrato executável. Os critérios de ofertas mais amplos continuam não comprovados.
+- Paginação da API não comprova navegação por páginas na interface. Restauração de filtros não equivale a restauração de página.
+- Link de aviso não comprova emissão para cada evento nem acesso direto ao registro correto.
+- Consulta pública e gestão privada precisam de testes diferentes; liberar leitura não autoriza CRUD anônimo.
+- A Etapa 16 não aprova toda a revisão; o TODO mantém etapas posteriores abertas. Não reutilizar testes de backend como evidência da interface nem os testes antigos de descarte como aprovação do novo alvo.
+
+Fontes normativas: [requisitos](requisitos.md), [regras](regras_de_negocio.md), [jornadas](jornadas_frontend.md), [modelo](modelo_dados.md), [contratos](contratos_http.md) e [casos](casos_de_teste.md). Reprodução do programa atual permanece no [README do projeto](../../README.md).

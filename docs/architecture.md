@@ -2,7 +2,7 @@
 
 ## Visão geral
 
-O Recicla/Reusa é uma PoC local com frontend estático, API FastAPI e MongoDB em replica set. Este documento descreve o código após as Etapas 1 a 15; a primeira entrega permanece preservada na tag `v1.0`.
+O Recicla/Reusa é uma PoC local com frontend estático, API FastAPI e MongoDB em replica set. Este documento descreve o código após as Etapas 1 a 16; a primeira entrega permanece preservada na tag `v1.0`.
 
 ```text
 Navegador → frontend HTML/CSS/JavaScript
@@ -60,6 +60,14 @@ O cadastro público cria `pessoa`. A mesma pessoa publica e manifesta interesse 
 A senha é persistida como hash scrypt. O login emite cookie de sessão `HttpOnly`/`SameSite=Lax`; o frontend envia `credentials: "include"`, sem ler o cookie. Sessões em memória não são uma solução para múltiplas instâncias.
 
 Permissões são verificadas no backend. DTOs públicos não retornam hash nem endereço completo do proprietário. `destinacao_informada` é visível somente ao autor. Ocultar botões não constitui autorização.
+
+## Leitura pública e transição da Etapa 16
+
+A lista e o detalhe de pontos ativos não exigem sessão e usam `PontoColetaPublicResponse`, com uma projeção explícita somente dos dados do local. Filtros cidade/categoria/ativo são aplicados no banco antes da paginação; ordem por nome e ID. `escopo=meus` seleciona a leitura de gestão, exige operador e limita os registros ao responsável antes de paginar. A presença de cookie por si só não amplia o DTO público.
+
+A consulta não escreve em nenhuma das seis coleções. Dados anteriores sem `ativo` mantêm a convenção já existente de ativo por padrão, sem migração. Itens de descarte, encaminhamentos, indicações e avisos anteriores conservam IDs, referências, datas e permissões originais. Nenhuma rotina percorre esses registros para convertê-los ou encerrá-los.
+
+A interface pública é etapa posterior. As rotas antigas de descarte e os indicadores anteriores permanecem operacionais até as Etapas 18 e 19; a Etapa 16 não conclui essa retirada nem muda os fluxos de doação/venda. O povoamento existente passou a reler os pontos em escopo de gestão para continuar verificando propriedade, sem trocar seus cenários nesta etapa.
 
 ## Fluxos atuais
 

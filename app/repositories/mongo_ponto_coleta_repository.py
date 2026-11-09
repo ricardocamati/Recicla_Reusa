@@ -46,10 +46,17 @@ class MongoPontoColetaRepository:
         cidade: str | None = None,
         categoria: str | None = None,
         responsavel_id: str | None = None,
+        ativo: bool | None = None,
         offset: int = 0,
         limite: int = 20,
     ) -> list[PontoColeta]:
         consulta: dict[str, Any] = {}
+        if ativo is True:
+            # Documentos anteriores ao campo ativo já eram lidos como ativos.
+            # Preservar essa compatibilidade sem gravar ou migrar o documento.
+            consulta["$or"] = [{"ativo": True}, {"ativo": {"$exists": False}}]
+        elif ativo is False:
+            consulta["ativo"] = False
         if cidade:
             consulta["endereco.cidade"] = {
                 "$regex": f"^{re.escape(cidade.strip())}$",
@@ -64,7 +71,7 @@ class MongoPontoColetaRepository:
             consulta["responsavel_id"] = object_id
         documentos = (
             self._colecao.find(consulta)
-            .sort("nome", 1)
+            .sort([("nome", 1), ("_id", 1)])
             .skip(offset)
             .limit(limite)
         )
