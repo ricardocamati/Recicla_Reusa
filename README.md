@@ -54,7 +54,7 @@ A documentação da revisão está em [artefatos/v2.1/](artefatos/v2.1/README.md
 
 ## 6. Stack utilizada
 
-A Etapa 16 acrescenta leitura pública de locais ativos em `GET /api/pontos-coleta` e `GET /api/pontos-coleta/{id}`, sem login nem cadastro de equipamento. As respostas expõem somente dados do local; a gestão continua autenticada com `escopo=meus`. A nova tela “Onde descartar” e a retirada do processo antigo pertencem às etapas seguintes: neste marco, o frontend e os indicadores de descarte anteriores continuam existentes. Detalhes e política de preservação em [docs/http-api.md](docs/http-api.md) e nos [artefatos v2.1](artefatos/v2.1/README.md).
+A Etapa 16 acrescenta leitura pública de locais ativos em `GET /api/pontos-coleta` e `GET /api/pontos-coleta/{id}`, sem login nem cadastro de equipamento. As respostas expõem somente dados do local; a gestão continua autenticada com `escopo=meus`. A Etapa 17 acrescenta a tela pública [Onde descartar](frontend/onde-descartar.html), com filtros, paginação, detalhe e cópia de endereço, acessível pela página inicial e pela navegação autenticada. Ela não cria registros de descarte. A retirada dos comandos antigos, a gestão revisada e os indicadores continuam para as etapas seguintes. Detalhes e política de preservação em [docs/http-api.md](docs/http-api.md) e nos [artefatos v2.1](artefatos/v2.1/README.md).
 
 - Python 3.11+;
 - FastAPI e Uvicorn;

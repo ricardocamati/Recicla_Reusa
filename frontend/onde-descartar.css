@@ -1,0 +1,20 @@
+.directory-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 1rem;
+}
+.directory-hint { color: var(--muted); font-size: 0.8rem; font-weight: 400; }
+.directory-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-top: 1.5rem; }
+.directory-address { user-select: text; overflow-wrap: anywhere; }
+.directory-page .item-card, .directory-page .form-card { min-width: 0; overflow-wrap: anywhere; }
+.directory-page .item-card h3 { white-space: normal; overflow: visible; text-overflow: clip; }
+.directory-page .item-card { justify-content: flex-start; gap: 0.75rem; }
+.directory-detail-link { margin-top: auto; }
+.directory-page .button { white-space: normal; }
+.directory-skip { position: absolute; left: 1rem; top: -10rem; z-index: 20; padding: 1rem; background: var(--card); color: var(--ink); }
+.directory-skip:focus { top: 1rem; }
+@media (max-width: 768px) {
+  .directory-filters { grid-template-columns: minmax(0, 1fr); }
+  .directory-page .header-content { flex-wrap: wrap; padding-block: 1rem; gap: 1rem; }
+}

@@ -1,6 +1,6 @@
 # Requisitos — v2.1
 
-Esta é a especificação de produto da v2.1, revisada para descarte como diretório público. A Etapa 16 implementa leitura pública e proteção do legado; a interface pública e a retirada do fluxo por item continuam pendentes nas etapas seguintes. Os critérios abaixo não constituem resultado de teste nem comprovação integral de entrega. A [matriz](matriz_rastreabilidade.md) distingue código, evidências e limites; os [contratos](contratos_http.md) registram as diferenças entre o desenho aprovado e o executável. Casos verificáveis em [casos_de_teste.md](casos_de_teste.md).
+Esta é a especificação de produto da v2.1, revisada para descarte como diretório público. As Etapas 16–17 implementam leitura pública, proteção do legado e a tela “Onde descartar”; a retirada do fluxo por item continua pendente nas etapas seguintes. Os critérios abaixo não constituem resultado de teste nem comprovação integral de entrega. A [matriz](matriz_rastreabilidade.md) distingue código, evidências e limites; os [contratos](contratos_http.md) registram as diferenças entre o desenho aprovado e o executável. Casos verificáveis em [casos_de_teste.md](casos_de_teste.md).
 
 ## Objetivo e atores
 

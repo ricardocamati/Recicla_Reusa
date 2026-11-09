@@ -4,7 +4,7 @@
 
 **“Onde descartar” passa a ser uma consulta pública de locais, sem login nem cadastro de item.** Doação e venda continuam centradas no equipamento: publicação, interesse, reserva, combinação e confirmação bilateral. O operador mantém o cadastro dos próprios locais, sem fila ou confirmação de entregas no novo fluxo de descarte.
 
-**Implementação parcial da revisão: Etapa 16 concluída.** A base anterior é `f216802`, integração do PR #25 com os ajustes do PR #26. Lista e detalhe de pontos ativos agora são públicos, com DTO reduzido, filtros/paginação e escopo de gestão protegido. A tela pública (Etapa 17), a retirada do processo por item (Etapa 18) e a revisão de avisos/indicadores/demonstração (Etapa 19) continuam pendentes. Dados anteriores não são migrados, convertidos ou excluídos: mantêm suas referências e permissões; as rotas antigas continuam até a descontinuação coordenada.
+**Implementação parcial da revisão: Etapas 16 e 17 concluídas.** A base anterior é `f216802`, integração do PR #25 com os ajustes do PR #26. Lista e detalhe de pontos ativos agora são públicos, com DTO reduzido, filtros/paginação e escopo de gestão protegido. A tela pública está implementada em `frontend/onde-descartar.html` (Etapa 17), com entradas pública e autenticada, filtros/paginação, detalhe e cópia de endereço. A retirada do processo por item (Etapa 18) e a revisão de avisos/indicadores/demonstração (Etapa 19) continuam pendentes. Dados anteriores não são migrados, convertidos ou excluídos: mantêm suas referências e permissões; as rotas antigas continuam até a descontinuação coordenada.
 
 ## Documentos e autoridade
 
@@ -45,12 +45,12 @@ Identificadores retirados permanecem marcados, sem reutilização para outros si
 | Frente | Código de referência | Alvo revisado |
 |---|---|---|
 | Descarte | Item, encaminhamento ou destinação informada | Diretório independente de item |
-| Consulta | Etapa 16: lista/detalhe ativos públicos, gestão protegida | Tela pública ainda pendente |
+| Consulta | Etapas 16–17: API pública e tela “Onde descartar”, filtros/paginação e detalhe | Gestão revisada e retirada do processo anterior pendentes |
 | Operador | Locais e entregas | Gestão autenticada dos próprios locais |
 | Indicadores | Incluem recebidos e indicados | Resultados de doação/venda separados de informações do diretório |
 | Dados | Seis coleções, inclusive `encaminhamentos` | Preservar documentos e referências anteriores |
 
-Testes e jornadas anteriores não comprovam o novo diretório. Os novos casos começam em V21-CT-35; os casos de descarte retirados mantêm seus IDs. A Etapa 16 entrega leitura e testes em `tests/test_diretorio_publico.py` e `tests/test_diretorio_runtime.py`. Interface, retirada do processo antigo e indicadores continuam pendentes; os testes de backend não comprovam toda a jornada de navegador.
+Testes e jornadas anteriores não comprovam o novo diretório. Os novos casos começam em V21-CT-35; os casos de descarte retirados mantêm seus IDs. A Etapa 16 entrega leitura e testes em `tests/test_diretorio_publico.py` e `tests/test_diretorio_runtime.py`. A Etapa 17 tem testes de interface em `tests/test_onde_descartar_selenium.py` e jornada anônima com HTTP/API/MongoDB reais em `tests/test_onde_descartar_browser_runtime.py`, incluindo snapshots. Retirada do processo antigo e indicadores continuam pendentes; essa evidência não aprova toda a revisão.
 
 ## Preservação e exclusões
 

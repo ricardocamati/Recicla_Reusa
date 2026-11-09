@@ -197,12 +197,12 @@ Referências: V21-RF-09, V21-RNF-01, V21-RNF-08 · V21-RN-11, V21-RN-21, V21-RN-
 
 Referências: V21-RF-03, V21-RF-09, V21-RF-15, V21-RNF-03 · V21-RN-24 · V21-CT-35, V21-CT-36, V21-CT-38, V21-CT-39, V21-CT-44 · [jornada J-03](artefatos/v2.1/jornadas_frontend.md).
 
-- [ ] Criar a entrada pública e autenticada de “Onde descartar”, acessível por endereço direto sem redirecionar ao login ou formulário de item.
-- [ ] Implementar filtros opcionais e cumulativos por cidade/categoria, controles de paginação e detalhe com retorno preservando filtros/página; trocar filtro reinicia a paginação.
-- [ ] Exibir nome, endereço público, categorias aceitas e horário informado; não inventar horário de atendimento, proximidade ou garantia de recebimento.
-- [ ] Oferecer cópia de endereço com feedback correto e texto selecionável quando a cópia não estiver disponível. Se houver link opcional de mapa, usar somente o endereço público codificado e manter toda a consulta funcional sem serviço externo.
-- [ ] Distinguir carregamento, resultado vazio, erro e local que ficou indisponível; oferecer nova tentativa ou mudança de filtros sem cadastro ou indicação privada como fallback.
-- [ ] Validar a consulta por Selenium em sessão anônima, teclado e telas pequenas, incluindo resultados em páginas posteriores e ausência de efeitos persistidos.
+- [x] Criar a entrada pública e autenticada de “Onde descartar”, acessível por endereço direto sem redirecionar ao login ou formulário de item.
+- [x] Implementar filtros opcionais e cumulativos por cidade/categoria, controles de paginação e detalhe com retorno preservando filtros/página; trocar filtro reinicia a paginação.
+- [x] Exibir nome, endereço público, categorias aceitas e horário informado; não inventar horário de atendimento, proximidade ou garantia de recebimento.
+- [x] Oferecer cópia de endereço com feedback correto e texto selecionável quando a cópia não estiver disponível. Se houver link opcional de mapa, usar somente o endereço público codificado e manter toda a consulta funcional sem serviço externo.
+- [x] Distinguir carregamento, resultado vazio, erro e local que ficou indisponível; oferecer nova tentativa ou mudança de filtros sem cadastro ou indicação privada como fallback.
+- [x] Validar a consulta por Selenium em sessão anônima, teclado e telas pequenas, incluindo resultados em páginas posteriores e ausência de efeitos persistidos.
 
 ## Etapa 18 — Gestão dos locais e retirada do processo antigo
 

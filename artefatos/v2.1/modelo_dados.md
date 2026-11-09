@@ -1,6 +1,6 @@
 # Modelo de dados — v2.1
 
-## Modelo-alvo revisado — implementação parcial na Etapa 16
+## Modelo-alvo revisado — implementação parcial nas Etapas 16–17
 
 Descarte é consulta de `pontos_coleta`, não cadastro ou estado de `itens`. Não criar nova coleção de visitas, intenções, encaminhamentos ou comprovantes para usar o diretório. As estruturas de doação/venda permanecem; os nomes originalmente propostos de oferta continuam distintos dos nomes do runtime, como indicado ao final.
 

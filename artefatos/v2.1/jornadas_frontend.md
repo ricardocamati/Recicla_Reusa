@@ -1,6 +1,6 @@
 # Jornadas e funções de frontend — v2.1
 
-Experiência-alvo da revisão de descarte como diretório. A Etapa 16 entrega somente a base HTTP pública e preservação de registros. As telas e controles de J-03 ainda não foram implementados; o frontend mantém o processo antigo até as etapas seguintes. Doação e venda preservam suas jornadas.
+Experiência-alvo da revisão de descarte como diretório. A Etapa 16 entrega a base HTTP pública e preservação de registros. A Etapa 17 implementa J-03 em `frontend/onde-descartar.html`, com navegação, filtros/paginação, detalhe, cópia e estados próprios. O frontend ainda mantém os comandos antigos até a Etapa 18; não confundir a nova consulta com sua retirada. Doação e venda preservam suas jornadas.
 
 ## Interface de referência e diferenças para o alvo
 

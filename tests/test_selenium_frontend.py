@@ -25,6 +25,7 @@ PAGINAS = {
     "interesses.html": "#meus-interesses-list",
     "notificacoes.html": "#notificacoes-list",
     "pontos.html": "#pontos-list",
+    "onde-descartar.html": "#directory-filters",
 }
 
 
@@ -367,8 +368,8 @@ def test_selenium_navegacao_consistente_e_contexto_carregado(
     navegador.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         "source": f"window.RECICLA_API_BASE = {json.dumps(servidor_api)};",
     })
-    paginas = ("catalogo.html", "itens.html", "interesses.html", "pontos.html", "notificacoes.html", "perfil.html")
-    rotulos = ("Catálogo", "Meus itens", "Interesses", "Pontos", "Notificações", "Meu perfil")
+    paginas = ("catalogo.html", "itens.html", "interesses.html", "onde-descartar.html", "pontos.html", "notificacoes.html", "perfil.html")
+    rotulos = ("Catálogo", "Meus itens", "Interesses", "Onde descartar", "Pontos", "Notificações", "Meu perfil")
     esperados = list(zip(paginas, rotulos))
     if tipo == "ponto_coleta":
         esperados = [p for p in esperados if p[0] not in ("itens.html", "interesses.html")]

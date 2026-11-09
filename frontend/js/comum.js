@@ -168,6 +168,7 @@ const NAVEGACAO_AUTENTICADA = [
   { pagina: "catalogo.html", href: "./catalogo.html", texto: "Catálogo" },
   { pagina: "itens.html", href: "./itens.html", texto: "Meus itens", pessoa: true, id: "items-link" },
   { pagina: "interesses.html", href: "./interesses.html", texto: "Interesses", pessoa: true },
+  { pagina: "onde-descartar.html", href: "./onde-descartar.html", texto: "Onde descartar" },
   { pagina: "pontos.html", href: "./pontos.html", texto: "Pontos" },
   { pagina: "notificacoes.html", href: "./notificacoes.html", texto: "Notificações" },
   { pagina: "perfil.html", href: "./perfil.html", texto: "Meu perfil" },

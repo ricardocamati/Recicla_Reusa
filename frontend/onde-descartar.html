@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Consulte locais de descarte de eletrônicos sem criar conta ou cadastrar equipamento.">
+  <title>Onde descartar | Recicla/Reusa</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./onde-descartar.css">
+</head>
+<body class="directory-page">
+  <a class="directory-skip" href="#directory-main">Ir para a consulta</a>
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="brand" href="./index.html" aria-label="Recicla/Reusa, início"><span class="brand-mark" aria-hidden="true">↺</span><span>Recicla/<span>Reusa</span></span></a>
+      <nav class="header-actions" aria-label="Navegação principal">
+        <a class="nav-link" href="./index.html">Início</a>
+        <a class="nav-link active" href="./onde-descartar.html" aria-current="page">Onde descartar</a>
+        <a class="button button-ghost directory-guest" href="./login.html">Entrar</a>
+        <span id="session-chip" class="session-chip" hidden></span>
+        <button id="logout-button" class="button button-ghost" type="button" hidden>Sair</button>
+      </nav>
+    </div>
+  </header>
+  <main id="directory-main" class="page-content" tabindex="-1">
+    <div class="container">
+      <section class="workspace-heading">
+        <div>
+          <p class="eyebrow">Consulta pública de locais</p>
+          <h1>Onde descartar</h1>
+          <p class="section-description">Encontre locais cadastrados sem criar conta nem cadastrar um equipamento.</p>
+        </div>
+      </section>
+      <p class="info-banner">Confira as categorias e o horário informado antes de ir. A consulta não garante recebimento nem registra um descarte realizado.</p>
+      <section class="card form-card" aria-labelledby="directory-filter-title">
+        <h2 id="directory-filter-title">Buscar locais</h2>
+        <form id="directory-filters" class="directory-filters">
+          <label class="field" for="directory-city">Cidade <span class="directory-hint">Opcional</span>
+            <input id="directory-city" name="cidade" type="text" maxlength="160" placeholder="Digite uma cidade" autocomplete="address-level2">
+          </label>
+          <label class="field" for="directory-category">Categoria do eletrônico <span class="directory-hint">Opcional</span>
+            <select id="directory-category" name="categoria"><option value="">Todas as categorias</option></select>
+          </label>
+          <div class="filter-actions">
+            <button class="button button-primary" type="submit">Buscar</button>
+            <button id="directory-clear" class="button button-ghost" type="button">Limpar filtros</button>
+          </div>
+        </form>
+      </section>
+      <section class="section-block" aria-labelledby="directory-title">
+        <h2 id="directory-title" tabindex="-1">Locais cadastrados</h2>
+        <p id="directory-message" class="form-message" role="status" aria-live="polite" aria-atomic="true"></p>
+        <button id="directory-retry" class="button button-secondary" type="button" hidden>Tentar novamente</button>
+        <div id="directory-list" class="item-grid" aria-busy="true"></div>
+        <div id="directory-detail" class="card form-card" hidden></div>
+        <nav id="directory-pagination" class="directory-controls" aria-label="Páginas dos locais" hidden>
+          <button id="directory-previous" class="button button-secondary" type="button" disabled>Página anterior</button>
+          <span id="directory-page" aria-live="polite"></span>
+          <button id="directory-next" class="button button-secondary" type="button" disabled>Próxima página</button>
+        </nav>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer"><div class="container footer-content"><p><strong>Recicla/Reusa</strong></p><p>Dados públicos informados pelos locais cadastrados.</p></div></footer>
+  <script type="module" src="./js/onde-descartar.js"></script>
+</body>
+</html>
