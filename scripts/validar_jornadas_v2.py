@@ -352,16 +352,32 @@ class Navegador:
             for chave in ("doados", "vendidos", "ofertas", "pendencias", "total", "locais")
         }
 
-    def consultar_diretorio_anonimo(self, cidade: str, categoria: str) -> None:
+    def consultar_diretorio_anonimo(self, cidade: str, categoria: str, categoria_alheia: str) -> None:
         """Terceira jornada: consulta pública sem conta, cookie ou cadastro de item."""
+        contagens_antes = contar_colecoes()
         self.driver.delete_all_cookies()
         self.abrir("onde-descartar.html", "#directory-list")
         self.espera.until(lambda d: d.find_elements(By.CSS_SELECTOR, "#directory-list article"))
-        campo = self.driver.find_element(By.ID, "directory-city")
-        campo.clear()
-        campo.send_keys(cidade)
-        Select(self.driver.find_element(By.ID, "directory-category")).select_by_value(categoria)
-        self.clicar(self.driver.find_element(By.CSS_SELECTOR, "#directory-filters button[type='submit']"))
+
+        def filtrar(valor_cidade: str, valor_categoria: str) -> None:
+            campo = self.driver.find_element(By.ID, "directory-city")
+            campo.clear()
+            campo.send_keys(valor_cidade)
+            Select(self.driver.find_element(By.ID, "directory-category")).select_by_value(valor_categoria)
+            self.clicar(self.driver.find_element(By.CSS_SELECTOR, "#directory-filters button[type='submit']"))
+            self.espera.until(
+                lambda d: d.find_element(By.ID, "directory-list").get_attribute("aria-busy") == "false"
+            )
+            self.espera.until(lambda d: d.find_element(By.ID, "directory-message").text != "Carregando locais...")
+
+        # Controle negativo: categoria incompatível não pode devolver o local consultado.
+        filtrar(cidade, categoria_alheia)
+        assert not [
+            c for c in self.driver.find_elements(By.CSS_SELECTOR, "#directory-list article")
+            if cidade in c.text
+        ], "filtro de categoria ignorado"
+
+        filtrar(cidade, categoria)
         cartao = self.espera.until(
             lambda d: next(
                 (c for c in d.find_elements(By.CSS_SELECTOR, "#directory-list article")
@@ -370,6 +386,7 @@ class Navegador:
             )
         )
         assert "Rua" in cartao.text, cartao.text
+        assert "Notebook" in cartao.text or "notebook" in cartao.text.lower(), cartao.text
         self.clicar(cartao.find_element(By.CSS_SELECTOR, ".directory-detail-link"))
         detalhe = self.espera.until(
             lambda d: d.find_element(By.ID, "directory-detail").is_displayed()
@@ -383,6 +400,9 @@ class Navegador:
         self.clicar(self.driver.find_element(By.ID, "directory-back"))
         self.espera.until(lambda d: d.find_elements(By.CSS_SELECTOR, "#directory-list article"))
         assert not self.driver.get_cookies(), "consulta pública não deve criar sessão"
+        assert not self.driver.execute_script("return Object.keys(localStorage).length + Object.keys(sessionStorage).length"), "consulta não deve gravar storage"
+        # A navegação não pode escrever em nenhuma das cinco coleções.
+        assert contar_colecoes() == contagens_antes, "consulta pública alterou o banco"
 
     def avisos(self, titulo: str | None = None) -> str:
         self.abrir("notificacoes.html", "#notificacoes-list")
@@ -393,6 +413,17 @@ class Navegador:
             By.CSS_SELECTOR, "#notificacoes-list article.item-card"
         )
         return " ".join(cartao.text for cartao in cartoes)
+
+
+def contar_colecoes() -> dict[str, int]:
+    """Contagem das cinco coleções para provar que consulta pública não escreve."""
+    return {
+        usuarios.name: usuarios.count_documents({}),
+        itens.name: itens.count_documents({}),
+        pontos.name: pontos.count_documents({}),
+        interesses.name: interesses.count_documents({}),
+        avisos.name: avisos.count_documents({}),
+    }
 
 
 def auditar_datas() -> dict[str, int]:
@@ -444,12 +475,17 @@ def limpar(prefixo: str = MARCA) -> None:
     assert removidos_itens == len(ids_itens), (removidos_itens, len(ids_itens))
     assert removidos_pontos == len(ids_pontos), (removidos_pontos, len(ids_pontos))
     assert removidos_usuarios == len(ids_usuarios), (removidos_usuarios, len(ids_usuarios))
+    # Órfãos ligados só à conta da jornada também contam como resíduo.
+    orfaos = {
+        "$or": [{"item_id": {"$in": ids_itens + [ObjectId()]}},
+                {"usuario_id": {"$in": ids_usuarios + [ObjectId()]}}]
+    }
     restantes = {
         "usuarios": usuarios.count_documents(filtro_usuarios),
         "itens": itens.count_documents(filtro_itens),
         "pontos": pontos.count_documents({"nome": {"$regex": f"^{prefixo}"}}),
-        "interesses": interesses.count_documents({"item_id": {"$in": ids_itens + [ObjectId()]}}),
-        "notificacoes": avisos.count_documents({"item_id": {"$in": ids_itens + [ObjectId()]}}),
+        "interesses": interesses.count_documents(orfaos),
+        "notificacoes": avisos.count_documents(orfaos),
     }
     assert restantes == {chave: 0 for chave in restantes}, restantes
     print(
@@ -462,6 +498,12 @@ def limpar(prefixo: str = MARCA) -> None:
 def main() -> None:
     # Restos de execuções interrompidas são removidos pelo mesmo prefixo seletivo.
     limpar("jornada-")
+    # Nada fora do prefixo pode ser apagado: contagem de sentinela antes/depois.
+    fora_do_prefixo = {
+        "usuarios": usuarios.count_documents({"email": {"$not": {"$regex": "^jornada-"}}}),
+        "itens": itens.count_documents({"titulo": {"$not": {"$regex": "^jornada-"}}}),
+        "pontos": pontos.count_documents({"nome": {"$not": {"$regex": "^jornada-"}}}),
+    }
     for colecao, nome in (
         (usuarios, "usuarios"), (itens, "itens"), (pontos, "pontos"),
         (interesses, "interesses"), (avisos, "notificacoes"),
@@ -514,7 +556,7 @@ def main() -> None:
         print("jornada_doacao=ok")
 
         # Jornada 3 — consulta anônima do diretório, sem item, conta ou escrita.
-        navegador.consultar_diretorio_anonimo("Maringá", "notebook")
+        navegador.consultar_diretorio_anonimo("Maringá", "notebook", "monitor")
         print("jornada_publica_onde_descartar=ok")
 
         # Jornada 2 — venda direta com entrega bilateral.
@@ -553,9 +595,10 @@ def main() -> None:
         indicadores = navegador.ler_indicadores()
     finally:
         navegador.fechar()
-    assert indicadores["doados"] == "1" and indicadores["vendidos"] == "1", indicadores
-    assert indicadores["total"] == "2", indicadores
-    assert indicadores["locais"] == "1", indicadores
+    assert indicadores == {
+        "doados": "1", "vendidos": "1", "ofertas": "0",
+        "pendencias": "0", "total": "2", "locais": "1",
+    }, indicadores
     print("indicadores=ok; " + " ".join(f"{k}={v}" for k, v in indicadores.items()))
 
     documento = itens.find_one({"titulo": titulo_doacao})
@@ -572,6 +615,12 @@ def main() -> None:
     print("auditoria_datas=ok; " + " ".join(f"{k}={v}" for k, v in verificados.items()))
 
     limpar(MARCA)
+    assert {
+        "usuarios": usuarios.count_documents({"email": {"$not": {"$regex": "^jornada-"}}}),
+        "itens": itens.count_documents({"titulo": {"$not": {"$regex": "^jornada-"}}}),
+        "pontos": pontos.count_documents({"nome": {"$not": {"$regex": "^jornada-"}}}),
+    } == fora_do_prefixo, "limpeza tocou documentos fora do prefixo"
+    print("preservacao_fora_do_prefixo=ok")
 
 
 if __name__ == "__main__":
