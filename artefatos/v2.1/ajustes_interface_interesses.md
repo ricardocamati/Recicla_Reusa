@@ -2,9 +2,9 @@
 
 ## Contexto e escopo
 
-Planejamento aprovado em conversa em 11/11/2026. **Etapa 21 concluída; Etapas 22–23 ainda pendentes.** Este documento complementa as jornadas v2.1 somente nos pontos descritos abaixo. Os critérios de interesses compactos e histórico não são comportamento entregue e não substituem contratos HTTP ou regras de autorização.
+Planejamento aprovado em conversa em 11/11/2026. **Etapas 21–22 concluídas; Etapa 23 ainda pendente.** Este documento complementa as jornadas v2.1 somente nos pontos descritos abaixo. Os critérios de interesses compactos e histórico não são comportamento entregue e não substituem contratos HTTP ou regras de autorização.
 
-A interface repete o tipo da conta em selos “Pessoa” no cabeçalho e no conteúdo. Interesses cancelados continuam misturados aos ativos. Nos cards selecionados, o formulário de combinação aparece aberto mesmo após o envio de uma proposta, aumentando o card e sugerindo edição permanente.
+No início deste planejamento, a interface repetia o tipo da conta em selos e misturava interesses cancelados aos ativos. As Etapas 21–22 tratam esses dois pontos. Nos cards selecionados, o formulário de combinação ainda aparece aberto após o envio de uma proposta; essa compactação pertence à Etapa 23, não implementada aqui.
 
 Objetivo: reduzir ruído visual e separar acompanhamento, edição e histórico, sem alterar reserva, desistência, retomada ou conclusão bilateral.
 
@@ -66,7 +66,7 @@ Objetivo: reduzir ruído visual e separar acompanhamento, edição e histórico,
 | UI-CT-11 | Dado card sem combinação, Propor combinação abre formulário vazio e cancelar não cria registro; previsão existente conserva o instante após edição. | UI-RF-03 |
 | UI-CT-12 | Dado uso por teclado/tela estreita, expansão, edição, cancelamento e remoção preservam foco, sem tabulação em campos ocultos nem rolagem horizontal; duplo clique não duplica ação. | Acessibilidade |
 
-Critérios escritos não são resultados de teste. UI-CT-01 está implementado e verificado em navegador; UI-CT-02 a UI-CT-12 permanecem pendentes de implementação e execução.
+Critérios escritos não são resultados de teste. UI-CT-01 a UI-CT-05 estão implementados e verificados. A Etapa 22 tem testes de navegador em `tests/test_etapa22_interesses.py`, incluindo falhas/reconciliação e paginação. UI-CT-06 a UI-CT-12 permanecem pendentes; verificações de foco e teclado dos filtros não concluem os critérios mais amplos dos cards da Etapa 23.
 
 ## Contratos, dados e exclusões
 

@@ -238,7 +238,7 @@ Referências: V21-RNF-02, V21-RNF-03, V21-RNF-04, V21-RNF-05, V21-RNF-06, V21-RN
 
 # Parte IV — Ajustes de interface planejados
 
-Planejamento aprovado em 11/11/2026, sem implementação nesta atualização. Preservar as etapas concluídas e não confundir os critérios abaixo com funcionalidades entregues. Especificação: [ajustes de perfil e interesses](artefatos/v2.1/ajustes_interface_interesses.md).
+Planejamento aprovado em 11/11/2026. Etapas 21 e 22 implementadas e validadas; Etapa 23 permanece pendente. Preservar as etapas concluídas e não apresentar o restante do planejamento como funcionalidade entregue. Especificação: [ajustes de perfil e interesses](artefatos/v2.1/ajustes_interface_interesses.md).
 
 ## Etapa 21 — Identificação do perfil sem repetição
 
@@ -251,10 +251,10 @@ Referências: UI-RF-01 · UI-CT-01.
 
 Referências: UI-RF-02 · UI-CT-02 a UI-CT-05.
 
-- [ ] Adotar filtros Ativos/Histórico em enviados e recebidos, com Ativos por padrão; classificar estados existentes após percorrer a paginação, preservando filtro e contadores.
-- [ ] Depois da desistência confirmada, retirar o card de Ativos e informar sucesso; manter cancelados no Histórico e preservar documentos, tentativas e relações.
-- [ ] Reconciliar retomada e reabertura com a lista ativa, sem duplicar cards; manter as regras atuais para oferecer essas ações.
-- [ ] Testar sucesso, erro, resposta perdida, lista vazia, várias páginas e persistência após recarregar; não retirar card definitivamente antes da confirmação/reconciliação.
+- [x] Adotar filtros Ativos/Histórico em enviados e recebidos, com Ativos por padrão; classificar estados existentes após percorrer a paginação, preservando filtro e contadores.
+- [x] Depois da desistência confirmada, retirar o card de Ativos e informar sucesso; manter cancelados no Histórico e preservar documentos, tentativas e relações.
+- [x] Reconciliar retomada e reabertura com a lista ativa, sem duplicar cards; manter as regras atuais para oferecer essas ações.
+- [x] Testar sucesso, erro, resposta perdida, lista vazia, várias páginas e persistência após recarregar; não retirar card definitivamente antes da confirmação/reconciliação.
 
 ## Etapa 23 — Cards compactos e combinação sob demanda
 
