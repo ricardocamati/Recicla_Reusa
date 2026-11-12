@@ -50,7 +50,7 @@ Cards: título, modalidade, condição, cidade, preço quando aplicável, dispon
 2. Interface passa a mostrar “Acompanhar negociação”, sem oferecer criação duplicada.
 3. Proprietário vê “Interesses recebidos” e escolhe uma pessoa; confirmação explica que reservará o item e deixará outros pendentes.
 4. Oferta passa a reservada. Participantes recebem atalho para combinar entrega.
-5. Formulário de combinação: local textual, previsão opcional e observação; resumo mostra quem propôs e qual revisão está pendente.
+5. Formulário de combinação: local textual, previsão opcional em data e hora (sem segundos), e observação; resumo mostra quem propôs e qual revisão está pendente, sem contagem de tentativas.
 6. Outra parte aceita; mudar a combinação invalida o aceite anterior e avisa a contraparte.
 7. Antes da entrega, ambos podem encerrar seleção por desistência/liberação com motivo. Não comparecimento é motivo, não conclusão.
 8. Proprietário clica “Já entreguei”; a confirmação explica que ficará aguardando recebimento.

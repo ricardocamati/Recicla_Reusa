@@ -126,7 +126,7 @@ def test_edicao_preenche_valores_e_cancelar_nao_grava(navegador, servidor_fronte
     formulario = card(navegador).find_element(By.CSS_SELECTOR, "form.combination-form")
     assert formulario.is_displayed()
     assert formulario.find_element(By.NAME, "local_texto").get_attribute("value") == "Portaria principal"
-    assert formulario.find_element(By.NAME, "previsao").get_attribute("value") == "2026-11-13T12:30:12.345"
+    assert formulario.find_element(By.NAME, "previsao").get_attribute("value") == "2026-11-13T12:30"
     assert formulario.find_element(By.NAME, "observacao").get_attribute("value") == "Levar embalagem"
     local = formulario.find_element(By.NAME, "local_texto")
     local.clear()
