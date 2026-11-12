@@ -2,7 +2,7 @@
 
 ## Contexto e escopo
 
-Planejamento aprovado em conversa em 11/11/2026. **Etapas 21–23 concluídas; Etapa 23 validada em 12/11/2026.** Este documento complementa as jornadas v2.1 somente nos pontos descritos abaixo. Os comportamentos entregues são de apresentação e interação; não substituem contratos HTTP ou regras de autorização.
+Planejamento aprovado em conversa em 11/11/2026. **Etapas 21–24 concluídas; Etapas 23 e 24 validadas em 12/11/2026.** Este documento complementa as jornadas v2.1 somente nos pontos descritos abaixo. Os comportamentos entregues são de apresentação e interação; não substituem contratos HTTP ou regras de autorização.
 
 No início deste planejamento, a interface repetia o tipo da conta em selos, misturava interesses cancelados aos ativos e mantinha aberto o formulário de combinação. As Etapas 21–23 tratam esses pontos: identificação sem repetição, ativos/histórico e cards compactos com edição explícita.
 
@@ -32,8 +32,10 @@ Objetivo: reduzir ruído visual e separar acompanhamento, edição e histórico,
 - Cards de interesses recebidos e enviados iniciam compactos: título, estado, modalidade, categoria, situação do item e resumo da combinação quando existir.
 - Uma combinação existente exibe local, previsão e observação quando informados, além de “aguardando aceite” ou “aceita”. Diferenciar “aguardando seu aceite” de “aguardando aceite da outra pessoa”.
 - “Ver detalhes” expande informações secundárias e ações adicionais; “Recolher” retorna ao resumo. Não usar o formulário como visualização de detalhes.
+- Não exibir a contagem de tentativas do interesse no card; o número é dado de histórico e permanece consultável pela API.
 - “Propor combinação”, quando ainda não há proposta, ou “Alterar combinação”, quando já existe, abre o formulário por ação explícita.
 - Ao editar, preencher os valores atuais, inclusive previsão convertida para o horário local; manter o envio UTC existente. Não alterar data/hora por conversão duplicada.
+- Previsão é data e hora, sem segundos nem milissegundos, na exibição e no campo de edição. Salvar sem alterar o campo preserva o instante original persistido; alterar grava o minuto escolhido; limpar envia nulo.
 - “Salvar alteração” só recolhe após confirmação e releitura da revisão salva. “Cancelar edição” fecha sem requisição nem persistência. Erro de validação/rede mantém os campos preenchidos para correção.
 - Cancelar uma edição descarta apenas o rascunho visual; reabrir carrega a combinação persistida. Cancelar a primeira proposta volta ao resumo sem criar combinação.
 - “Aceitar combinação” permanece visível no resumo para a contraparte elegível. Não permitir aceitar a própria proposta nem uma revisão desatualizada.
@@ -49,7 +51,7 @@ Objetivo: reduzir ruído visual e separar acompanhamento, edição e histórico,
 - Bloquear duplo envio enquanto a ação aguarda resposta e reabilitar controles em erro.
 - A 360 px de largura e em desktop, os cards não devem causar rolagem horizontal.
 
-## Critérios de aceitação a implementar
+## Critérios de aceitação
 
 | Caso | Dado / Quando / Então | Referência |
 |---|---|---|
@@ -65,8 +67,10 @@ Objetivo: reduzir ruído visual e separar acompanhamento, edição e histórico,
 | UI-CT-10 | Dado card recebido, ao expandir detalhes, Liberar reserva aparece com motivo obrigatório; cancelar, recusar ou concluir não deixa edição ativa. | UI-RF-03 |
 | UI-CT-11 | Dado card sem combinação, Propor combinação abre formulário vazio e cancelar não cria registro; previsão existente conserva o instante após edição. | UI-RF-03 |
 | UI-CT-12 | Dado uso por teclado/tela estreita, expansão, edição, cancelamento e remoção preservam foco, sem tabulação em campos ocultos nem rolagem horizontal; duplo clique não duplica ação. | Acessibilidade |
+| UI-CT-13 | Dada combinação com previsão gravada com segundos, ao abrir a edição, o campo mostra apenas data e hora; salvar sem alterar conserva o instante original e alterar grava o minuto escolhido. | UI-RF-03 |
+| UI-CT-14 | Dado interesse em primeira tentativa ou retomada, os detalhes do card não exibem contagem de tentativas; o histórico e a API continuam com o valor. | UI-RF-03 |
 
-Critérios escritos não são resultados de teste. UI-CT-01 a UI-CT-12 estão implementados e verificados: identificação em `tests/test_selenium_frontend.py`, ativos/histórico em `tests/test_etapa22_interesses.py` e cards/combinação em `tests/test_etapa23_interesses.py`. O consumidor `scripts/validar_jornadas_v2.py` abre explicitamente a edição antes de preencher e foi exercitado nas jornadas Docker isoladas. Não houve mudança dos contratos de negócio nem aplicação na base de demonstração.
+Critérios escritos não são resultados de teste. UI-CT-13 e UI-CT-14 foram implementados em 12/11/2026 e verificados em `tests/test_etapa24_interesses.py`. UI-CT-01 a UI-CT-12 estão implementados e verificados: identificação em `tests/test_selenium_frontend.py`, ativos/histórico em `tests/test_etapa22_interesses.py` e cards/combinação em `tests/test_etapa23_interesses.py`. O consumidor `scripts/validar_jornadas_v2.py` abre explicitamente a edição antes de preencher e foi exercitado nas jornadas Docker isoladas. Não houve mudança dos contratos de negócio nem aplicação na base de demonstração.
 
 ## Contratos, dados e exclusões
 

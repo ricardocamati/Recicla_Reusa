@@ -22,7 +22,7 @@ Não há dados do descarte por item a conservar. Portanto, sua retirada remove c
 | [Casos de teste](casos_de_teste.md) | Critérios escritos, não resultados de execução |
 | [Matriz](matriz_rastreabilidade.md) | Rastreabilidade, código existente e implementação pendente |
 | [Registro da entrega](registro_entrega.md) | Marco final, escopo entregue, evidências reproduzíveis e limites |
-| [Ajustes de perfil e interesses](ajustes_interface_interesses.md) | Etapas 21–23 entregues: identificação de perfil, ativos/histórico e cards compactos com edição sob demanda |
+| [Ajustes de perfil e interesses](ajustes_interface_interesses.md) | Etapas 21–23 entregues: identificação de perfil, ativos/histórico e cards compactos com edição sob demanda. Etapa 24 entregue: previsão em minutos e sem contagem de tentativas no card |
 
 Requisitos delimitam escopo; regras definem comportamento; os demais artefatos devem corresponder a ambos. Para o programa existente, continuam valendo o [contrato atual](../../docs/http-api.md) e a [OpenAPI gerada](../../docs/openapi.md).
 

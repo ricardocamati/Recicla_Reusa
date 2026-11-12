@@ -39,8 +39,15 @@ async function carregarItem(itemId, atualizar = false) {
 function valorDatetimeLocal(iso) {
   if (!iso) return "";
   const data = new Date(iso);
-  const pad = (numero, tamanho = 2) => String(numero).padStart(tamanho, "0");
-  return `${data.getFullYear()}-${pad(data.getMonth() + 1)}-${pad(data.getDate())}T${pad(data.getHours())}:${pad(data.getMinutes())}:${pad(data.getSeconds())}.${pad(data.getMilliseconds(), 3)}`;
+  const pad = (numero) => String(numero).padStart(2, "0");
+  return `${data.getFullYear()}-${pad(data.getMonth() + 1)}-${pad(data.getDate())}T${pad(data.getHours())}:${pad(data.getMinutes())}`;
+}
+
+function exibirPrevisao(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
 }
 
 async function atualizarCombinacao(interesse, recebido, requisicao, confere, mensagem, relerConflito = false) {
@@ -133,7 +140,6 @@ function cartaoInteresse(interesse, { recebido }) {
   if (interesse.motivo) {
     detalhes.append(createElement("p", "item-card-description", `Motivo: ${interesse.motivo}`));
   }
-  detalhes.append(createElement("p", "field-hint", `Tentativa ${interesse.tentativa || 1}`));
 
   const editavel = interesse.status === "selecionado" && item?.status === "reservado";
   if (interesse.status === "selecionado" || interesse.combinacao) {
@@ -145,7 +151,7 @@ function cartaoInteresse(interesse, { recebido }) {
         }`
       : "Ainda sem combinação de entrega.";
     article.append(createElement("p", "item-card-description", situacao));
-    if (combinacao?.previsao) article.append(createElement("p", "field-hint", `Previsão: ${new Date(combinacao.previsao).toLocaleString("pt-BR")}`));
+    if (combinacao?.previsao) article.append(createElement("p", "field-hint", `Previsão: ${exibirPrevisao(combinacao.previsao)}`));
     if (combinacao?.observacao) article.append(createElement("p", "field-hint", `Observação: ${combinacao.observacao}`));
 
     if (editavel) {
@@ -159,7 +165,9 @@ function cartaoInteresse(interesse, { recebido }) {
       const previsao = createElement("input", "", "");
       previsao.name = "previsao";
       previsao.type = "datetime-local";
-      previsao.step = "0.001";
+      previsao.step = "60";
+      let preenchido = "";
+      const instanteOriginal = combinacao?.previsao || null;
       const observacao = createElement("input", "", "");
       observacao.name = "observacao";
       observacao.placeholder = "Observação (opcional)";
@@ -177,9 +185,12 @@ function cartaoInteresse(interesse, { recebido }) {
       form.append(propor, cancelar);
       form.addEventListener("submit", async (evento) => {
         evento.preventDefault();
+        const previsaoMantida = preenchido && previsao.value === preenchido;
         const dados = {
           local_texto: local.value.trim(),
-          previsao: previsao.value ? new Date(previsao.value).toISOString() : null,
+          previsao: previsaoMantida
+            ? instanteOriginal
+            : previsao.value ? new Date(previsao.value).toISOString() : null,
           observacao: observacao.value.trim() || null,
         };
         await atualizarCombinacao(interesse, recebido,
@@ -200,6 +211,7 @@ function cartaoInteresse(interesse, { recebido }) {
         if (form.hidden) {
           local.value = combinacao?.local_texto || "";
           previsao.value = valorDatetimeLocal(combinacao?.previsao);
+          preenchido = previsao.value;
           observacao.value = combinacao?.observacao || "";
         }
         form.hidden = false;
@@ -209,6 +221,7 @@ function cartaoInteresse(interesse, { recebido }) {
       cancelar.addEventListener("click", () => {
         form.hidden = true;
         form.reset();
+        preenchido = "";
         abrirEdicao.setAttribute("aria-expanded", "false");
         abrirEdicao.focus();
       });

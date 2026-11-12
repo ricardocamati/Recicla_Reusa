@@ -238,7 +238,7 @@ Referências: V21-RNF-02, V21-RNF-03, V21-RNF-04, V21-RNF-05, V21-RNF-06, V21-RN
 
 # Parte IV — Ajustes de interface
 
-Planejamento aprovado em 11/11/2026. Etapas 21 a 23 implementadas e validadas; Etapa 23 concluída em 12/11/2026. Preservar o histórico das etapas e suas evidências locais. Especificação: [ajustes de perfil e interesses](artefatos/v2.1/ajustes_interface_interesses.md).
+Planejamento aprovado em 11/11/2026. Etapas 21 a 23 implementadas, validadas e integradas (PR #33); Etapa 24 implementada e validada em 12/11/2026 como correção de apresentação. Preservar o histórico das etapas e suas evidências locais. Especificação: [ajustes de perfil e interesses](artefatos/v2.1/ajustes_interface_interesses.md).
 
 ## Etapa 21 — Identificação do perfil sem repetição
 
@@ -266,3 +266,15 @@ Referências: UI-RF-03 · UI-CT-06 a UI-CT-12.
 - [x] Manter Aceitar combinação visível à contraparte elegível no resumo e Liberar reserva na área expandida, sem mudar motivo obrigatório, revisões, autorização ou confirmação bilateral.
 - [x] Testar edição, cancelamento, primeira proposta, aceite, revisão concorrente e encerramento; garantir teclado, foco, aria-expanded/aria-controls, bloqueio de duplo envio e layout a 360 px.
 - [x] Reconstruir as imagens e validar os critérios em navegador com stack e banco isolados; rodar regressões de ofertas/permissões e somente então marcar tarefas concluídas.
+
+## Etapa 24 — Previsão em minutos e sem “Tentativa” no card
+
+Referências: UI-RF-03 · UI-CT-13 e UI-CT-14.
+
+Planejada em 12/11/2026, após o merge do PR #33 (`1f42a0c`). Ajuste exclusivamente de apresentação: nenhum contrato, schema, modelo, documento persistido ou permissão muda.
+
+- [x] Exibir e editar a previsão com data e hora, sem segundos e sem milissegundos; o campo usa `step` de minuto e o resumo segue o mesmo formato.
+- [x] Ao salvar sem alterar a previsão, reenviar o instante original recebido da API; ao alterar, gravar o minuto escolhido com segundos zerados; limpar continua enviando nulo.
+- [x] Remover a linha “Tentativa” dos detalhes do card em enviados e recebidos, inclusive em retomadas e reaberturas; o contador permanece no modelo, no banco e no histórico, e `retomar`/`reabrir` continuam incrementando.
+- [x] Testar exibição, preservação do instante, alteração de minuto, envio nulo e ausência da linha em `tentativa` 1 e 3, sem alterar testes de backend.
+- [x] Reconstruir a imagem do frontend, validar a versão servida, rodar a suíte completa em MongoDB isolado e as jornadas Docker, e só então marcar as tarefas concluídas.
