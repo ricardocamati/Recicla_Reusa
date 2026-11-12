@@ -23,6 +23,7 @@ const filtros = { meus: "ativos", recebidos: "ativos" };
 const registros = { meus: null, recebidos: null };
 const versoes = { meus: 0, recebidos: 0 };
 let acaoEmCurso = false;
+let proximoCardId = 0;
 
 async function carregarItem(itemId, atualizar = false) {
   if (atualizar || !itens.has(itemId)) {
@@ -35,8 +36,80 @@ async function carregarItem(itemId, atualizar = false) {
   return itens.get(itemId);
 }
 
+function valorDatetimeLocal(iso) {
+  if (!iso) return "";
+  const data = new Date(iso);
+  const pad = (numero, tamanho = 2) => String(numero).padStart(tamanho, "0");
+  return `${data.getFullYear()}-${pad(data.getMonth() + 1)}-${pad(data.getDate())}T${pad(data.getHours())}:${pad(data.getMinutes())}:${pad(data.getSeconds())}.${pad(data.getMilliseconds(), 3)}`;
+}
+
+async function atualizarCombinacao(interesse, recebido, requisicao, confere, mensagem, relerConflito = false) {
+  if (acaoEmCurso) return;
+  acaoEmCurso = true;
+  const chave = recebido ? "recebidos" : "meus";
+  const { message, listaId } = contexto(chave);
+  // Restaura só os controles que esta operação bloqueou; não habilita ações proibidas.
+  const controles = [...document.querySelectorAll(".interest-card button, .interest-card input")]
+    .map((elemento) => [elemento, elemento.disabled]);
+  const tinhaFoco = document.getElementById(listaId).contains(document.activeElement);
+  controles.forEach(([elemento]) => { elemento.disabled = true; });
+  setMessage(message, "Confirmando combinação...");
+  try {
+    const resposta = await requisicao();
+    const relidas = await carregarTudo();
+    if (!relidas[chave]) {
+      setMessage(message, "Não foi possível atualizar para confirmar a combinação. Os campos foram mantidos; tente Atualizar.", "error");
+      return;
+    }
+    const atual = registros[chave].find((i) => i.id === interesse.id);
+    if (confere(resposta, atual)) {
+      setMessage(message, mensagem, "success");
+    } else {
+      setMessage(message, "A combinação mudou novamente. Confira o resumo atualizado antes de continuar.", "error");
+    }
+  } catch (error) {
+    if (relerConflito && error?.status === 409) await carregarTudo();
+    // Erro de gravação/rede conserva a edição e não reenvia a mutação.
+    handleError(error, message);
+  } finally {
+    acaoEmCurso = false;
+    controles.forEach(([elemento, desabilitado]) => {
+      if (elemento.isConnected) elemento.disabled = desabilitado;
+    });
+    if (tinhaFoco && !document.getElementById(listaId).contains(document.activeElement)) {
+      const novo = [...document.getElementById(listaId).querySelectorAll("article")]
+        .find((cartao) => cartao.dataset.interesseId === interesse.id);
+      (novo?.querySelector(".combination-toggle") || novo?.querySelector(".interest-details-toggle") || message).focus();
+    }
+  }
+}
+
 function cartaoInteresse(interesse, { recebido }) {
-  const article = createElement("article", "item-card");
+  const article = createElement("article", "item-card interest-card");
+  article.dataset.interesseId = interesse.id;
+  const cardId = `interesse-card-${++proximoCardId}`;
+  const detalhes = createElement("div", "interest-details");
+  detalhes.id = `${cardId}-detalhes`;
+  detalhes.hidden = true;
+  const verDetalhes = createElement("button", "button button-ghost", "Ver detalhes");
+  verDetalhes.type = "button";
+  verDetalhes.classList.add("interest-details-toggle");
+  verDetalhes.setAttribute("aria-controls", detalhes.id);
+  verDetalhes.setAttribute("aria-expanded", "false");
+  verDetalhes.addEventListener("click", () => {
+    detalhes.hidden = !detalhes.hidden;
+    verDetalhes.setAttribute("aria-expanded", String(!detalhes.hidden));
+    verDetalhes.textContent = detalhes.hidden ? "Ver detalhes" : "Recolher";
+    if (detalhes.hidden) {
+      const editor = article.querySelector("form.combination-form");
+      if (editor) {
+        editor.hidden = true;
+        editor.reset();
+        article.querySelector(".combination-toggle").setAttribute("aria-expanded", "false");
+      }
+      verDetalhes.focus();
+    }
+  });
   const tags = createElement("div", "item-tags");
   tags.append(
     createElement("span", "tag", labelForInteresse(interesse.status)),
@@ -58,72 +131,103 @@ function cartaoInteresse(interesse, { recebido }) {
   }
 
   if (interesse.motivo) {
-    article.append(createElement("p", "item-card-description", `Motivo: ${interesse.motivo}`));
+    detalhes.append(createElement("p", "item-card-description", `Motivo: ${interesse.motivo}`));
   }
-  if (interesse.tentativa > 1) {
-    article.append(createElement("p", "field-hint", `Tentativa ${interesse.tentativa}`));
-  }
+  detalhes.append(createElement("p", "field-hint", `Tentativa ${interesse.tentativa || 1}`));
 
-  if (interesse.status === "selecionado") {
+  const editavel = interesse.status === "selecionado" && item?.status === "reservado";
+  if (interesse.status === "selecionado" || interesse.combinacao) {
     const combinacao = interesse.combinacao;
     const situacao = combinacao
       ? `Combinação r${combinacao.revisao}: ${combinacao.local_texto} — ${
-          combinacao.aceito_por ? "aceita" : "aguardando aceite da contraparte"
+          combinacao.aceito_por ? "aceita" : combinacao.proposto_por === usuario.id
+            ? "aguardando aceite da outra pessoa" : "aguardando seu aceite"
         }`
       : "Ainda sem combinação de entrega.";
     article.append(createElement("p", "item-card-description", situacao));
+    if (combinacao?.previsao) article.append(createElement("p", "field-hint", `Previsão: ${new Date(combinacao.previsao).toLocaleString("pt-BR")}`));
+    if (combinacao?.observacao) article.append(createElement("p", "field-hint", `Observação: ${combinacao.observacao}`));
 
-    const form = createElement("form", "form-stack combination-form");
-    const local = createElement("input", "", "");
-    local.name = "local_texto";
-    local.placeholder = "Local da entrega";
-    local.maxLength = 200;
-    local.required = true;
-    const previsao = createElement("input", "", "");
-    previsao.name = "previsao";
-    previsao.type = "datetime-local";
-    const observacao = createElement("input", "", "");
-    observacao.name = "observacao";
-    observacao.placeholder = "Observação (opcional)";
-    observacao.maxLength = 300;
-    const propor = createElement("button", "button button-secondary", combinacao ? "Alterar combinação" : "Propor combinação");
-    propor.type = "submit";
-    form.append(local, previsao, observacao, propor);
-    form.addEventListener("submit", async (evento) => {
-      evento.preventDefault();
-      try {
-        await requestApi(`/api/interesses/${encodeURIComponent(interesse.id)}/combinacao`, {
-          method: "PUT",
-          body: JSON.stringify({
-            local_texto: local.value.trim(),
-            previsao: previsao.value ? new Date(previsao.value).toISOString() : null,
-            observacao: observacao.value.trim() || null,
-          }),
-        });
-        await carregarTudo();
-      } catch (error) {
-        handleError(error, recebido ? byIdRecebidos() : byIdMeus());
+    if (editavel) {
+      const form = createElement("form", "form-stack combination-form");
+      const local = createElement("input", "", "");
+      local.name = "local_texto";
+      local.placeholder = "Local da entrega";
+      local.maxLength = 200;
+      local.minLength = 3;
+      local.required = true;
+      const previsao = createElement("input", "", "");
+      previsao.name = "previsao";
+      previsao.type = "datetime-local";
+      previsao.step = "0.001";
+      const observacao = createElement("input", "", "");
+      observacao.name = "observacao";
+      observacao.placeholder = "Observação (opcional)";
+      observacao.maxLength = 300;
+      for (const [campo, texto] of [[local, "Local da entrega"], [previsao, "Previsão da entrega (opcional)"], [observacao, "Observação (opcional)"]]) {
+        campo.id = `${cardId}-${campo.name}`;
+        const label = createElement("label", "", texto);
+        label.htmlFor = campo.id;
+        form.append(label, campo);
       }
-    });
-    article.append(form);
+      const propor = createElement("button", "button button-secondary", combinacao ? "Salvar alteração" : "Enviar proposta");
+      propor.type = "submit";
+      const cancelar = createElement("button", "button button-ghost", "Cancelar edição");
+      cancelar.type = "button";
+      form.append(propor, cancelar);
+      form.addEventListener("submit", async (evento) => {
+        evento.preventDefault();
+        const dados = {
+          local_texto: local.value.trim(),
+          previsao: previsao.value ? new Date(previsao.value).toISOString() : null,
+          observacao: observacao.value.trim() || null,
+        };
+        await atualizarCombinacao(interesse, recebido,
+          () => requestApi(`/api/interesses/${encodeURIComponent(interesse.id)}/combinacao`, {
+            method: "PUT", body: JSON.stringify(dados),
+          }),
+          (resposta, atual) => Boolean(resposta?.combinacao)
+            && atual?.combinacao?.revisao === resposta.combinacao.revisao,
+          "Combinação atualizada.");
+      });
+      form.id = `${cardId}-combinacao`;
+      form.hidden = true;
+      const abrirEdicao = createElement("button", "button button-secondary combination-toggle", combinacao ? "Alterar combinação" : "Propor combinação");
+      abrirEdicao.type = "button";
+      abrirEdicao.setAttribute("aria-controls", form.id);
+      abrirEdicao.setAttribute("aria-expanded", "false");
+      abrirEdicao.addEventListener("click", () => {
+        if (form.hidden) {
+          local.value = combinacao?.local_texto || "";
+          previsao.value = valorDatetimeLocal(combinacao?.previsao);
+          observacao.value = combinacao?.observacao || "";
+        }
+        form.hidden = false;
+        abrirEdicao.setAttribute("aria-expanded", "true");
+        local.focus();
+      });
+      cancelar.addEventListener("click", () => {
+        form.hidden = true;
+        form.reset();
+        abrirEdicao.setAttribute("aria-expanded", "false");
+        abrirEdicao.focus();
+      });
+      article.append(abrirEdicao, form);
+    }
 
-    if (combinacao && !combinacao.aceito_por && combinacao.proposto_por !== usuario.id) {
+    if (editavel && combinacao && !combinacao.aceito_por && combinacao.proposto_por !== usuario.id) {
       const aceitarCombinacao = createElement("button", "button button-primary", "Aceitar combinação");
       aceitarCombinacao.type = "button";
-      aceitarCombinacao.addEventListener("click", async () => {
-        try {
-          await requestApi(
-            `/api/interesses/${encodeURIComponent(interesse.id)}/combinacao/aceite`,
-            { method: "POST", body: JSON.stringify({ revisao: combinacao.revisao }) },
-          );
-          await carregarTudo();
-        } catch (error) {
-          handleError(error, recebido ? byIdRecebidos() : byIdMeus());
-        }
-      });
+      aceitarCombinacao.addEventListener("click", () => atualizarCombinacao(interesse, recebido,
+        () => requestApi(`/api/interesses/${encodeURIComponent(interesse.id)}/combinacao/aceite`, {
+          method: "POST", body: JSON.stringify({ revisao: combinacao.revisao }),
+        }),
+        (_resposta, atual) => atual?.combinacao?.revisao === combinacao.revisao
+          && atual.combinacao.aceito_por === usuario.id,
+        "Combinação aceita.", true));
       article.append(aceitarCombinacao);
     }
-    if (combinacao && combinacao.aceito_por && !recebido) {
+    if (interesse.status === "selecionado" && combinacao?.aceito_por && !recebido && item?.status === "aguardando_confirmacao") {
       const confirmar = createElement("button", "button button-primary", "Confirmar recebimento");
       confirmar.type = "button";
       confirmar.addEventListener("click", async () => {
@@ -191,7 +295,7 @@ function cartaoInteresse(interesse, { recebido }) {
     if (motivo === null) return;
     if (!motivo.trim()) {
       handleError(
-        { status: 400, message: "O motivo é obrigatório." },
+        new ApiError(400, { detail: "O motivo é obrigatório." }),
         recebido ? byIdRecebidos() : byIdMeus(),
       );
       return;
@@ -208,11 +312,13 @@ function cartaoInteresse(interesse, { recebido }) {
     recusar.addEventListener("click", () => pedirMotivo("recusar"));
     actions.append(selecionar, recusar);
   }
-  if (recebido && interesse.status === "selecionado") {
+  if (recebido && editavel) {
     const liberar = createElement("button", "button button-ghost", "Liberar reserva");
     liberar.type = "button";
     liberar.addEventListener("click", () => pedirMotivo("liberar"));
-    actions.append(liberar);
+    const adicionais = createElement("div", "item-actions");
+    adicionais.append(liberar);
+    detalhes.append(adicionais);
   }
   if (recebido && interesse.status === "recusado" && item?.status === "disponivel") {
     const reabrir = createElement("button", "button button-secondary", "Reabrir");
@@ -232,6 +338,7 @@ function cartaoInteresse(interesse, { recebido }) {
     retomar.addEventListener("click", () => executar("retomar"));
     actions.append(retomar);
   }
+  article.append(verDetalhes, detalhes);
   if (actions.childElementCount > 0) article.append(actions);
   return article;
 }

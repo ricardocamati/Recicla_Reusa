@@ -236,9 +236,9 @@ Referências: V21-RNF-02, V21-RNF-03, V21-RNF-04, V21-RNF-05, V21-RNF-06, V21-RN
 - [x] Conciliar os artefatos e a matriz com código e testes finais, preservando limites não comprovados e os IDs retirados, sem reutilizar evidência do fluxo anterior como aprovação desta revisão.
 - [x] Marcar somente tarefas comprovadas e incluir o TODO no respectivo commit de implementação; publicação e merge continuam separados e sujeitos a autorização explícita.
 
-# Parte IV — Ajustes de interface planejados
+# Parte IV — Ajustes de interface
 
-Planejamento aprovado em 11/11/2026. Etapas 21 e 22 implementadas e validadas; Etapa 23 permanece pendente. Preservar as etapas concluídas e não apresentar o restante do planejamento como funcionalidade entregue. Especificação: [ajustes de perfil e interesses](artefatos/v2.1/ajustes_interface_interesses.md).
+Planejamento aprovado em 11/11/2026. Etapas 21 a 23 implementadas e validadas; Etapa 23 concluída em 12/11/2026. Preservar o histórico das etapas e suas evidências locais. Especificação: [ajustes de perfil e interesses](artefatos/v2.1/ajustes_interface_interesses.md).
 
 ## Etapa 21 — Identificação do perfil sem repetição
 
@@ -260,9 +260,9 @@ Referências: UI-RF-02 · UI-CT-02 a UI-CT-05.
 
 Referências: UI-RF-03 · UI-CT-06 a UI-CT-12.
 
-- [ ] Renderizar cards compactos, com resumo da combinação e estado de aceite por ator; abrir informações secundárias por Ver detalhes e oferecer Recolher.
-- [ ] Abrir formulário apenas em Propor/Alterar combinação; preencher valores persistidos e preservar o instante da previsão entre horário local e UTC.
-- [ ] Recolher após salvar e reler com sucesso; cancelar sem mutação, descartar apenas o rascunho visual e conservar campos em falha.
-- [ ] Manter Aceitar combinação visível à contraparte elegível no resumo e Liberar reserva na área expandida, sem mudar motivo obrigatório, revisões, autorização ou confirmação bilateral.
-- [ ] Testar edição, cancelamento, primeira proposta, aceite, revisão concorrente e encerramento; garantir teclado, foco, aria-expanded/aria-controls, bloqueio de duplo envio e layout a 360 px.
-- [ ] Reconstruir as imagens e validar os critérios em navegador com stack e banco isolados; rodar regressões de ofertas/permissões e somente então marcar tarefas concluídas.
+- [x] Renderizar cards compactos, com resumo da combinação e estado de aceite por ator; abrir informações secundárias por Ver detalhes e oferecer Recolher.
+- [x] Abrir formulário apenas em Propor/Alterar combinação; preencher valores persistidos e preservar o instante da previsão entre horário local e UTC.
+- [x] Recolher após salvar e reler com sucesso; cancelar sem mutação, descartar apenas o rascunho visual e conservar campos em falha.
+- [x] Manter Aceitar combinação visível à contraparte elegível no resumo e Liberar reserva na área expandida, sem mudar motivo obrigatório, revisões, autorização ou confirmação bilateral.
+- [x] Testar edição, cancelamento, primeira proposta, aceite, revisão concorrente e encerramento; garantir teclado, foco, aria-expanded/aria-controls, bloqueio de duplo envio e layout a 360 px.
+- [x] Reconstruir as imagens e validar os critérios em navegador com stack e banco isolados; rodar regressões de ofertas/permissões e somente então marcar tarefas concluídas.
