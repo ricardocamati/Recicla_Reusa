@@ -129,6 +129,39 @@ def test_selenium_perfil_preenche_resumo_e_atualiza_cidade(
     assert navegador.find_element(By.ID, "account-city").text == "Sarandi"
 
 
+@pytest.mark.parametrize("tipo", ["pessoa", "ponto_coleta"])
+def test_etapa21_identificacao_sem_selos_preserva_perfil_e_menu(
+    navegador, servidor_frontend, servidor_api, monkeypatch, tipo,
+):
+    monkeypatch.setattr(ServidorApi, "usuario", {**ServidorApi.usuario, "tipo": tipo})
+    navegador.execute_cdp_cmd(
+        "Page.addScriptToEvaluateOnNewDocument",
+        {"source": f"window.RECICLA_API_BASE = {json.dumps(servidor_api)};"},
+    )
+    paginas = ["catalogo.html", "notificacoes.html", "onde-descartar.html", "perfil.html"]
+    paginas += ["itens.html", "interesses.html"] if tipo == "pessoa" else ["pontos.html"]
+    for pagina in paginas:
+        navegador.get(f"{servidor_frontend}/{pagina}")
+        WebDriverWait(navegador, 5).until(
+            lambda d: d.find_element(By.ID, "logout-button").is_displayed()
+        )
+        assert not navegador.find_elements(By.CSS_SELECTOR, "#session-chip, #role-badge")
+        links = navegador.find_elements(By.CSS_SELECTOR, ".header-actions a.nav-link")
+        destinos = {urlsplit(a.get_attribute("href")).path.rsplit("/", 1)[-1] for a in links}
+        assert ("pontos.html" in destinos) == (tipo == "ponto_coleta")
+        assert ("itens.html" in destinos) == (tipo == "pessoa")
+        assert ("interesses.html" in destinos) == (tipo == "pessoa")
+        if pagina == "perfil.html":
+            papel = "Pessoa" if tipo == "pessoa" else "Ponto de coleta"
+            WebDriverWait(navegador, 5).until(
+                lambda d: d.find_element(By.ID, "account-role").text == papel
+            )
+            assert navegador.find_element(By.NAME, "nome").get_attribute("value") == ServidorApi.usuario["nome"]
+        else:
+            for nome in navegador.find_elements(By.ID, "user-name"):
+                assert nome.text == ServidorApi.usuario["nome"]
+
+
 @pytest.fixture()
 def servidor_frontend():
     from frontend.servidor import criar_servidor
@@ -223,7 +256,7 @@ def test_selenium_menu_oferece_acesso_a_interesses(navegador, servidor_frontend,
         "source": f"window.RECICLA_API_BASE = {json.dumps(servidor_api)};",
     })
     navegador.get(f"{servidor_frontend}/{pagina}")
-    WebDriverWait(navegador, 5).until(lambda d: d.find_element(By.ID, "session-chip").get_attribute("textContent") == "Pessoa")
+    WebDriverWait(navegador, 5).until(lambda d: d.find_element(By.ID, "logout-button").is_displayed())
     links = navegador.find_elements(By.CSS_SELECTOR, ".header-actions a[href^='./interesses.html']")
     assert len(links) == 1 and links[0].is_displayed()
 
@@ -378,7 +411,7 @@ def test_selenium_navegacao_consistente_e_contexto_carregado(
     for pagina, _ in esperados:
         navegador.get(f"{servidor_frontend}/{pagina}")
         espera = WebDriverWait(navegador, 5)
-        espera.until(lambda d: d.find_element(By.ID, "session-chip").get_attribute("textContent") != "")
+        espera.until(lambda d: d.find_element(By.ID, "logout-button").is_displayed())
         links = navegador.find_elements(By.CSS_SELECTOR, ".header-actions a.nav-link")
         menu = [(urlsplit(a.get_attribute("href")).path.rsplit("/", 1)[-1], a.get_attribute("textContent")) for a in links if a.is_displayed()]
         assert menu == esperados, (pagina, menu)

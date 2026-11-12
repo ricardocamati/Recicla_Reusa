@@ -187,21 +187,14 @@ function renderAuthenticatedNavigation(usuario) {
     }
     links.append(link);
   }
-  navigation.insertBefore(links, byId("session-chip") || byId("logout-button"));
+  navigation.insertBefore(links, byId("logout-button"));
 }
 
 export function setupAuthenticatedHeader(usuario) {
-  const sessionChip = byId("session-chip");
   const userName = byId("user-name");
-  const roleBadge = byId("role-badge");
   const description = byId("role-description");
 
-  if (sessionChip) {
-    sessionChip.hidden = false;
-    sessionChip.textContent = labelFor("tipo", usuario.tipo);
-  }
   if (userName) userName.textContent = usuario.nome;
-  if (roleBadge) roleBadge.textContent = labelFor("tipo", usuario.tipo);
   if (description) description.textContent = roleDescription(usuario.tipo);
   renderAuthenticatedNavigation(usuario);
 

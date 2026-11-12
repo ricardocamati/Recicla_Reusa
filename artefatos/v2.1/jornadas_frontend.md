@@ -1,5 +1,9 @@
 # Jornadas e funções de frontend — v2.1
 
+## Ajustes de interface aprovados, ainda pendentes
+
+As Etapas 21–23 do [TODO](../../TODO.md) planejam retirar selos repetidos de perfil, separar interesses ativos do histórico e recolher cards/formulários de combinação. A [especificação complementar](ajustes_interface_interesses.md) define requisitos e critérios UI-CT-01 a UI-CT-12. Esses comportamentos não estão implementados por esta atualização documental; não alteram contratos HTTP, permissões nem regras de reserva e confirmação bilateral.
+
 Experiência-alvo da revisão de descarte como diretório. A Etapa 16 entrega a base HTTP pública e preservação de registros. A Etapa 17 implementa J-03 em `frontend/onde-descartar.html`, com navegação, filtros/paginação, detalhe, cópia e estados próprios. A Etapa 18 retira os controles antigos e entrega a gestão de locais sem histórico de descarte, em validação integrada; não confundir a nova consulta com registro de entrega. Doação e venda preservam suas jornadas.
 
 ## Interface de referência e diferenças para o alvo
