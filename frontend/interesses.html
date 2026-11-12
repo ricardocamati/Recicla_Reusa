@@ -48,7 +48,14 @@
           </div>
           <button id="atualizar-meus" class="button button-ghost" type="button">Atualizar</button>
         </div>
-        <p id="meus-message" class="form-message" role="status" aria-live="polite"></p>
+        <div id="meus-filtros" class="tabs" role="group" aria-label="Filtrar meus interesses">
+          <button id="meus-filtro-ativos" class="tab is-active" type="button"
+                  aria-pressed="true" data-filtro="ativos">Ativos</button>
+          <button id="meus-filtro-historico" class="tab" type="button"
+                  aria-pressed="false" data-filtro="historico">Histórico</button>
+        </div>
+        <p id="meus-count" class="field-hint" aria-live="polite"></p>
+        <p id="meus-message" class="form-message" role="status" aria-live="polite" tabindex="-1"></p>
         <div id="meus-interesses-list" class="item-grid" aria-live="polite"></div>
       </section>
 
@@ -60,7 +67,14 @@
           </div>
           <button id="atualizar-recebidos" class="button button-ghost" type="button">Atualizar</button>
         </div>
-        <p id="recebidos-message" class="form-message" role="status" aria-live="polite"></p>
+        <div id="recebidos-filtros" class="tabs" role="group" aria-label="Filtrar interesses recebidos">
+          <button id="recebidos-filtro-ativos" class="tab is-active" type="button"
+                  aria-pressed="true" data-filtro="ativos">Ativos</button>
+          <button id="recebidos-filtro-historico" class="tab" type="button"
+                  aria-pressed="false" data-filtro="historico">Histórico</button>
+        </div>
+        <p id="recebidos-count" class="field-hint" aria-live="polite"></p>
+        <p id="recebidos-message" class="form-message" role="status" aria-live="polite" tabindex="-1"></p>
         <div id="recebidos-interesses-list" class="item-grid" aria-live="polite"></div>
       </section>
     </div>

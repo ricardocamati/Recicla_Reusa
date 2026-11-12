@@ -1,4 +1,5 @@
 import {
+  ApiError,
   createElement,
   handleError,
   labelFor,
@@ -13,9 +14,18 @@ import {
 
 let usuario;
 const itens = new Map();
+// Filtro de apresentação: Ativos reúne pendente/selecionado; Histórico reúne os encerrados.
+const GRUPOS = {
+  ativos: new Set(["pendente", "selecionado"]),
+  historico: new Set(["cancelado", "recusado", "encerrado"]),
+};
+const filtros = { meus: "ativos", recebidos: "ativos" };
+const registros = { meus: null, recebidos: null };
+const versoes = { meus: 0, recebidos: 0 };
+let acaoEmCurso = false;
 
-async function carregarItem(itemId) {
-  if (!itens.has(itemId)) {
+async function carregarItem(itemId, atualizar = false) {
+  if (atualizar || !itens.has(itemId)) {
     try {
       itens.set(itemId, await requestApi(`/api/itens/${encodeURIComponent(itemId)}`));
     } catch {
@@ -131,16 +141,49 @@ function cartaoInteresse(interesse, { recebido }) {
   }
 
   const actions = createElement("div", "item-actions");
-  const executar = async (acao, motivo = null) => {
+  const executar = async (acao, motivo = null, sucesso = null) => {
+    if (acaoEmCurso) return;
+    acaoEmCurso = true;
+    const chave = recebido ? "recebidos" : "meus";
     const alvo = recebido ? byIdRecebidos() : byIdMeus();
+    const tinhaFoco = article.contains(document.activeElement);
+    const bloquear = (valor) => document.querySelectorAll(".item-actions button").forEach((b) => { b.disabled = valor; });
+    bloquear(true);
+    let confirmada = false;
+    let incerta = false;
     try {
-      await requestApi(`/api/interesses/${encodeURIComponent(interesse.id)}/acoes`, {
-        method: "POST",
-        body: JSON.stringify({ acao, motivo }),
-      });
-      await carregarTudo();
+      try {
+        await requestApi(`/api/interesses/${encodeURIComponent(interesse.id)}/acoes`, {
+          method: "POST",
+          body: JSON.stringify({ acao, motivo }),
+        });
+        confirmada = true;
+      } catch (error) {
+        if (error instanceof ApiError && error.status < 500) throw error;
+        // Resposta de rede perdida ou erro 5xx: reler sem repetir a mutação.
+        incerta = true;
+      }
+      const relidas = await carregarTudo();
+      if (!relidas[chave]) {
+        setMessage(alvo, "Não foi possível atualizar para confirmar o estado. A última lista foi mantida; tente Atualizar.", "error");
+        return;
+      }
+      const esperado = { desistir: "cancelado", retomar: "pendente", reabrir: "pendente",
+        recusar: "recusado", selecionar: "selecionado", liberar: "cancelado" }[acao];
+      const atual = registros[chave].find((i) => i.id === interesse.id);
+      if (atual?.status === esperado) {
+        setMessage(alvo, sucesso || "Estado do interesse atualizado.", "success");
+      } else if (incerta) {
+        setMessage(alvo, "Não foi possível confirmar a operação. A lista foi relida; confira o estado atual antes de tentar novamente.", "error");
+      } else if (confirmada) {
+        setMessage(alvo, "Operação confirmada; o estado mudou novamente. Confira a lista atualizada.");
+      }
     } catch (error) {
       handleError(error, alvo);
+    } finally {
+      acaoEmCurso = false;
+      bloquear(false);
+      if (tinhaFoco && !article.isConnected) alvo.focus();
     }
   };
   const pedirMotivo = (acao) => {
@@ -171,7 +214,7 @@ function cartaoInteresse(interesse, { recebido }) {
     liberar.addEventListener("click", () => pedirMotivo("liberar"));
     actions.append(liberar);
   }
-  if (recebido && interesse.status === "recusado") {
+  if (recebido && interesse.status === "recusado" && item?.status === "disponivel") {
     const reabrir = createElement("button", "button button-secondary", "Reabrir");
     reabrir.type = "button";
     reabrir.addEventListener("click", () => executar("reabrir"));
@@ -180,10 +223,10 @@ function cartaoInteresse(interesse, { recebido }) {
   if (!recebido && ["pendente", "selecionado"].includes(interesse.status)) {
     const desistir = createElement("button", "button button-ghost", "Desistir");
     desistir.type = "button";
-    desistir.addEventListener("click", () => executar("desistir"));
+    desistir.addEventListener("click", () => executar("desistir", null, "Você desistiu deste interesse."));
     actions.append(desistir);
   }
-  if (!recebido && interesse.status === "cancelado") {
+  if (!recebido && interesse.status === "cancelado" && item?.status === "disponivel") {
     const retomar = createElement("button", "button button-secondary", "Retomar");
     retomar.type = "button";
     retomar.addEventListener("click", () => executar("retomar"));
@@ -201,68 +244,116 @@ function byIdRecebidos() {
   return document.getElementById("recebidos-message");
 }
 
-function renderLista(listaId, interesses, opcoes) {
+function visiveis(interesses, filtro) {
+  return interesses.filter((interesse) => GRUPOS[filtro].has(interesse.status));
+}
+
+function contexto(chave) {
+  return {
+    recebido: chave === "recebidos",
+    listaId: chave === "meus" ? "meus-interesses-list" : "recebidos-interesses-list",
+    message: document.getElementById(`${chave}-message`),
+  };
+}
+
+function renderEscopo(chave) {
+  const todos = registros[chave];
+  if (todos === null) return; // Falha inicial não é uma lista vazia.
+  const { recebido, listaId } = contexto(chave);
+  const filtro = filtros[chave];
   const lista = document.getElementById(listaId);
+  const selecionados = visiveis(todos, filtro);
+  const desconhecidos = todos.filter((i) => !GRUPOS.ativos.has(i.status) && !GRUPOS.historico.has(i.status));
+  const historico = filtro === "historico";
+  const rotulo = historico ? "no histórico" : "ativo(s)";
+  const alerta = desconhecidos.length ? ` ${desconhecidos.length} não classificado(s).` : "";
+  document.getElementById(`${chave}-count`).textContent = `${selecionados.length} interesse(s) ${rotulo}.${alerta}`;
   lista.replaceChildren();
-  if (interesses.length === 0) {
-    renderEmptyState(
-      lista,
-      opcoes.vazioTitulo,
-      opcoes.vazioTexto,
-    );
-    return;
+  if (!selecionados.length && !desconhecidos.length) {
+    const noOutro = visiveis(todos, historico ? "ativos" : "historico").length;
+    const titulo = historico ? "Nada no histórico" : "Nenhum interesse ativo";
+    const texto = noOutro
+      ? (historico ? "Os interesses em andamento estão em Ativos." : "Seus interesses encerrados estão no Histórico.")
+      : (historico ? "Interesses cancelados, recusados ou encerrados aparecem aqui."
+        : recebido ? "Quando alguém se interessar pelos seus itens, a decisão aparece aqui."
+          : "Abra o catálogo e manifeste interesse em um item de doação ou revenda.");
+    renderEmptyState(lista, titulo, texto);
   }
-  interesses.forEach((interesse) => lista.append(cartaoInteresse(interesse, opcoes)));
-}
-
-async function carregarMeus() {
-  const message = byIdMeus();
-  setMessage(message, "Carregando seus interesses...");
-  try {
-    const interesses = await requestAllPages("/api/interesses", { escopo: "meus" });
-    await Promise.all(interesses.map((interesse) => carregarItem(interesse.item_id)));
-    renderLista("meus-interesses-list", interesses, {
-      recebido: false,
-      vazioTitulo: "Nenhum interesse registrado",
-      vazioTexto: "Abra o catálogo e manifeste interesse em um item de doação ou revenda.",
-    });
-    setMessage(message, `${interesses.length} interesse(s).`, "success");
-  } catch (error) {
-    handleError(error, message);
-    document.getElementById("meus-interesses-list").replaceChildren();
+  selecionados.forEach((interesse) => lista.append(cartaoInteresse(interesse, { recebido })));
+  if (desconhecidos.length) {
+    lista.append(createElement("p", "field-hint", "Há interesses com situação não reconhecida. Atualize a lista para conferir."));
+    // Sem reclassificar nem inventar ações para um estado fora do contrato.
+    desconhecidos.forEach((interesse) => lista.append(cartaoInteresse(interesse, { recebido })));
   }
 }
 
-async function carregarRecebidos() {
-  const secao = document.getElementById("recebidos-section");
-  const message = byIdRecebidos();
+async function carregarEscopo(chave) {
+  const { message, listaId } = contexto(chave);
+  const lista = document.getElementById(listaId);
+  const versao = ++versoes[chave];
+  lista.setAttribute("aria-busy", "true");
+  setMessage(message, "Carregando interesses...");
   try {
-    const interesses = await requestAllPages("/api/interesses", { escopo: "recebidos" });
-    await Promise.all(interesses.map((interesse) => carregarItem(interesse.item_id)));
-    secao.hidden = false;
-    renderLista("recebidos-interesses-list", interesses, {
-      recebido: true,
-      vazioTitulo: "Nenhum interesse recebido",
-      vazioTexto: "Quando alguém se interessar pelos seus itens, a decisão aparece aqui.",
-    });
-    setMessage(message, `${interesses.length} interesse(s) recebido(s).`, "success");
+    const interesses = await requestAllPages("/api/interesses", { escopo: chave });
+    const ids = [...new Set(interesses.map((interesse) => interesse.item_id))];
+    await Promise.all(ids.map((id) => carregarItem(id, true)));
+    if (versao !== versoes[chave]) return false;
+    registros[chave] = interesses;
+    if (chave === "recebidos") document.getElementById("recebidos-section").hidden = false;
+    renderEscopo(chave);
+    setMessage(message, "Lista atualizada.", "success");
+    return true;
   } catch (error) {
-    if (error?.status === 403) {
-      secao.hidden = true;
-      return;
+    if (versao !== versoes[chave]) return false;
+    if (chave === "recebidos" && error?.status === 403) {
+      registros[chave] = null;
+      lista.replaceChildren();
+      document.getElementById("recebidos-section").hidden = true;
+      return false;
     }
     handleError(error, message);
+    if (registros[chave] !== null) {
+      // Mantém os últimos dados conhecidos, sem fingir que a releitura deu certo.
+      message.textContent += " Não foi possível atualizar; a última lista foi mantida.";
+    }
+    return false;
+  } finally {
+    if (versao === versoes[chave]) lista.setAttribute("aria-busy", "false");
   }
 }
 
+async function carregarMeus() { return carregarEscopo("meus"); }
+async function carregarRecebidos() { return carregarEscopo("recebidos"); }
+
 async function carregarTudo() {
-  await Promise.all([carregarMeus(), carregarRecebidos()]);
+  const [meus, recebidos] = await Promise.all([carregarMeus(), carregarRecebidos()]);
+  return { meus, recebidos };
+}
+
+function ligarFiltro(chave) {
+  const container = document.getElementById(`${chave}-filtros`);
+  const botoes = [...container.querySelectorAll("[data-filtro]")];
+  botoes.forEach((botao) => {
+    botao.addEventListener("click", () => {
+      if (filtros[chave] === botao.dataset.filtro) return;
+      filtros[chave] = botao.dataset.filtro;
+      botoes.forEach((outro) => {
+        const ativo = outro.dataset.filtro === filtros[chave];
+        outro.classList.toggle("is-active", ativo);
+        outro.setAttribute("aria-pressed", String(ativo));
+      });
+      // A lista completa já foi carregada: filtrar não depende de outra requisição.
+      renderEscopo(chave);
+    });
+  });
 }
 
 async function initInteresses() {
   usuario = await requireSession();
   if (!usuario) return;
   setupAuthenticatedHeader(usuario);
+  ligarFiltro("meus");
+  ligarFiltro("recebidos");
   document.getElementById("atualizar-meus").addEventListener("click", carregarMeus);
   document.getElementById("atualizar-recebidos").addEventListener("click", carregarRecebidos);
   await carregarTudo();
