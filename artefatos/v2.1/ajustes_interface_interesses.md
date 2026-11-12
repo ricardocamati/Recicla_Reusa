@@ -2,7 +2,7 @@
 
 ## Contexto e escopo
 
-Planejamento aprovado em conversa em 11/11/2026; **implementação pendente**. Este documento complementa as jornadas v2.1 somente nos pontos descritos abaixo. Não declara comportamento entregue nem substitui contratos HTTP ou regras de autorização.
+Planejamento aprovado em conversa em 11/11/2026. **Etapa 21 concluída; Etapas 22–23 ainda pendentes.** Este documento complementa as jornadas v2.1 somente nos pontos descritos abaixo. Os critérios de interesses compactos e histórico não são comportamento entregue e não substituem contratos HTTP ou regras de autorização.
 
 A interface repete o tipo da conta em selos “Pessoa” no cabeçalho e no conteúdo. Interesses cancelados continuam misturados aos ativos. Nos cards selecionados, o formulário de combinação aparece aberto mesmo após o envio de uma proposta, aumentando o card e sugerindo edição permanente.
 
@@ -66,7 +66,7 @@ Objetivo: reduzir ruído visual e separar acompanhamento, edição e histórico,
 | UI-CT-11 | Dado card sem combinação, Propor combinação abre formulário vazio e cancelar não cria registro; previsão existente conserva o instante após edição. | UI-RF-03 |
 | UI-CT-12 | Dado uso por teclado/tela estreita, expansão, edição, cancelamento e remoção preservam foco, sem tabulação em campos ocultos nem rolagem horizontal; duplo clique não duplica ação. | Acessibilidade |
 
-Critérios escritos não são resultados de teste. Todos permanecem pendentes de implementação e execução.
+Critérios escritos não são resultados de teste. UI-CT-01 está implementado e verificado em navegador; UI-CT-02 a UI-CT-12 permanecem pendentes de implementação e execução.
 
 ## Contratos, dados e exclusões
 

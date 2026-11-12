@@ -244,8 +244,8 @@ Planejamento aprovado em 11/11/2026, sem implementação nesta atualização. Pr
 
 Referências: UI-RF-01 · UI-CT-01.
 
-- [ ] Retirar selos repetidos do tipo de conta do cabeçalho e das telas comuns; manter nome e tipo em Meu perfil, sem alterar navegação, guardas ou permissões.
-- [ ] Testar pessoa e operador nas telas comuns e em Meu perfil, incluindo negação das ações de outro perfil.
+- [x] Retirar selos repetidos do tipo de conta do cabeçalho e das telas comuns; manter nome e tipo em Meu perfil, sem alterar navegação, guardas ou permissões.
+- [x] Testar pessoa e operador nas telas comuns e em Meu perfil, incluindo negação das ações de outro perfil.
 
 ## Etapa 22 — Interesses ativos e histórico
 
