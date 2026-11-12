@@ -235,3 +235,34 @@ Referências: V21-RNF-02, V21-RNF-03, V21-RNF-04, V21-RNF-05, V21-RNF-06, V21-RN
 - [x] Atualizar README principal, arquitetura, contratos, OpenAPI gerada e instruções de demonstração para o comportamento efetivamente implementado, sem reapresentar campos/rotas planejados como executáveis.
 - [x] Conciliar os artefatos e a matriz com código e testes finais, preservando limites não comprovados e os IDs retirados, sem reutilizar evidência do fluxo anterior como aprovação desta revisão.
 - [x] Marcar somente tarefas comprovadas e incluir o TODO no respectivo commit de implementação; publicação e merge continuam separados e sujeitos a autorização explícita.
+
+# Parte IV — Ajustes de interface planejados
+
+Planejamento aprovado em 11/11/2026, sem implementação nesta atualização. Preservar as etapas concluídas e não confundir os critérios abaixo com funcionalidades entregues. Especificação: [ajustes de perfil e interesses](artefatos/v2.1/ajustes_interface_interesses.md).
+
+## Etapa 21 — Identificação do perfil sem repetição
+
+Referências: UI-RF-01 · UI-CT-01.
+
+- [ ] Retirar selos repetidos do tipo de conta do cabeçalho e das telas comuns; manter nome e tipo em Meu perfil, sem alterar navegação, guardas ou permissões.
+- [ ] Testar pessoa e operador nas telas comuns e em Meu perfil, incluindo negação das ações de outro perfil.
+
+## Etapa 22 — Interesses ativos e histórico
+
+Referências: UI-RF-02 · UI-CT-02 a UI-CT-05.
+
+- [ ] Adotar filtros Ativos/Histórico em enviados e recebidos, com Ativos por padrão; classificar estados existentes após percorrer a paginação, preservando filtro e contadores.
+- [ ] Depois da desistência confirmada, retirar o card de Ativos e informar sucesso; manter cancelados no Histórico e preservar documentos, tentativas e relações.
+- [ ] Reconciliar retomada e reabertura com a lista ativa, sem duplicar cards; manter as regras atuais para oferecer essas ações.
+- [ ] Testar sucesso, erro, resposta perdida, lista vazia, várias páginas e persistência após recarregar; não retirar card definitivamente antes da confirmação/reconciliação.
+
+## Etapa 23 — Cards compactos e combinação sob demanda
+
+Referências: UI-RF-03 · UI-CT-06 a UI-CT-12.
+
+- [ ] Renderizar cards compactos, com resumo da combinação e estado de aceite por ator; abrir informações secundárias por Ver detalhes e oferecer Recolher.
+- [ ] Abrir formulário apenas em Propor/Alterar combinação; preencher valores persistidos e preservar o instante da previsão entre horário local e UTC.
+- [ ] Recolher após salvar e reler com sucesso; cancelar sem mutação, descartar apenas o rascunho visual e conservar campos em falha.
+- [ ] Manter Aceitar combinação visível à contraparte elegível no resumo e Liberar reserva na área expandida, sem mudar motivo obrigatório, revisões, autorização ou confirmação bilateral.
+- [ ] Testar edição, cancelamento, primeira proposta, aceite, revisão concorrente e encerramento; garantir teclado, foco, aria-expanded/aria-controls, bloqueio de duplo envio e layout a 360 px.
+- [ ] Reconstruir as imagens e validar os critérios em navegador com stack e banco isolados; rodar regressões de ofertas/permissões e somente então marcar tarefas concluídas.
