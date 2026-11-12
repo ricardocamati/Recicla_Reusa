@@ -2,7 +2,7 @@
 
 ## Ajustes de interface aprovados
 
-As Etapas 21–22 do [TODO](../../TODO.md) retiraram selos repetidos de perfil e separaram interesses ativos do histórico. A Etapa 23 (recolher cards/formulários de combinação) permanece pendente. A [especificação complementar](ajustes_interface_interesses.md) define os critérios: UI-CT-01 a UI-CT-05 entregues; UI-CT-06 a UI-CT-12 ainda planejados. Contratos HTTP, permissões e regras de reserva e confirmação bilateral permanecem inalterados.
+As Etapas 21–23 do [TODO](../../TODO.md) retiraram selos repetidos de perfil, separaram interesses ativos do histórico e entregaram cards compactos. “Ver detalhes” expande informações secundárias; “Propor/Alterar combinação” abre campos preenchidos e “Cancelar edição” fecha sem gravar. Salvar confirma a revisão por releitura antes de recolher; erros conservam os campos. Aceite da contraparte permanece visível no resumo e liberação de reserva fica nos detalhes com motivo obrigatório. A [especificação complementar](ajustes_interface_interesses.md) define UI-CT-01 a UI-CT-12, implementados e verificados. Contratos HTTP, permissões e regras de reserva e confirmação bilateral permanecem inalterados.
 
 Experiência-alvo da revisão de descarte como diretório. A Etapa 16 entrega a base HTTP pública e preservação de registros. A Etapa 17 implementa J-03 em `frontend/onde-descartar.html`, com navegação, filtros/paginação, detalhe, cópia e estados próprios. A Etapa 18 retira os controles antigos e entrega a gestão de locais sem histórico de descarte, em validação integrada; não confundir a nova consulta com registro de entrega. Doação e venda preservam suas jornadas.
 

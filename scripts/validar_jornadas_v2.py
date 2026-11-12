@@ -272,7 +272,19 @@ class Navegador:
     def propor_combinacao(self, lista: str, titulo: str, local: str = "Portaria da jornada") -> None:
         self.abrir("interesses.html", f"#{lista}")
         cartao = self.cartao(lista, titulo)
-        formulario = cartao.find_element(By.CSS_SELECTOR, "form.combination-form")
+        self.clicar(cartao.find_element(By.CSS_SELECTOR, ".combination-toggle"))
+
+        def formulario_visivel(driver):
+            try:
+                atual = self._cartao(lista, titulo)
+                if atual is None:
+                    return False
+                formulario = atual.find_element(By.CSS_SELECTOR, "form.combination-form")
+                return formulario if formulario.is_displayed() else False
+            except StaleElementReferenceException:
+                return False
+
+        formulario = self.espera.until(formulario_visivel)
         campo = formulario.find_element(By.NAME, "local_texto")
         campo.clear()
         campo.send_keys(local)

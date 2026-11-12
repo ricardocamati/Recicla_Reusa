@@ -864,6 +864,33 @@ legend {
   font-weight: 600;
 }
 
+/* Cards de interesses: resumo legível e edição somente quando solicitada. */
+.interest-card {
+  min-width: 0;
+}
+
+.interest-card h3 {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+}
+
+.interest-card .item-card-description,
+.interest-card .field-hint {
+  overflow-wrap: anywhere;
+}
+
+.interest-card .combination-form input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.interest-details {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
 .item-actions select {
   min-height: 36px;
   max-width: 100%;
